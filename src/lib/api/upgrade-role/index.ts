@@ -1,3 +1,4 @@
+import { r2Public } from "@/config";
 import { errorRes, successRes } from "@/lib/auth";
 import { db } from "@/lib/db";
 import { NextRequest } from "next/server";
@@ -23,6 +24,10 @@ export const apiGetStatusRole = async (req: NextRequest, userId: string) => {
         status: true,
         role: true,
         message: true,
+        fileKtp: true,
+        name: true,
+        nik: true,
+        storefront: true,
       },
       where: (u, { eq, and }) =>
         and(eq(u.userId, userId), eq(u.newRole, "PETSHOP")),
@@ -30,11 +35,27 @@ export const apiGetStatusRole = async (req: NextRequest, userId: string) => {
 
     if (!userExist)
       return successRes(
-        { status: null, role: user.role, message: null },
+        {
+          status: null,
+          role: user.role,
+          message: null,
+          fileKtp: null,
+          storefront: null,
+          name: null,
+          nik: null,
+        },
         "Application status"
       );
 
-    return successRes(userExist, "Application status");
+    const response = {
+      ...userExist,
+      fileKtp: userExist.fileKtp ? `${r2Public}/${userExist.fileKtp}` : null,
+      storefront: userExist.storefront
+        ? `${r2Public}/${userExist.storefront}`
+        : null,
+    };
+
+    return successRes(response, "Application status");
   }
 
   const userExist = await db.query.userRoleDetails.findFirst({
@@ -42,6 +63,11 @@ export const apiGetStatusRole = async (req: NextRequest, userId: string) => {
       status: true,
       role: true,
       message: true,
+      fileKtp: true,
+      fileKta: true,
+      name: true,
+      nik: true,
+      noKta: true,
     },
     where: (u, { eq, and }) =>
       and(eq(u.userId, userId), eq(u.newRole, "VETERINARIAN")),
@@ -49,9 +75,24 @@ export const apiGetStatusRole = async (req: NextRequest, userId: string) => {
 
   if (!userExist)
     return successRes(
-      { status: null, role: user.role, message: null },
+      {
+        status: null,
+        role: user.role,
+        message: null,
+        fileKtp: null,
+        fileKta: null,
+        name: null,
+        nik: null,
+        noKta: null,
+      },
       "Application status"
     );
 
-  return successRes(userExist, "Application status");
+  const response = {
+    ...userExist,
+    fileKtp: userExist.fileKtp ? `${r2Public}/${userExist.fileKtp}` : null,
+    fileKta: userExist.fileKta ? `${r2Public}/${userExist.fileKta}` : null,
+  };
+
+  return successRes(response, "Application status");
 };

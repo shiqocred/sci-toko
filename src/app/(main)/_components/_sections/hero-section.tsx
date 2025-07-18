@@ -18,7 +18,7 @@ export const HeroSection = () => {
   );
   return (
     <div
-      className="[--height-homepage:610px] min-[1440px]:h-[var(--height-homepage)] w-full aspect-[1442/610] relative bg-repeat-x bg-[position:center_bottom] bg-[length:auto_100%] flex items-center"
+      className="min-[1440px]:h-[610px] w-full aspect-[1442/610] relative bg-repeat-x bg-[position:center_bottom] bg-[length:auto_100%] flex items-center"
       style={{
         backgroundImage: "url('/assets/images/homepage.webp')",
       }}

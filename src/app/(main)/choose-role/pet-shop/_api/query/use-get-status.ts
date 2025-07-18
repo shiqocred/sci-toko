@@ -3,8 +3,12 @@ import { useApiQuery } from "@/lib/query/use-query";
 type Response = {
   data: {
     status: "PENDING" | "APPROVED" | "REJECTED" | null;
-    role: "BASIC" | "PETSHOP" | "VETERINARIAN";
+    name: string | null;
+    role: "BASIC" | "PETSHOP" | "VETERINARIAN" | "ADMIN";
     message: string | null;
+    fileKtp: string | null;
+    storefront: string | null;
+    nik: string | null;
   };
 };
 

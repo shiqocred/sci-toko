@@ -6,15 +6,28 @@ import { Label } from "@/components/ui/label";
 import Link from "next/link";
 import React, { FormEvent, useState } from "react";
 import { useSendOTP } from "../_api";
+import { cn } from "@/lib/utils";
 
 const Client = () => {
   const [input, setInput] = useState("");
+  const [errors, setErrors] = useState({ email: "" });
 
   const { mutate: sendOTP, isPending: sendingOTP } = useSendOTP();
 
   const handleSubmit = async (e: FormEvent) => {
     e.preventDefault();
-    sendOTP({ body: { email: input } });
+    sendOTP(
+      { body: { email: input } },
+      {
+        onSuccess: () => {
+          setInput("");
+          setErrors({ email: "" });
+        },
+        onError: (err) => {
+          setErrors((err.response?.data as any).errors);
+        },
+      }
+    );
   };
 
   return (
@@ -40,7 +53,10 @@ const Client = () => {
             <Label htmlFor="email">Email</Label>
             <Input
               id="email"
-              className="bg-gray-100 border-gray-100 focus-visible:ring-0 focus-visible:border-gray-500"
+              className={cn(
+                "bg-gray-100 border-gray-100 focus-visible:ring-0 focus-visible:border-gray-500",
+                errors.email && "border-red-500 focus-visible:border-red-500"
+              )}
               placeholder="Type your email"
               type="email"
               onChange={(e) => setInput(e.target.value)}
@@ -48,6 +64,9 @@ const Client = () => {
               autoFocus
               disabled={sendingOTP}
             />
+            {errors.email && (
+              <p className="text-xs text-red-500">{errors.email}</p>
+            )}
           </div>
           <Button
             type="submit"

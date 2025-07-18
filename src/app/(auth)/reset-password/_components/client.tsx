@@ -7,11 +7,13 @@ import { PasswordInput } from "../../_components/form/password-input";
 import { ConfirmPasswordInput } from "../../_components/form/confirm-password-input";
 import { useSearchParams } from "next/navigation";
 
+const initialValue = { password: "", confirm_password: "" };
 const Client = () => {
   const searchParams = useSearchParams();
   const tokenQuery = searchParams.get("token") ?? "";
   const token = decodeURIComponent(tokenQuery);
-  const [input, setInput] = useState({ password: "", confirm_password: "" });
+  const [input, setInput] = useState(initialValue);
+  const [errors, setErrors] = useState(initialValue);
 
   const validations = [
     {
@@ -45,13 +47,24 @@ const Client = () => {
 
   const handleSubmit = async (e: FormEvent) => {
     e.preventDefault();
-    resetPassword({
-      body: {
-        password: input.password,
-        confirm_password: input.confirm_password,
-        token,
+    resetPassword(
+      {
+        body: {
+          password: input.password,
+          confirm_password: input.confirm_password,
+          token,
+        },
       },
-    });
+      {
+        onSuccess: () => {
+          setInput(initialValue);
+          setErrors(initialValue);
+        },
+        onError: (err) => {
+          setErrors((err.response?.data as any).errors);
+        },
+      }
+    );
   };
 
   return (
@@ -80,11 +93,13 @@ const Client = () => {
             handleChange={handleChange}
             disabled={resetingPassword}
             isNewPassword
+            errors={errors}
           />
           <ConfirmPasswordInput
             input={input}
             handleChange={handleChange}
             disabled={resetingPassword}
+            errors={errors}
           />
           <Button
             type="submit"

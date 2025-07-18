@@ -1,14 +1,16 @@
 import { Button } from "@/components/ui/button";
-import { AlertCircle } from "lucide-react";
+import { AlertCircle, Loader2 } from "lucide-react";
 import Link from "next/link";
 import React, { MouseEvent } from "react";
 
 export const RejectedView = ({
   message,
   handleReset,
+  isReseting,
 }: {
   message: string | null;
   handleReset: (e: MouseEvent) => void;
+  isReseting: boolean;
 }) => {
   return (
     <div className="max-w-md w-full p-5 bg-white rounded-2xl flex flex-col gap-1 text-center">
@@ -22,6 +24,7 @@ export const RejectedView = ({
           variant={"destructiveOutline"}
           className="rounded-full w-full flex-auto"
           asChild
+          disabled={isReseting}
         >
           <Link href={"/"}>Go to Homepage</Link>
         </Button>
@@ -29,8 +32,10 @@ export const RejectedView = ({
           onClick={handleReset}
           variant={"destructive"}
           className="rounded-full w-full flex-auto cursor-pointer"
+          disabled={isReseting}
         >
-          Apply again
+          {isReseting && <Loader2 className="animate-spin" />}
+          {isReseting ? "Reseting Form..." : "Apply again"}
         </Button>
       </div>
     </div>

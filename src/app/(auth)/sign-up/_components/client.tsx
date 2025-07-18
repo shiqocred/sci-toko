@@ -3,7 +3,7 @@
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { numericString } from "@/lib/utils";
+import { cn, numericString } from "@/lib/utils";
 import Link from "next/link";
 import React, { useState, ChangeEvent, FormEvent } from "react";
 import { PasswordInput } from "../../_components/form/password-input";
@@ -23,6 +23,7 @@ const initialValue = {
 const Client = () => {
   const [dialCode, setDialCode] = useState("+62");
   const [input, setInput] = useState(initialValue);
+  const [errors, setErrors] = useState(initialValue);
 
   const { mutate: register, isPending: isRegistering } = useRegister();
 
@@ -72,12 +73,17 @@ const Client = () => {
       { body: input },
       {
         onSuccess: async () => {
+          setInput(initialValue);
+          setErrors(initialValue);
           await signIn("credentials", {
             email: input.email,
             password: input.password,
             redirect: true,
             redirectTo: "/verification-email",
           });
+        },
+        onError: (err) => {
+          setErrors((err.response?.data as any).errors);
         },
       }
     );
@@ -86,7 +92,7 @@ const Client = () => {
   return (
     <div className="w-full bg-sky-50 relative h-full">
       <div
-        className="[--height-homepage:610px] min-[1440px]:h-[var(--height-homepage)] w-full aspect-[1442/610] bg-repeat-x bg-[position:center_bottom] bg-[length:auto_100%] absolute top-0 z-0"
+        className="min-[1440px]:h-[610px] w-full aspect-[1442/610] bg-repeat-x bg-[position:center_bottom] bg-[length:auto_100%] absolute top-0 z-0"
         style={{
           backgroundImage: "url('/assets/images/homepage.webp')",
         }}
@@ -106,13 +112,19 @@ const Client = () => {
               </Label>
               <Input
                 id="name"
-                className="bg-gray-100 border-gray-100 focus-visible:ring-0 focus-visible:border-gray-500"
+                className={cn(
+                  "bg-gray-100 border-gray-100 focus-visible:ring-0 focus-visible:border-gray-500",
+                  errors.name && "border-red-500 focus-visible:border-red-500"
+                )}
                 placeholder="Type your name"
                 onChange={handleChange}
                 value={input.name}
                 required
                 disabled={isRegistering}
               />
+              {errors.name && (
+                <p className="text-xs text-red-500">{errors.name}</p>
+              )}
             </div>
             <div className="flex flex-col gap-1.5 w-full">
               <Label htmlFor="email" className="required">
@@ -120,7 +132,10 @@ const Client = () => {
               </Label>
               <Input
                 id="email"
-                className="bg-gray-100 border-gray-100 focus-visible:ring-0 focus-visible:border-gray-500"
+                className={cn(
+                  "bg-gray-100 border-gray-100 focus-visible:ring-0 focus-visible:border-gray-500",
+                  errors.email && "border-red-500 focus-visible:border-red-500"
+                )}
                 placeholder="Type your email"
                 type="email"
                 onChange={handleChange}
@@ -128,6 +143,9 @@ const Client = () => {
                 required
                 disabled={isRegistering}
               />
+              {errors.email && (
+                <p className="text-xs text-red-500">{errors.email}</p>
+              )}
             </div>
             <PasswordInput
               validations={validations}
@@ -135,11 +153,13 @@ const Client = () => {
               allValid={allValid}
               handleChange={handleChange}
               disabled={isRegistering}
+              errors={errors}
             />
             <ConfirmPasswordInput
               input={input}
               handleChange={handleChange}
               disabled={isRegistering}
+              errors={errors}
             />
             <PhoneNumberInput
               input={input}
