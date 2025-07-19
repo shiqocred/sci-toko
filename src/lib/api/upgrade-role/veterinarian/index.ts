@@ -32,6 +32,10 @@ const upgradeRoleVeterinarian = z.object({
     }),
 });
 
+/**
+ *
+ * @FormData full_name, nik, ktp, no_kta, kta
+ */
 export const apiUpgradeToVeterinarian = async (
   req: NextRequest,
   userId: string

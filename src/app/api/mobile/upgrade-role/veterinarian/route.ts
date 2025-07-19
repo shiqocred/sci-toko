@@ -16,6 +16,7 @@ export async function PUT(req: NextRequest) {
     return successRes(response, "Document successfully submited");
   } catch (error) {
     if (isResponse(error)) return error;
+
     console.log("ERROR_UPGRADE_ROLE_VETERINARIAN", error);
     return errorRes("Internal Error", 500);
   }

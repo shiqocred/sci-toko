@@ -1,5 +1,6 @@
 import { sign, SignOptions, verify } from "jsonwebtoken";
 import { jwtSecret } from "@/config";
+import { errorRes } from "./response";
 
 export const signJWT = (
   payload: string | Buffer | object,
@@ -11,7 +12,7 @@ export const signJWT = (
 const tokenJWT = (req: Request) => {
   const authHeader = req.headers.get("authorization");
 
-  if (!authHeader) return null;
+  if (!authHeader) throw errorRes("Unauthorize", 401);
 
   const token = authHeader.replace("Bearer ", "");
 
@@ -25,21 +26,22 @@ export const isAuth = async (
 ) => {
   const token = tokenJWT(req);
 
-  if (!token) return null;
+  if (!token) throw errorRes("Unauthorize", 401);
 
-  const payload: { sub: string; email: string; password: string } | null =
-    verify(token, jwtSecret) as {
-      sub: string;
-      email: string;
-      password: string;
-    };
+  let payload: { sub: string; email: string; password: string };
+  try {
+    payload = verify(token, jwtSecret) as typeof payload;
+  } catch (err) {
+    console.log(err);
+    throw errorRes("Unauthorize", 401);
+  }
 
   if (
     (type === "noverify" && payload.email) ||
     (type === "noverify" && payload.password) ||
     (type === "verify" && payload.sub)
   )
-    return null;
+    throw errorRes("Unauthorize", 401);
 
   return payload;
 };

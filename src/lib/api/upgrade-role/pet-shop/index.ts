@@ -31,6 +31,10 @@ const upgradeRolePetshop = z.object({
     }),
 });
 
+/**
+ *
+ * @FormData full_name, nik, ktp, storefront
+ */
 export const apiUpgradeToPetShop = async (req: NextRequest, userId: string) => {
   const formData = await req.formData();
 

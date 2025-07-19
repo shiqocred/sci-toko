@@ -1,4 +1,6 @@
 import { errorRes, isAuth, successRes } from "@/lib/auth";
+import { db } from "@/lib/db";
+import { isResponse } from "@/lib/utils";
 import { NextRequest } from "next/server";
 
 export async function GET(req: NextRequest) {
@@ -9,8 +11,23 @@ export async function GET(req: NextRequest) {
 
     const { sub: userId } = auth;
 
-    return successRes({ userId }, "Authorized");
+    const user = await db.query.users.findFirst({
+      columns: {
+        id: true,
+        email: true,
+        emailVerified: true,
+        name: true,
+        role: true,
+      },
+      where: (u, { eq }) => eq(u.id, userId),
+    });
+
+    if (!user) throw errorRes("Unauthorize", 401);
+
+    return successRes(user, "Authorized");
   } catch (error) {
+    if (isResponse(error)) return error;
+
     console.log("ERROR_CHECK_USER", error);
     return errorRes("Internal Error", 500);
   }
