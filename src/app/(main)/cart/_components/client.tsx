@@ -187,9 +187,9 @@ const Client = () => {
         <div className="flex flex-col gap-4 pt-5">
           <Heading label="Similar Products" isExpand />
           <div className="grid grid-cols-5 gap-6 w-full">
-            {products.map((item, idx) => (
+            {/* {products.map((item, idx) => (
               <ProductCard key={`${item.title}-${idx}`} {...item} />
-            ))}
+            ))} */}
           </div>
         </div>
       </div>
