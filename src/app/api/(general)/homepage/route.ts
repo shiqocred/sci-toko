@@ -1,7 +1,7 @@
 import { r2Public } from "@/config";
 import { errorRes, successRes } from "@/lib/auth";
-import { categories, db, products, suppliers } from "@/lib/db";
-import { sql } from "drizzle-orm";
+import { categories, db, productImages, products, suppliers } from "@/lib/db";
+import { and, eq, sql } from "drizzle-orm";
 
 export async function GET() {
   try {
@@ -11,10 +11,32 @@ export async function GET() {
         title: products.name,
         slug: products.slug,
         description: products.description,
+        image: productImages.url, // ambil gambar pertama
       })
       .from(products)
+      .leftJoin(
+        productImages,
+        and(
+          eq(productImages.productId, products.id),
+          // Ambil hanya satu image: gambar pertama (misalnya berdasarkan waktu dibuat)
+          eq(
+            productImages.id,
+            sql`(
+          SELECT id FROM product_images
+          WHERE product_id = ${products.id}
+          ORDER BY created_at ASC
+          LIMIT 1
+        )`
+          )
+        )
+      )
       .orderBy(sql`RANDOM()`)
       .limit(4);
+
+    const productsFormated = trendingProducts.map((item) => ({
+      ...item,
+      image: item.image ? `${r2Public}/${item.image}` : null,
+    }));
 
     const suppliersHome = await db
       .select({
@@ -36,12 +58,14 @@ export async function GET() {
         id: categories.id,
         name: categories.name,
         slug: categories.slug,
+        image: categories.image,
       })
       .from(categories)
-      .orderBy(sql`RANDOM()`);
+      .orderBy(sql`RANDOM()`)
+      .limit(3);
 
     const response = {
-      products: trendingProducts,
+      products: productsFormated,
       suppliers: suppliersHomeFormat,
       categories: categoriesHome,
     };

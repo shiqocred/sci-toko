@@ -9,26 +9,6 @@ import { z } from "zod/v4";
 const upgradeRolePetshop = z.object({
   nik: z.string().min(16, "Invalid NIK number"),
   full_name: z.string().min(1, "full name is required"),
-  ktp: z
-    .custom<File>((val) => val instanceof File, {
-      message: "File is required",
-    })
-    .refine((file) => file.size > 0, {
-      message: "File is empty",
-    })
-    .refine((file) => file.type.startsWith("image/"), {
-      message: "Only image files are allowed",
-    }),
-  storefront: z
-    .custom<File>((val) => val instanceof File, {
-      message: "File is required",
-    })
-    .refine((file) => file.size > 0, {
-      message: "File is empty",
-    })
-    .refine((file) => file.type.startsWith("image/"), {
-      message: "Only image files are allowed",
-    }),
 });
 
 /**
@@ -41,8 +21,6 @@ export const apiUpgradeToPetShop = async (req: NextRequest, userId: string) => {
   const body = {
     full_name: formData.get("full_name") as string,
     nik: formData.get("nik") as string,
-    ktp: formData.get("ktp") as File,
-    storefront: formData.get("storefront") as File,
   };
 
   const result = upgradeRolePetshop.safeParse(body);
@@ -58,7 +36,9 @@ export const apiUpgradeToPetShop = async (req: NextRequest, userId: string) => {
     throw errorRes("Validation failed", 400, errors);
   }
 
-  const { nik, full_name, ktp, storefront } = result.data;
+  const { nik, full_name } = result.data;
+  const ktp = formData.get("ktp") as File;
+  const storefront = formData.get("storefront") as File;
 
   const baseKey = `images/roles/petshop/${userId}`;
 

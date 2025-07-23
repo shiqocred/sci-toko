@@ -12,31 +12,27 @@ import Image from "next/image";
 import Link from "next/link";
 
 interface ProductCardProps {
+  id: string;
   title: string;
   description: string;
-  stars: number;
-  sold: number;
-  urlImage: string;
-  href: string;
+  image: string;
 }
 
 export const ProductCard = ({
+  id,
   title,
   description,
-  stars,
-  sold,
-  urlImage,
-  href,
+  image,
 }: ProductCardProps) => {
   return (
-    <Link href={href}>
+    <Link href={`/products/${id}`}>
       <Card className="p-0 overflow-hidden gap-0 rounded-xl shadow">
         <CardHeader className="w-full aspect-4/3 relative p-0 overflow-hidden">
           <Image
             alt={title}
-            src={urlImage}
+            src={image}
             fill
-            className="object-contain"
+            className="object-cover"
             sizes={sizesImage}
           />
         </CardHeader>
@@ -49,12 +45,12 @@ export const ProductCard = ({
           <div className="flex items-center gap-3">
             <StarIcon className="[--color-star:#FFC403] size-3 text-[var(--color-star)] fill-[var(--color-star)]" />
             <div className="[--color:#746D76] text-xs flex items-center text-[var(--color)]">
-              <p>{stars}</p>
+              <p>{100}</p>
               <Separator
                 className="[--color:#746D76] mx-1.5 !h-3.5 flex-none bg-[var(--color)]"
                 orientation="vertical"
               />
-              <p>{sold.toLocaleString()} Sold</p>
+              <p>{(100).toLocaleString()} Sold</p>
             </div>
           </div>
         </CardContent>

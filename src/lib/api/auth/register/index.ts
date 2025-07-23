@@ -76,7 +76,7 @@ export const apiRegister = async (req: Request) => {
       errors[path] = err.message;
     });
 
-    throw errorRes("Validation failed", 400, errors);
+    throw errorRes("Validation failed", 422, errors);
   }
 
   const { name, email, password, confirm_password, phone_number } = result.data;
@@ -89,7 +89,7 @@ export const apiRegister = async (req: Request) => {
   const passwordMatch = validationConfirmPassword(password, confirm_password);
 
   if (emailError || password.length < 8 || failed.length > 0 || passwordMatch)
-    throw errorRes("Validation failed", emailError ? 409 : 400, {
+    throw errorRes("Validation failed", emailError ? 409 : 422, {
       ...emailError,
       ...passwordError,
       ...passwordMatch,

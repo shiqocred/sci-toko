@@ -10,26 +10,6 @@ const upgradeRoleVeterinarian = z.object({
   nik: z.string().min(16, "Invalid NIK number"),
   no_kta: z.string().min(1, "KTA number is required"),
   full_name: z.string().min(1, "full name is required"),
-  ktp: z
-    .custom<File>((val) => val instanceof File, {
-      message: "File is required",
-    })
-    .refine((file) => file.size > 0, {
-      message: "File is empty",
-    })
-    .refine((file) => file.type.startsWith("image/"), {
-      message: "Only image files are allowed",
-    }),
-  kta: z
-    .custom<File>((val) => val instanceof File, {
-      message: "File is required",
-    })
-    .refine((file) => file.size > 0, {
-      message: "File is empty",
-    })
-    .refine((file) => file.type.startsWith("image/"), {
-      message: "Only image files are allowed",
-    }),
 });
 
 /**
@@ -46,8 +26,6 @@ export const apiUpgradeToVeterinarian = async (
     full_name: formData.get("full_name") as string,
     nik: formData.get("nik") as string,
     no_kta: formData.get("no_kta") as string,
-    ktp: formData.get("ktp") as File,
-    kta: formData.get("kta") as File,
   };
 
   const result = upgradeRoleVeterinarian.safeParse(body);
@@ -63,7 +41,10 @@ export const apiUpgradeToVeterinarian = async (
     throw errorRes("Validation failed", 422, errors);
   }
 
-  const { nik, no_kta, full_name, ktp, kta } = result.data;
+  const { nik, no_kta, full_name } = result.data;
+
+  const ktp = formData.get("ktp") as File;
+  const kta = formData.get("kta") as File;
 
   const baseKey = `images/roles/veterinarian/${userId}`;
 
