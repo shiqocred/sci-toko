@@ -287,10 +287,13 @@ const products = [
   },
 ];
 
-const initialIsOpen = data.reduce((acc, item) => {
-  acc[item.label] = false;
-  return acc;
-}, {} as Record<string, boolean>);
+const initialIsOpen = data.reduce(
+  (acc, item) => {
+    acc[item.label] = false;
+    return acc;
+  },
+  {} as Record<string, boolean>
+);
 
 const Client = () => {
   const [isOpen, setIsOpen] = useState(initialIsOpen);
@@ -392,9 +395,9 @@ const Client = () => {
         </div>
         <div className="flex flex-col gap-10">
           <div className="grid grid-cols-4 gap-3.5 w-full">
-            {products.map((item, idx) => (
+            {/* {products.map((item, idx) => (
               <ProductCard key={`${item.title}-${idx}`} {...item} />
-            ))}
+            ))} */}
           </div>
           <div className="w-full flex justify-end">
             <div className="flex items-center *:hover:bg-green-200 *:hover:rounded-lg">
