@@ -10,7 +10,7 @@ const cartSchema = z.object({
   quantity: z.string().min(1, { message: "Quantity is required" }),
 });
 
-export async function GET(req: NextRequest) {
+export async function GET() {
   try {
     const isAuth = await auth();
     if (!isAuth) return errorRes("Unauthorized", 401);

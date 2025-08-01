@@ -1,6 +1,6 @@
 import { auth, errorRes, successRes } from "@/lib/auth";
 import { addresses, db } from "@/lib/db";
-import { and, asc, eq, desc } from "drizzle-orm";
+import { and, eq } from "drizzle-orm";
 import { NextRequest } from "next/server";
 import { z } from "zod/v4";
 

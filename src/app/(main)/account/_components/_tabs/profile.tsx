@@ -220,6 +220,8 @@ export const ProfileTab = ({ user, update }: ProfileTabProps) => {
             onChange={(e) =>
               setInput((prev) => ({ ...prev, phone: e.target.value }))
             }
+            dialCode={dialCode}
+            setDialCode={setDialCode}
             disabled={isUpdatingUser}
           />
         </div>

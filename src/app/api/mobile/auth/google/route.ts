@@ -22,46 +22,48 @@ export async function POST(req: NextRequest) {
         and(eq(a.provider, "google"), eq(a.providerAccountId, googleId)),
     });
 
-    let userId: string;
-    let isNew = false;
+    // let userId: string;
+    // let isNew = false;
 
-    if (account) {
-      userId = account.userId;
-    } else {
-      // Buat user baru
-      const [user] = await db
-        .insert(users)
-        .values({
-          id: createId(),
-          email,
-          name,
-          image,
-          emailVerified: new Date(),
-          role: "BASIC",
-        })
-        .returning({ id: users.id });
+    // if (account) {
+    //   userId = account.userId;
+    // } else {
+    //   // Buat user baru
+    //   const [user] = await db
+    //     .insert(users)
+    //     .values({
+    //       id: createId(),
+    //       email,
+    //       name,
+    //       image,
+    //       emailVerified: new Date(),
+    //       role: "BASIC",
+    //     })
+    //     .returning({ id: users.id });
 
-      userId = user.id;
-      isNew = true;
+    //   userId = user.id;
+    //   isNew = true;
 
-      // Tambahkan akun Google ke tabel account
-      await db.insert(accounts).values({
-        userId,
-        provider: "google",
-        providerAccountId: googleId,
-        type: "oauth",
-      });
-    }
+    //   // Tambahkan akun Google ke tabel account
+    //   await db.insert(accounts).values({
+    //     userId,
+    //     provider: "google",
+    //     providerAccountId: googleId,
+    //     type: "oauth",
+    //   });
+    // }
 
-    const jwt = signJWT({ sub: userId, verified: true });
+    // const jwt = signJWT({ sub: userId, verified: true });
 
-    return successRes(
-      {
-        token: jwt,
-        is_new: isNew,
-      },
-      isNew ? "Account created via Google" : "Login success"
-    );
+    // return successRes(
+    //   {
+    //     token: jwt,
+    //     is_new: isNew,
+    //   },
+    //   isNew ? "Account created via Google" : "Login success"
+    // );
+
+    return successRes("success", "success");
   } catch (err) {
     console.error(err);
     return errorRes("Google OAuth failed", 500);

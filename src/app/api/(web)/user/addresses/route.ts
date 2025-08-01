@@ -20,7 +20,7 @@ const addressSchema = z.object({
   is_default: z.boolean(),
 });
 
-export async function GET(req: NextRequest) {
+export async function GET() {
   try {
     const isAuth = await auth();
     if (!isAuth) return errorRes("Unauthorized", 401);
