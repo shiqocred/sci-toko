@@ -7,9 +7,9 @@ export const useReset = () => {
   const mutation = useMutate({
     endpoint: "/upgrade-role/reset",
     method: "put",
-    onSuccess: ({ data }) => {
+    onSuccess: async ({ data }) => {
       toast.success(data.message);
-      invalidateQuery(queryClient, [["status-app-veterinarian"]]);
+      await invalidateQuery(queryClient, [["status-app-veterinarian"]]);
     },
     onError: {
       title: "REGISTER",

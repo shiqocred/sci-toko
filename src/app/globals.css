@@ -143,3 +143,8 @@ input[type="number"] {
     @apply after:-ml-1 after:text-red-500 after:content-['*'];
   }
 }
+
+.vertical-range {
+  writing-mode: bt-lr; /* Vertikal, bottom to top */
+  margin: 0 auto; /* Pusatkan secara horizontal */
+}

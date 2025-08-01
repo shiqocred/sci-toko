@@ -9,9 +9,9 @@ export const useUpgradePetShop = () => {
   const mutation = useMutate<Body>({
     endpoint: "/upgrade-role/petshop",
     method: "put",
-    onSuccess: ({ data }) => {
+    onSuccess: async ({ data }) => {
       toast.success(data.message);
-      invalidateQuery(queryClient, [["status-app-petshop"]]);
+      await invalidateQuery(queryClient, [["status-app-petshop"]]);
     },
     onError: {
       title: "REGISTER",

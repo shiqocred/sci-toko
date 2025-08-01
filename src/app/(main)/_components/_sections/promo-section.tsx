@@ -19,7 +19,7 @@ export const PromoSection = () => {
   return (
     <div className="[--max-width:1440px] w-full max-w-[var(--max-width)] mx-auto px-4 lg:px-8 flex flex-col gap-8 py-6">
       <div className="[--max-width:1240px] w-full max-w-[var(--max-width)] mx-auto min-[1440px]:px-8">
-        <Heading label="Best Deal" isExpand />
+        <Heading label="Best Deal" isExpand={"#"} />
       </div>
       <div className=" w-full">
         <Carousel

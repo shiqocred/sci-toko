@@ -69,8 +69,12 @@ const Client = () => {
 
   const handleSubmit = (e: FormEvent) => {
     e.preventDefault();
+    const body = {
+      ...input,
+      phone_number: `${dialCode} ${input.phone_number}`,
+    };
     register(
-      { body: input },
+      { body },
       {
         onSuccess: async () => {
           setInput(initialValue);
@@ -79,7 +83,7 @@ const Client = () => {
             email: input.email,
             password: input.password,
             redirect: true,
-            redirectTo: "/verification-email",
+            redirectTo: "/verification-email?from=register",
           });
         },
         onError: (err) => {

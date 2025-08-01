@@ -16,10 +16,14 @@ import {
 import { useGetResend, useResendOTP, useVerify } from "../_api";
 import { useSession } from "next-auth/react";
 import { pronoun } from "@/lib/utils";
+import { useRouter, useSearchParams } from "next/navigation";
 
 const Client = () => {
   const { update } = useSession();
   const [sendAgain, setSendAgain] = useState(0);
+  const router = useRouter();
+  const serachParams = useSearchParams();
+  const from = serachParams.get("from");
 
   const [input, setInput] = useState("");
 
@@ -40,6 +44,16 @@ const Client = () => {
     resend({});
   };
 
+  const redirectUrl = () => {
+    if (from === "register") {
+      return "/choose-role";
+    } else if (from === "account") {
+      return "/account";
+    } else {
+      return "/";
+    }
+  };
+
   const handleVerify = async (e: FormEvent) => {
     e.preventDefault();
 
@@ -48,6 +62,7 @@ const Client = () => {
       {
         onSuccess: async ({ data }) => {
           await update({ emailVerified: data.data.emailVerified });
+          router.push(redirectUrl());
         },
       }
     );

@@ -7,9 +7,9 @@ export const useResendOTP = () => {
   const mutation = useMutate({
     endpoint: "/auth/verify/otp",
     method: "post",
-    onSuccess: ({ data }) => {
+    onSuccess: async ({ data }) => {
       toast.success(data.message);
-      invalidateQuery(queryClient, [["resend-otp"]]);
+      await invalidateQuery(queryClient, [["resend-otp"]]);
     },
     onError: {
       title: "RESEND_OTP",

@@ -55,7 +55,7 @@ export const apiResendOTPForgotPassword = async (email: string) => {
       expires,
     }),
     resend.emails.send({
-      from: "SCI Team<ju@support.sro.my.id>",
+      from: "SCI Team<inpo@support.sro.my.id>",
       to: [email],
       subject: "Reset password",
       react: ResetPassword({

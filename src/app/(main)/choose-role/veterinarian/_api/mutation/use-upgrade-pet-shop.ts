@@ -9,9 +9,9 @@ export const useUpgradeVeterinarian = () => {
   const mutation = useMutate<Body>({
     endpoint: "/upgrade-role/veterinarian",
     method: "put",
-    onSuccess: ({ data }) => {
+    onSuccess: async ({ data }) => {
       toast.success(data.message);
-      invalidateQuery(queryClient, [["status-app-veterinarian"]]);
+      await invalidateQuery(queryClient, [["status-app-veterinarian"]]);
     },
     onError: {
       title: "REGISTER",

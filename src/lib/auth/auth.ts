@@ -5,6 +5,7 @@ import { DrizzleAdapter } from "@auth/drizzle-adapter";
 import { db, accounts, sessions, users, verificationTokens } from "../db";
 import { verify } from "argon2";
 import { eq } from "drizzle-orm";
+import { r2Public } from "@/config";
 
 class CustomError extends CredentialsSignin {
   code = "credential_not_match";
@@ -22,6 +23,8 @@ export async function authorizeWithCredentials(
       emailVerified: users.emailVerified,
       role: users.role,
       name: users.name,
+      phone: users.phoneNumber,
+      image: users.image,
     })
     .from(users)
     .where(eq(users.email, email));
@@ -39,6 +42,8 @@ export async function authorizeWithCredentials(
     email: user.email,
     role: user.role,
     emailVerified: user.emailVerified,
+    phone: user.phone,
+    image: user.image ? `${r2Public}/${user.image}` : null,
   };
 }
 
@@ -90,12 +95,28 @@ export const { handlers, auth, unstable_update } = NextAuth({
         token.name = user.name;
         token.role = user.role;
         token.emailVerified = user.emailVerified;
+        token.phone = user.phone;
+        token.image = user.image;
       }
-      if (trigger === "update" && session?.emailVerified !== undefined) {
-        token.emailVerified = session.emailVerified;
-      }
-      if (trigger === "update" && session?.role !== undefined) {
-        token.role = session.role;
+      if (trigger === "update") {
+        if (session?.emailVerified !== undefined) {
+          token.emailVerified = session.emailVerified;
+        }
+        if (session?.role !== undefined) {
+          token.role = session.role;
+        }
+        if (session?.name !== undefined) {
+          token.name = session.name;
+        }
+        if (session?.email !== undefined) {
+          token.email = session.email;
+        }
+        if (session?.phone !== undefined) {
+          token.phone = session.phone;
+        }
+        if (session?.image !== undefined) {
+          token.image = session.image;
+        }
       }
       return token;
     },
@@ -106,6 +127,8 @@ export const { handlers, auth, unstable_update } = NextAuth({
         name: token.name as string,
         role: token.role as "BASIC" | "PETSHOP" | "VETERINARIAN" | "ADMIN",
         emailVerified: token.emailVerified as Date | null,
+        phone: token.phone as string | null,
+        image: token.image as string | null,
       };
       return session;
     },

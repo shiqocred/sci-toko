@@ -1,67 +1,115 @@
 "use client";
 
-import { Heading } from "@/components/heading";
-import { ProductCard } from "@/components/product-card";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Separator } from "@/components/ui/separator";
-import { sizesImage } from "@/lib/utils";
-import { MinusIcon, PlusIcon, Trash2 } from "lucide-react";
+import { cn, formatRupiah, numericString, sizesImage } from "@/lib/utils";
+import { Minus, Plus, Trash2 } from "lucide-react";
 import Image from "next/image";
-import React, { useEffect, useState } from "react";
-
-const products = [
-  {
-    title: "DOXYHCL 10 MG",
-    description:
-      "Lorem ipsum dolor sit, amet consectetur adipisicing elit. Ullam, enim?",
-    urlImage: "/assets/images/product-1.png",
-    href: "/products/detail",
-    stars: 4.8,
-    sold: 100,
-  },
-  {
-    title: "DOXYHCL 0.1 G",
-    description:
-      "Lorem ipsum dolor sit amet consectetur adipisicing elit. Nam, tempore! Exercitationem, fuga.",
-    urlImage: "/assets/images/product-2.png",
-    href: "/products/detail",
-    stars: 4.9,
-    sold: 208,
-  },
-  {
-    title: "DOXYHCL 50 MG",
-    description:
-      "maxime molestias cum corporis consectetur eligendi aut possimus vero pariatur error! Ipsum deleniti consequuntur quia.",
-    urlImage: "/assets/images/product-3.png",
-    href: "/products/detail",
-    stars: 4.8,
-    sold: 312,
-  },
-  {
-    title: "ITRACA",
-    description:
-      "Lorem ipsum dolor sit amet, consectetur adipisicing elit. Incidunt, ipsum explicabo.",
-    urlImage: "/assets/images/product-4.png",
-    href: "/products/detail",
-    stars: 4.7,
-    sold: 242,
-  },
-  {
-    title: "DOXYHCL 10 MG",
-    description:
-      "Lorem ipsum dolor sit, amet consectetur adipisicing elit. Ullam, enim?",
-    urlImage: "/assets/images/product-1.png",
-    href: "/products/detail",
-    stars: 4.8,
-    sold: 100,
-  },
-];
+import React, { MouseEvent, useEffect, useMemo, useState } from "react";
+import {
+  useDeleteCart,
+  useGetCarts,
+  useUpdateCheck,
+  useUpdateQuantity,
+} from "../_api";
+import Link from "next/link";
+import { useDebounce } from "@/hooks/use-debounce";
+import { DialogRemoveProduct } from "./_dialogs";
+import { useConfirm } from "@/hooks/use-confirm";
+import { CheckedState } from "@radix-ui/react-checkbox";
 
 const Client = () => {
+  const [input, setInput] = useState({
+    variantId: "",
+    qty: "",
+  });
+  const [inputField, setInputField] = useState({
+    variantId: "",
+    qty: "",
+  });
+  const [dialog, setDialog] = useState("");
+
+  const [DeleteDialog, confirmDelete] = useConfirm(
+    "Delete Product From Cart?",
+    "This action cannot be undone",
+    "destructive"
+  );
+
+  const debounceQty = useDebounce(input.qty);
   const [isMounted, setIsMounted] = useState(false);
+
+  const { mutate: updateQty, isPending: isUpdating } = useUpdateQuantity();
+  const { mutate: deleteCart, isPending: isDeleting } = useDeleteCart();
+  const { mutate: checkCart, isPending: isChecking } = useUpdateCheck();
+
+  const { data } = useGetCarts();
+
+  const dataCart = useMemo(() => {
+    return data?.data;
+  }, [data]);
+  const carts = useMemo(() => {
+    return data?.data.products;
+  }, [data]);
+
+  const handleIncrease = (id: string, newQty?: number) => {
+    setInput((prev) => ({
+      variantId: id,
+      qty: newQty
+        ? (newQty + 1).toString()
+        : (parseFloat(prev.qty) + 1).toString(),
+    }));
+  };
+
+  const handleReduce = (id: string, newQty?: number) => {
+    setInput((prev) => ({
+      variantId: id,
+      qty: newQty
+        ? (newQty - 1).toString()
+        : (parseFloat(prev.qty) - 1).toString(),
+    }));
+  };
+
+  const handleUpdateQty = (variantId: string, qty: string, onSuccess?: any) => {
+    updateQty(
+      {
+        params: { variantId },
+        body: { qty },
+      },
+      { onSuccess }
+    );
+  };
+
+  const handleDelete = async (id: string) => {
+    const ok = await confirmDelete();
+
+    if (!ok) return;
+
+    deleteCart({ params: { variantId: id } });
+  };
+
+  const handleChecked = (variantId: string[], checked: CheckedState) => {
+    checkCart({
+      body: { checked: checked as boolean, variant_ids: variantId },
+    });
+  };
+
+  useEffect(() => {
+    if (!!input.variantId && !!input.qty) {
+      if (parseFloat(input.qty) > 0) {
+        handleUpdateQty(
+          input.variantId,
+          input.qty,
+          setInput({ qty: "", variantId: "" })
+        );
+      } else {
+        setDialog(input.variantId);
+      }
+    }
+  }, [debounceQty]);
+
   useEffect(() => {
     if (!isMounted) {
       setIsMounted(true);
@@ -70,89 +118,305 @@ const Client = () => {
   if (!isMounted) return;
   return (
     <div className="bg-sky-50 h-full">
+      <DeleteDialog />
+      <DialogRemoveProduct
+        open={!!dialog}
+        onOpenChange={() => {
+          if (dialog) {
+            setDialog("");
+            setInputField({ qty: "", variantId: "" });
+            setInput({ qty: "", variantId: "" });
+          }
+        }}
+        onSubmit={() =>
+          handleUpdateQty(dialog, "0", () => {
+            setInput({ qty: "", variantId: "" });
+            setInputField({ qty: "", variantId: "" });
+            setDialog("");
+          })
+        }
+      />
       <div className="max-w-[1240px] mx-auto w-full flex flex-col gap-7 px-4 lg:px-8 py-14">
         <div className="flex items-center gap-2">
           <h1 className="text-3xl font-bold ">Your Cart</h1>
-          <p className="text-gray-500">(3)</p>
+          <p className="text-gray-500">({dataCart?.total_cart})</p>
         </div>
         <div className="w-full grid grid-cols-7 gap-6">
           <div className="col-span-5 w-full">
-            <div className="flex items-center h-10 px-5 text-sm">
-              <div className="flex-none w-6" />
-              <div className="w-full">
-                <p>Product</p>
-              </div>
-              <div className="flex-none w-44">
-                <p>Quantity</p>
-              </div>
-              <div className="flex-none w-32">
-                <p>Subtotal</p>
-              </div>
-            </div>
-            <div className="flex flex-col rounded shadow bg-white text-sm divide-y divide-gray-300">
-              {Array.from({ length: 3 }, (_, i) => (
-                <div key={i} className="flex items-center px-5 py-1 gap-3">
-                  <div className="flex justify-center flex-none w-6">
-                    <Checkbox className="data-[state=checked]:bg-red-500 data-[state=checked]:border-red-500" />
-                  </div>
-                  <div className="flex items-center w-full gap-2">
-                    <div className="relative h-24 aspect-square">
-                      <Image
-                        fill
-                        src={`/assets/images/product-${i + 1}.png`}
-                        alt="product"
-                        sizes={sizesImage}
-                      />
+            <div className="flex flex-col gap-4">
+              {carts &&
+                carts.map((cart) => (
+                  <div
+                    key={cart.id}
+                    className={cn(
+                      "flex px-5 py-3 gap-3 bg-white rounded-lg shadow text-sm",
+                      cart.default_variant ? "items-center" : "flex-col"
+                    )}
+                  >
+                    <div className="flex items-center w-full gap-3">
+                      <div className="flex justify-center flex-none w-6">
+                        <Checkbox
+                          className="data-[state=checked]:bg-red-500 data-[state=checked]:border-red-500"
+                          checked={
+                            cart.default_variant?.checked ??
+                            cart.variants?.every((item) => item.checked)
+                          }
+                          onCheckedChange={(e) => {
+                            if (cart.default_variant) {
+                              handleChecked([`${cart.default_variant.id}`], e);
+                            } else if (cart.variants) {
+                              handleChecked(
+                                cart.variants.map((item) => item.id),
+                                e
+                              );
+                            }
+                          }}
+                        />
+                      </div>
+                      <div className="flex items-center w-full gap-2">
+                        <div className="relative h-20 aspect-square border rounded-md">
+                          <Image
+                            fill
+                            src={cart.image ?? `/assets/images/logo-sci.png`}
+                            alt="product"
+                            sizes={sizesImage}
+                            className="object-contain"
+                          />
+                        </div>
+                        <div className="flex flex-col">
+                          <Link
+                            href={`/products/${cart.slug}`}
+                            className="line-clamp-1 text-base hover:underline hover:underline-offset-2"
+                          >
+                            {cart.name}
+                          </Link>
+                          {cart.default_variant && (
+                            <p className="font-semibold">
+                              {formatRupiah(cart.default_variant.price)}
+                            </p>
+                          )}
+                        </div>
+                      </div>
                     </div>
-                    <div className="flex flex-col">
-                      <p className="truncate">ITRACA</p>
-                      <p className="font-bold">
-                        Rp {(1000000).toLocaleString()}
-                      </p>
-                    </div>
+                    {cart.default_variant && (
+                      <div className="flex items-center gap-3">
+                        <div className="flex items-center gap-3 w-44 flex-none">
+                          <div className="flex items-center">
+                            <Button
+                              variant={"outline"}
+                              size={"icon"}
+                              className="rounded-r-none disabled:opacity-100 group"
+                              onClick={() => {
+                                if (isNaN(parseFloat(input.qty))) {
+                                  handleReduce(
+                                    cart.default_variant?.id ?? "",
+                                    cart.default_variant?.quantity ?? 0
+                                  );
+                                } else {
+                                  handleReduce(cart.default_variant?.id ?? "");
+                                }
+                              }}
+                            >
+                              <Minus className="group-disabled:opacity-50" />
+                            </Button>
+                            <input
+                              className="h-9 focus-visible:outline-0 text-center w-14 border-y"
+                              type="number"
+                              value={
+                                inputField.qty
+                                  ? inputField.qty
+                                  : cart.default_variant.quantity
+                              }
+                              onFocus={() =>
+                                setInputField({
+                                  variantId: cart.default_variant?.id ?? "",
+                                  qty: (
+                                    cart.default_variant?.quantity ?? 0
+                                  ).toString(),
+                                })
+                              }
+                              onChange={(e) =>
+                                setInputField({
+                                  variantId: cart.default_variant?.id ?? "",
+                                  qty: isNaN(parseFloat(e.target.value))
+                                    ? "0"
+                                    : numericString(e.target.value),
+                                })
+                              }
+                              onBlur={() => {
+                                if (inputField.qty === "0") {
+                                  setDialog(cart.default_variant?.id ?? "");
+                                } else if (
+                                  parseFloat(inputField.qty) !==
+                                  cart.default_variant?.quantity
+                                ) {
+                                  handleUpdateQty(
+                                    inputField.variantId,
+                                    inputField.qty,
+                                    setInputField({
+                                      qty: "",
+                                      variantId: "",
+                                    })
+                                  );
+                                }
+                              }}
+                            />
+                            <Button
+                              variant={"outline"}
+                              size={"icon"}
+                              className="rounded-l-none disabled:opacity-100 group"
+                              onClick={() => {
+                                if (isNaN(parseFloat(input.qty))) {
+                                  handleIncrease(
+                                    cart.default_variant?.id ?? "",
+                                    cart.default_variant?.quantity ?? 0
+                                  );
+                                } else {
+                                  handleIncrease(
+                                    cart.default_variant?.id ?? ""
+                                  );
+                                }
+                              }}
+                            >
+                              <Plus className="group-disabled:opacity-50" />
+                            </Button>
+                          </div>
+                          <Button
+                            className=" hover:bg-red-50 text-destructive hover:text-destructive size-8"
+                            variant={"ghost"}
+                            size={"icon"}
+                            onClick={() =>
+                              handleDelete(cart.default_variant?.id ?? "")
+                            }
+                          >
+                            <Trash2 />
+                          </Button>
+                        </div>
+                        <div className="whitespace-nowrap font-semibold w-32 flex-none">
+                          {formatRupiah(cart.default_variant.total)}
+                        </div>
+                      </div>
+                    )}
+                    {cart.variants && (
+                      <div className="flex flex-col border-t divide-y">
+                        {cart.variants.map((item) => (
+                          <div
+                            key={item.id}
+                            className="flex items-center gap-3 py-3"
+                          >
+                            <div className="flex justify-center flex-none w-6">
+                              <Checkbox
+                                className="data-[state=checked]:bg-red-500 data-[state=checked]:border-red-500"
+                                checked={item.checked}
+                                onCheckedChange={(e) =>
+                                  handleChecked([`${item.id}`], e)
+                                }
+                              />
+                            </div>
+                            <p className="w-full">{item.name}</p>
+                            <div className="flex items-center gap-3 w-44 flex-none">
+                              <div className="flex items-center">
+                                <Button
+                                  variant={"outline"}
+                                  size={"icon"}
+                                  className="rounded-r-none disabled:opacity-100 group"
+                                  onClick={() => {
+                                    if (isNaN(parseFloat(input.qty))) {
+                                      handleReduce(
+                                        item.id ?? "",
+                                        item.quantity ?? 0
+                                      );
+                                    } else {
+                                      handleReduce(item.id ?? "");
+                                    }
+                                  }}
+                                >
+                                  <Minus className="group-disabled:opacity-50" />
+                                </Button>
+                                <input
+                                  className="h-9 focus-visible:outline-0 text-center w-14 border-y"
+                                  type="number"
+                                  value={
+                                    inputField.qty
+                                      ? inputField.qty
+                                      : item.quantity
+                                  }
+                                  onFocus={() =>
+                                    setInputField({
+                                      variantId: item.id ?? "",
+                                      qty: (item.quantity ?? 0).toString(),
+                                    })
+                                  }
+                                  onChange={(e) =>
+                                    setInputField({
+                                      variantId: item.id ?? "",
+                                      qty: isNaN(parseFloat(e.target.value))
+                                        ? "0"
+                                        : numericString(e.target.value),
+                                    })
+                                  }
+                                  onBlur={() => {
+                                    if (inputField.qty === "0") {
+                                      setDialog(cart.default_variant?.id ?? "");
+                                    } else if (
+                                      parseFloat(inputField.qty) !==
+                                      item.quantity
+                                    ) {
+                                      handleUpdateQty(
+                                        inputField.variantId,
+                                        inputField.qty,
+                                        setInputField({
+                                          qty: "",
+                                          variantId: "",
+                                        })
+                                      );
+                                    }
+                                  }}
+                                />
+                                <Button
+                                  variant={"outline"}
+                                  size={"icon"}
+                                  className="rounded-l-none disabled:opacity-100 group"
+                                  onClick={() => {
+                                    if (isNaN(parseFloat(input.qty))) {
+                                      handleIncrease(
+                                        item.id ?? "",
+                                        item.quantity ?? 0
+                                      );
+                                    } else {
+                                      handleIncrease(item.id ?? "");
+                                    }
+                                  }}
+                                >
+                                  <Plus className="group-disabled:opacity-50" />
+                                </Button>
+                              </div>
+                              <Button
+                                className=" hover:bg-red-50 text-destructive hover:text-destructive size-8"
+                                variant={"ghost"}
+                                size={"icon"}
+                                onClick={() => handleDelete(item.id)}
+                              >
+                                <Trash2 />
+                              </Button>
+                            </div>
+                            <div className="whitespace-nowrap font-semibold w-32 flex-none">
+                              {formatRupiah(item.total)}
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    )}
                   </div>
-                  <div className="flex items-center gap-3 w-44 flex-none">
-                    <div className="flex items-center border border-gray-500 rounded overflow-hidden">
-                      <Button
-                        className="rounded-none shadow-none hover:bg-green-50 size-8"
-                        variant={"ghost"}
-                        size={"icon"}
-                      >
-                        <MinusIcon />
-                      </Button>
-                      <p className="text-center w-12 font-semibold">1</p>
-                      <Button
-                        className="rounded-none shadow-none hover:bg-green-50 size-8"
-                        variant={"ghost"}
-                        size={"icon"}
-                      >
-                        <PlusIcon />
-                      </Button>
-                    </div>
-                    <Button
-                      className=" hover:bg-red-50 text-destructive hover:text-destructive size-8"
-                      variant={"ghost"}
-                      size={"icon"}
-                    >
-                      <Trash2 />
-                    </Button>
-                  </div>
-                  <div className="whitespace-nowrap font-bold w-32 flex-none">
-                    Rp {(1000000).toLocaleString()}
-                  </div>
-                </div>
-              ))}
+                ))}
             </div>
           </div>
           <div className="w-full col-span-2">
-            <div className="flex items-center h-10 text-sm">
-              <p>Total Cart</p>
-            </div>
-            <div className="bg-white shadow rounded p-5 flex flex-col gap-4 text-sm">
+            <div className="bg-white shadow rounded-lg p-5 flex flex-col gap-4 text-sm">
               <div className="flex justify-between items-center text-gray-500">
-                <p>Subtotal (3)</p>
+                <p>Subtotal ({dataCart?.total_cart_selected})</p>
                 <p className="font-bold text-black">
-                  Rp {(3000000).toLocaleString()}
+                  {formatRupiah(dataCart?.subtotal ?? 0)}
                 </p>
               </div>
               <Separator />
@@ -172,24 +436,17 @@ const Client = () => {
               <div className="flex items-center justify-between text-gray-500">
                 <p>Total</p>
                 <p className="font-bold text-black">
-                  Rp {(3000000).toLocaleString()}
+                  {formatRupiah(dataCart?.total ?? 0)}
                 </p>
               </div>
               <Button
                 className="w-full flex-auto rounded-full"
                 variant={"destructive"}
+                disabled={dataCart && dataCart.total_cart_selected < 1}
               >
                 Proceed to Checkout
               </Button>
             </div>
-          </div>
-        </div>
-        <div className="flex flex-col gap-4 pt-5">
-          <Heading label="Similar Products" isExpand />
-          <div className="grid grid-cols-5 gap-6 w-full">
-            {/* {products.map((item, idx) => (
-              <ProductCard key={`${item.title}-${idx}`} {...item} />
-            ))} */}
           </div>
         </div>
       </div>

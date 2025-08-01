@@ -9,6 +9,8 @@ declare module "next-auth" {
       email: string | null;
       role: "BASIC" | "PETSHOP" | "VETERINARIAN" | "ADMIN";
       emailVerified: Date | null;
+      phone: string | null;
+      image: string | null;
     };
   }
 
@@ -18,6 +20,8 @@ declare module "next-auth" {
     email: string | null;
     role: "BASIC" | "PETSHOP" | "VETERINARIAN" | "ADMIN";
     emailVerified: Date | null;
+    phone: string | null;
+    image: string | null;
   }
 }
 
@@ -28,5 +32,7 @@ declare module "next-auth/jwt" {
     email: string | null;
     role: "BASIC" | "PETSHOP" | "VETERINARIAN" | "ADMIN";
     emailVerified: Date | null;
+    phone: string | null;
+    image: string | null;
   }
 }

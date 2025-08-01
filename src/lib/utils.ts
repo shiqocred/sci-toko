@@ -18,16 +18,19 @@ export function generateRandomNumber(length = 5): string {
 export const sizesImage =
   "(max-width: 768px) 33vw, (max-width: 1200px) 50vw, 100vw";
 
-export function formatRupiah(rupiah: number) {
-  if (rupiah) {
-    const formatter = new Intl.NumberFormat("id-ID", {
-      style: "currency",
-      currency: "IDR",
-      minimumFractionDigits: 0,
-    });
-    return formatter.format(Math.ceil(rupiah));
-  }
-  return "Rp 0";
+export function formatRupiah(rupiah: string | number): string {
+  const value =
+    typeof rupiah === "string"
+      ? parseFloat(rupiah.replace(/[^\d.-]/g, ""))
+      : rupiah;
+
+  if (!value || isNaN(value)) return "Rp 0";
+
+  return new Intl.NumberFormat("id-ID", {
+    style: "currency",
+    currency: "IDR",
+    minimumFractionDigits: 0,
+  }).format(Math.ceil(value));
 }
 
 export const timeNow = async () => {

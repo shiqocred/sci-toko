@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useMemo, useState } from "react";
 import {
   Accordion,
   AccordionContent,
@@ -18,8 +18,9 @@ import {
 import { cn } from "@/lib/utils";
 import { ProductCard } from "@/components/product-card";
 import { ChevronLeft, ChevronRight } from "lucide-react";
+import { useGetProducts } from "../_api";
 
-const data = [
+const filters = [
   {
     label: "animals",
     items: [
@@ -77,217 +78,7 @@ const data = [
   },
 ];
 
-const products = [
-  {
-    title: "DOXYHCL 10 MG",
-    description:
-      "Lorem ipsum dolor sit, amet consectetur adipisicing elit. Ullam, enim?",
-    urlImage: "/assets/images/product-1.png",
-    href: "/products/detail",
-    stars: 4.8,
-    sold: 100,
-  },
-  {
-    title: "DOXYHCL 0.1 G",
-    description:
-      "Lorem ipsum dolor sit amet consectetur adipisicing elit. Nam, tempore! Exercitationem, fuga.",
-    urlImage: "/assets/images/product-2.png",
-    href: "/products/detail",
-    stars: 4.9,
-    sold: 208,
-  },
-  {
-    title: "DOXYHCL 50 MG",
-    description:
-      "maxime molestias cum corporis consectetur eligendi aut possimus vero pariatur error! Ipsum deleniti consequuntur quia.",
-    urlImage: "/assets/images/product-3.png",
-    href: "/products/detail",
-    stars: 4.8,
-    sold: 312,
-  },
-  {
-    title: "ITRACA",
-    description:
-      "Lorem ipsum dolor sit amet, consectetur adipisicing elit. Incidunt, ipsum explicabo.",
-    urlImage: "/assets/images/product-4.png",
-    href: "/products/detail",
-    stars: 4.7,
-    sold: 242,
-  },
-  {
-    title: "DOXYHCL 10 MG",
-    description:
-      "Lorem ipsum dolor sit, amet consectetur adipisicing elit. Ullam, enim?",
-    urlImage: "/assets/images/product-1.png",
-    href: "/products/detail",
-    stars: 4.8,
-    sold: 100,
-  },
-  {
-    title: "DOXYHCL 0.1 G",
-    description:
-      "Lorem ipsum dolor sit amet consectetur adipisicing elit. Nam, tempore! Exercitationem, fuga.",
-    urlImage: "/assets/images/product-2.png",
-    href: "/products/detail",
-    stars: 4.9,
-    sold: 208,
-  },
-  {
-    title: "DOXYHCL 50 MG",
-    description:
-      "maxime molestias cum corporis consectetur eligendi aut possimus vero pariatur error! Ipsum deleniti consequuntur quia.",
-    urlImage: "/assets/images/product-3.png",
-    href: "/products/detail",
-    stars: 4.8,
-    sold: 312,
-  },
-  {
-    title: "ITRACA",
-    description:
-      "Lorem ipsum dolor sit amet, consectetur adipisicing elit. Incidunt, ipsum explicabo.",
-    urlImage: "/assets/images/product-4.png",
-    href: "/products/detail",
-    stars: 4.7,
-    sold: 242,
-  },
-  {
-    title: "DOXYHCL 10 MG",
-    description:
-      "Lorem ipsum dolor sit, amet consectetur adipisicing elit. Ullam, enim?",
-    urlImage: "/assets/images/product-1.png",
-    href: "/products/detail",
-    stars: 4.8,
-    sold: 100,
-  },
-  {
-    title: "DOXYHCL 0.1 G",
-    description:
-      "Lorem ipsum dolor sit amet consectetur adipisicing elit. Nam, tempore! Exercitationem, fuga.",
-    urlImage: "/assets/images/product-2.png",
-    href: "/products/detail",
-    stars: 4.9,
-    sold: 208,
-  },
-  {
-    title: "DOXYHCL 50 MG",
-    description:
-      "maxime molestias cum corporis consectetur eligendi aut possimus vero pariatur error! Ipsum deleniti consequuntur quia.",
-    urlImage: "/assets/images/product-3.png",
-    href: "/products/detail",
-    stars: 4.8,
-    sold: 312,
-  },
-  {
-    title: "ITRACA",
-    description:
-      "Lorem ipsum dolor sit amet, consectetur adipisicing elit. Incidunt, ipsum explicabo.",
-    urlImage: "/assets/images/product-4.png",
-    href: "/products/detail",
-    stars: 4.7,
-    sold: 242,
-  },
-  {
-    title: "DOXYHCL 10 MG",
-    description:
-      "Lorem ipsum dolor sit, amet consectetur adipisicing elit. Ullam, enim?",
-    urlImage: "/assets/images/product-1.png",
-    href: "/products/detail",
-    stars: 4.8,
-    sold: 100,
-  },
-  {
-    title: "DOXYHCL 0.1 G",
-    description:
-      "Lorem ipsum dolor sit amet consectetur adipisicing elit. Nam, tempore! Exercitationem, fuga.",
-    urlImage: "/assets/images/product-2.png",
-    href: "/products/detail",
-    stars: 4.9,
-    sold: 208,
-  },
-  {
-    title: "DOXYHCL 50 MG",
-    description:
-      "maxime molestias cum corporis consectetur eligendi aut possimus vero pariatur error! Ipsum deleniti consequuntur quia.",
-    urlImage: "/assets/images/product-3.png",
-    href: "/products/detail",
-    stars: 4.8,
-    sold: 312,
-  },
-  {
-    title: "ITRACA",
-    description:
-      "Lorem ipsum dolor sit amet, consectetur adipisicing elit. Incidunt, ipsum explicabo.",
-    urlImage: "/assets/images/product-4.png",
-    href: "/products/detail",
-    stars: 4.7,
-    sold: 242,
-  },
-  {
-    title: "DOXYHCL 0.1 G",
-    description:
-      "Lorem ipsum dolor sit amet consectetur adipisicing elit. Nam, tempore! Exercitationem, fuga.",
-    urlImage: "/assets/images/product-2.png",
-    href: "/products/detail",
-    stars: 4.9,
-    sold: 208,
-  },
-  {
-    title: "DOXYHCL 50 MG",
-    description:
-      "maxime molestias cum corporis consectetur eligendi aut possimus vero pariatur error! Ipsum deleniti consequuntur quia.",
-    urlImage: "/assets/images/product-3.png",
-    href: "/products/detail",
-    stars: 4.8,
-    sold: 312,
-  },
-  {
-    title: "ITRACA",
-    description:
-      "Lorem ipsum dolor sit amet, consectetur adipisicing elit. Incidunt, ipsum explicabo.",
-    urlImage: "/assets/images/product-4.png",
-    href: "/products/detail",
-    stars: 4.7,
-    sold: 242,
-  },
-  {
-    title: "DOXYHCL 10 MG",
-    description:
-      "Lorem ipsum dolor sit, amet consectetur adipisicing elit. Ullam, enim?",
-    urlImage: "/assets/images/product-1.png",
-    href: "/products/detail",
-    stars: 4.8,
-    sold: 100,
-  },
-  {
-    title: "DOXYHCL 0.1 G",
-    description:
-      "Lorem ipsum dolor sit amet consectetur adipisicing elit. Nam, tempore! Exercitationem, fuga.",
-    urlImage: "/assets/images/product-2.png",
-    href: "/products/detail",
-    stars: 4.9,
-    sold: 208,
-  },
-  {
-    title: "DOXYHCL 50 MG",
-    description:
-      "maxime molestias cum corporis consectetur eligendi aut possimus vero pariatur error! Ipsum deleniti consequuntur quia.",
-    urlImage: "/assets/images/product-3.png",
-    href: "/products/detail",
-    stars: 4.8,
-    sold: 312,
-  },
-  {
-    title: "ITRACA",
-    description:
-      "Lorem ipsum dolor sit amet, consectetur adipisicing elit. Incidunt, ipsum explicabo.",
-    urlImage: "/assets/images/product-4.png",
-    href: "/products/detail",
-    stars: 4.7,
-    sold: 242,
-  },
-];
-
-const initialIsOpen = data.reduce(
+const initialIsOpen = filters.reduce(
   (acc, item) => {
     acc[item.label] = false;
     return acc;
@@ -297,6 +88,12 @@ const initialIsOpen = data.reduce(
 
 const Client = () => {
   const [isOpen, setIsOpen] = useState(initialIsOpen);
+
+  const { data } = useGetProducts();
+
+  const products = useMemo(() => {
+    return data?.data.data;
+  }, [data]);
 
   const toggleExpand = (label: string, open: boolean) => {
     setIsOpen((prev) => ({ ...prev, [label]: open }));
@@ -313,14 +110,14 @@ const Client = () => {
             <div className="max-h-[calc(95vh-48px)] overflow-y-scroll px-3.5 py-2">
               <Accordion
                 type="multiple"
-                defaultValue={data.map((item) => item.label)}
+                defaultValue={filters.map((item) => item.label)}
               >
-                {data.map((item, index) => (
+                {filters.map((item, index) => (
                   <div
                     key={item.label}
                     className={cn(
                       "flex flex-col border-b border-gray-500",
-                      index === data.length - 1 && "border-0"
+                      index === filters.length - 1 && "border-0"
                     )}
                   >
                     <AccordionItem value={item.label}>
@@ -330,7 +127,7 @@ const Client = () => {
                       <AccordionContent
                         className={cn(
                           "w-full",
-                          index === data.length - 1 && "pb-0"
+                          index === filters.length - 1 && "pb-0"
                         )}
                       >
                         <Collapsible
@@ -393,11 +190,12 @@ const Client = () => {
             </div>
           </div>
         </div>
-        <div className="flex flex-col gap-10">
+        <div className="flex flex-col gap-10 w-full">
           <div className="grid grid-cols-4 gap-3.5 w-full">
-            {/* {products.map((item, idx) => (
-              <ProductCard key={`${item.title}-${idx}`} {...item} />
-            ))} */}
+            {products &&
+              products.map((item, idx) => (
+                <ProductCard key={`${item.title}-${idx}`} {...item} />
+              ))}
           </div>
           <div className="w-full flex justify-end">
             <div className="flex items-center *:hover:bg-green-200 *:hover:rounded-lg">

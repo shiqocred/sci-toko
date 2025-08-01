@@ -35,10 +35,10 @@ interface CategoryCardProps {
 export const ByCategorySection = ({ data }: { data: any[] }) => {
   return (
     <div className="[--max-width:1240px] w-full max-w-[var(--max-width)] mx-auto px-4 lg:px-8 flex flex-col gap-8 py-6">
-      <Heading label="Shop By Category" isExpand />
+      <Heading label="Shop By Category" isExpand={"#"} />
       <div className="grid grid-cols-3 gap-6 w-full">
         {data.map((item) => (
-          <CategoryCard key={item.label} {...item} />
+          <CategoryCard key={item.id} {...item} />
         ))}
       </div>
     </div>
@@ -55,7 +55,7 @@ const CategoryCard = ({ id, name, className, image }: CategoryCardProps) => {
         <div className="size-full relative">
           <Image
             alt={name}
-            src={image}
+            src={image ?? "/assets/images/logo-sci.png"}
             fill
             className="object-contain"
             sizes={sizesImage}
