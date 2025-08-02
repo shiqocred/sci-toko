@@ -1,5 +1,5 @@
 import { deleteCart, quantityCart } from "@/lib/api";
-import { auth, errorRes, successRes } from "@/lib/auth";
+import { errorRes, isAuth, successRes } from "@/lib/auth";
 import { isResponse } from "@/lib/utils";
 import { NextRequest } from "next/server";
 
@@ -8,10 +8,11 @@ export async function PUT(
   { params }: { params: Promise<{ variantId: string }> }
 ) {
   try {
-    const isAuth = await auth();
-    if (!isAuth) return errorRes("Unauthorized", 401);
+    const auth = await isAuth(req);
+    if (!auth || auth.email || auth.password || !auth.sub)
+      throw errorRes("Unauthorized", 401);
 
-    const userId = isAuth.user.id;
+    const { sub: userId } = auth;
 
     await quantityCart(req, params, userId);
 
@@ -28,10 +29,11 @@ export async function DELETE(
   { params }: { params: Promise<{ variantId: string }> }
 ) {
   try {
-    const isAuth = await auth();
-    if (!isAuth) return errorRes("Unauthorized", 401);
+    const auth = await isAuth(req);
+    if (!auth || auth.email || auth.password || !auth.sub)
+      throw errorRes("Unauthorized", 401);
 
-    const userId = isAuth.user.id;
+    const { sub: userId } = auth;
 
     await deleteCart(params, userId);
 

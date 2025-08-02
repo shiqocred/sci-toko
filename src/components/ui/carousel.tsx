@@ -206,7 +206,7 @@ function CarouselNext({
   className,
   variant = "outline",
   size = "icon",
-  icon: Icon = ArrowLeft,
+  icon: Icon = ArrowRight,
   ...props
 }: React.ComponentProps<typeof Button> & { icon?: LucideIcon }) {
   const { orientation, scrollNext, canScrollNext } = useCarousel();

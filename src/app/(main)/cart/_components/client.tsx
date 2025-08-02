@@ -8,7 +8,7 @@ import { Separator } from "@/components/ui/separator";
 import { cn, formatRupiah, numericString, sizesImage } from "@/lib/utils";
 import { Minus, Plus, Trash2 } from "lucide-react";
 import Image from "next/image";
-import React, { MouseEvent, useEffect, useMemo, useState } from "react";
+import React, { useEffect, useMemo, useState } from "react";
 import {
   useDeleteCart,
   useGetCarts,
