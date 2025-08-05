@@ -47,6 +47,7 @@ import { Input } from "@/components/ui/input";
 import { toast } from "sonner";
 import {
   useAddAddress,
+  useDeleteAddress,
   useGetAddress,
   useGetAddresses,
   useSetDefaultAddress,
@@ -62,6 +63,8 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import { useRouter } from "next/navigation";
+import { useConfirm } from "@/hooks/use-confirm";
 
 const initialValue = {
   address: "",
@@ -78,6 +81,7 @@ const initialValue = {
 };
 
 export const AddressTab = () => {
+  const router = useRouter();
   const [{ address, id: addressId }, setAddress] = useQueryStates({
     address: parseAsString.withDefault(""),
     id: parseAsString.withDefault(""),
@@ -97,8 +101,15 @@ export const AddressTab = () => {
     is_default: "",
   });
 
+  const [DeleteDialog, confirmDelete] = useConfirm(
+    "Delete Address?",
+    "This action cannot be undone",
+    "destructive"
+  );
+
   const { mutate: addAddress, isPending: isAdding } = useAddAddress();
   const { mutate: updateAddress, isPending: isUpdating } = useUpdateAddress();
+  const { mutate: deleteAddress, isPending: isDeleting } = useDeleteAddress();
   const { mutate: setDefault, isPending: isSettingDefault } =
     useSetDefaultAddress();
 
@@ -138,6 +149,7 @@ export const AddressTab = () => {
         {
           onSuccess: () => {
             setInput(initialValue);
+            router.push("/account?tab=address");
           },
           onError: (data) => {
             setErrors((data.response?.data as any)?.errors);
@@ -157,6 +169,7 @@ export const AddressTab = () => {
         {
           onSuccess: () => {
             setInput(initialValue);
+            router.push("/account?tab=address");
           },
           onError: (data) => {
             setErrors((data.response?.data as any)?.errors);
@@ -164,6 +177,12 @@ export const AddressTab = () => {
         }
       );
     }
+  };
+
+  const handleDelete = async (id: string) => {
+    const ok = await confirmDelete();
+    if (!ok) return;
+    deleteAddress({ params: { id } });
   };
 
   const handleSetDefault = (id: string) => {
@@ -196,6 +215,7 @@ export const AddressTab = () => {
       value="address"
       className="bg-white p-5 flex flex-col text-sm gap-4"
     >
+      <DeleteDialog />
       <div className="flex items-center gap-2">
         {address ? (
           <Button
@@ -289,7 +309,10 @@ export const AddressTab = () => {
                                   <Edit />
                                   Edit
                                 </DropdownMenuItem>
-                                <DropdownMenuItem className="focus:bg-red-100 focus:text-red-500 group">
+                                <DropdownMenuItem
+                                  onSelect={() => handleDelete(item.id)}
+                                  className="focus:bg-red-100 focus:text-red-500 group"
+                                >
                                   <Trash2 className="group-focus:text-red-500" />
                                   Delete
                                 </DropdownMenuItem>
@@ -297,25 +320,6 @@ export const AddressTab = () => {
                             </DropdownMenuContent>
                           </DropdownMenu>
                         </div>
-                        {/* <div className="flex items-center gap-2">
-                            <Button
-                              size={"icon"}
-                              variant={"ghost"}
-                              className="size-7 hover:bg-yellow-100"
-                              onClick={() =>
-                                setAddress({ address: "edit", id: item.id })
-                              }
-                            >
-                              <Edit />
-                            </Button>
-                            <Button
-                              size={"icon"}
-                              variant={"ghost"}
-                              className="size-7 hover:bg-red-100"
-                            >
-                              <Trash2 />
-                            </Button>
-                          </div> */}
                       </div>
 
                       <div className="flex flex-col gap-1.5 text-sm">
@@ -428,7 +432,7 @@ export const AddressTab = () => {
   );
 };
 
-const MapPicker = ({
+export const MapPicker = ({
   input,
   setInput,
   errors,
@@ -783,7 +787,7 @@ const Maps = ({
   const isSomeError = errors.address || errors.latitude || errors.longitude;
 
   return (
-    <div className="size-full flex-col flex-none relative flex gap-1.5 justify-center overflow-hidden">
+    <div className="w-full flex-col flex-none relative flex gap-1.5 justify-center overflow-hidden">
       <div
         className={cn(
           "flex flex-col gap-4 relative border border-gray-300 rounded-md p-3 w-full",

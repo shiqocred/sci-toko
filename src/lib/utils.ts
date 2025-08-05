@@ -1,6 +1,8 @@
+import { apiXenditDev } from "@/config";
 import { clsx, type ClassValue } from "clsx";
 import { formatInTimeZone } from "date-fns-tz";
 import { twMerge } from "tailwind-merge";
+import { Xendit } from "xendit-node";
 
 export function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs));
@@ -61,3 +63,5 @@ export function isResponse(obj: unknown): obj is Response {
 export const pronoun = (num: number) => {
   return num > 1 ? "s" : "";
 };
+
+export const xendit = new Xendit({ secretKey: apiXenditDev });

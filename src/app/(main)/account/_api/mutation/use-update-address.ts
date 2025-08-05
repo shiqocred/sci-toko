@@ -1,6 +1,5 @@
 import { invalidateQuery, useMutate } from "@/lib/query";
 import { useQueryClient } from "@tanstack/react-query";
-import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 
 type Body = {
@@ -22,14 +21,12 @@ type Params = {
 };
 
 export const useUpdateAddress = () => {
-  const router = useRouter();
   const queryClient = useQueryClient();
   const mutation = useMutate<Body, Params>({
     endpoint: "/user/addresses/:id",
     method: "put",
     onSuccess: async ({ data }) => {
       toast.success(data.message);
-      router.push("/account?tab=address");
       await invalidateQuery(queryClient, [
         ["addresses"],
         ["address", data.data.id],

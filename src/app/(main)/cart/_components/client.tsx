@@ -10,6 +10,7 @@ import { Minus, Plus, Trash2 } from "lucide-react";
 import Image from "next/image";
 import React, { useEffect, useMemo, useState } from "react";
 import {
+  useCreateCheckout,
   useDeleteCart,
   useGetCarts,
   useUpdateCheck,
@@ -44,6 +45,7 @@ const Client = () => {
   const { mutate: updateQty, isPending: isUpdating } = useUpdateQuantity();
   const { mutate: deleteCart, isPending: isDeleting } = useDeleteCart();
   const { mutate: checkCart, isPending: isChecking } = useUpdateCheck();
+  const { mutate: checkout, isPending: isCheckouting } = useCreateCheckout();
 
   const { data } = useGetCarts();
 
@@ -94,6 +96,10 @@ const Client = () => {
     checkCart({
       body: { checked: checked as boolean, variant_ids: variantId },
     });
+  };
+
+  const handleCheckout = () => {
+    checkout({});
   };
 
   useEffect(() => {
@@ -443,6 +449,7 @@ const Client = () => {
                 className="w-full flex-auto rounded-full"
                 variant={"destructive"}
                 disabled={dataCart && dataCart.total_cart_selected < 1}
+                onClick={handleCheckout}
               >
                 Proceed to Checkout
               </Button>

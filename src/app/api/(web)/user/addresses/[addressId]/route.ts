@@ -131,3 +131,25 @@ export async function PUT(
     return errorRes("Internal Error", 500);
   }
 }
+
+export async function DELETE(
+  req: NextRequest,
+  { params }: { params: Promise<{ addressId: string }> }
+) {
+  try {
+    const { addressId } = await params;
+    const isAuth = await auth();
+    if (!isAuth) return errorRes("Unauthorized", 401);
+
+    const userId = isAuth.user.id;
+
+    await db
+      .delete(addresses)
+      .where(and(eq(addresses.id, addressId), eq(addresses.userId, userId)));
+
+    return successRes(null, "Address successfully deleted");
+  } catch (error) {
+    console.log("ERROR_DELETED_ADDRESS", error);
+    return errorRes("Internal Error", 500);
+  }
+}
