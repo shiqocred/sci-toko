@@ -1,5 +1,5 @@
 import { updateStatusAddress } from "@/lib/api";
-import { auth, errorRes, successRes } from "@/lib/auth";
+import { errorRes, isAuth, successRes } from "@/lib/auth";
 import { NextRequest } from "next/server";
 
 export async function PUT(
@@ -8,10 +8,12 @@ export async function PUT(
 ) {
   try {
     const { addressId } = await params;
-    const isAuth = await auth();
-    if (!isAuth) return errorRes("Unauthorized", 401);
+    const auth = await isAuth(req);
 
-    const userId = isAuth.user.id;
+    if (!auth || auth.email || auth.password || !auth.sub)
+      throw errorRes("Unauthorized", 401);
+
+    const { sub: userId } = auth;
 
     const response = await updateStatusAddress(userId, addressId);
 

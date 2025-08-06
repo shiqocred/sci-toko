@@ -1,22 +1,22 @@
 import { updatePassword } from "@/lib/api";
-import { auth, errorRes, successRes } from "@/lib/auth";
+import { errorRes, isAuth, successRes } from "@/lib/auth";
 import { isResponse } from "@/lib/utils";
 import { NextRequest } from "next/server";
 
 export async function PUT(req: NextRequest) {
   try {
-    const isAuth = await auth();
+    const auth = await isAuth(req);
 
-    if (!isAuth) return errorRes("Unauthorized", 401);
+    if (!auth || auth.email || auth.password || !auth.sub)
+      throw errorRes("Unauthorized", 401);
 
-    const userId = isAuth.user.id;
+    const { sub: userId } = auth;
 
     await updatePassword(req, userId);
 
     return successRes(null, "User password successfully updated");
   } catch (error) {
     if (isResponse(error)) return error;
-
     console.log("ERROR_UPDATE_PASSWORD", error);
     return errorRes("Internal Error", 500);
   }

@@ -9,7 +9,7 @@ export const useCreateCheckout = () => {
     endpoint: "/checkout",
     method: "post",
     onSuccess: async () => {
-      await invalidateQuery(queryClient, [["carts"]]);
+      await invalidateQuery(queryClient, [["carts"], ["checkout"], ["ongkir"]]);
       router.push("/checkout");
     },
     onError: {

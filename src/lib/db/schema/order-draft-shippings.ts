@@ -3,6 +3,7 @@ import { index, numeric, pgTable, text, timestamp } from "drizzle-orm/pg-core";
 import { orderDraft } from "./order-draft";
 import { orderDraftShippingsEnum } from "./enums";
 import { addresses } from "./addresses";
+import { users } from "./users";
 
 export const orderDraftShippings = pgTable(
   "order_draft_shippings",
@@ -20,6 +21,11 @@ export const orderDraftShippings = pgTable(
     addressId: text("address_id")
       .notNull()
       .references(() => addresses.id, {
+        onDelete: "cascade",
+      }),
+    userId: text("user_id")
+      .notNull()
+      .references(() => users.id, {
         onDelete: "cascade",
       }),
 

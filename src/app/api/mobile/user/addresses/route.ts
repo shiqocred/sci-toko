@@ -1,14 +1,16 @@
 import { addressesList, createAddress } from "@/lib/api";
-import { auth, errorRes, successRes } from "@/lib/auth";
+import { errorRes, isAuth, successRes } from "@/lib/auth";
 import { isResponse } from "@/lib/utils";
 import { NextRequest } from "next/server";
 
-export async function GET() {
+export async function GET(req: NextRequest) {
   try {
-    const isAuth = await auth();
-    if (!isAuth) return errorRes("Unauthorized", 401);
+    const auth = await isAuth(req);
 
-    const userId = isAuth.user.id;
+    if (!auth || auth.email || auth.password || !auth.sub)
+      throw errorRes("Unauthorized", 401);
+
+    const { sub: userId } = auth;
 
     const response = await addressesList(userId);
 
@@ -23,10 +25,12 @@ export async function GET() {
 
 export async function POST(req: NextRequest) {
   try {
-    const isAuth = await auth();
-    if (!isAuth) return errorRes("Unauthorized", 401);
+    const auth = await isAuth(req);
 
-    const userId = isAuth.user.id;
+    if (!auth || auth.email || auth.password || !auth.sub)
+      throw errorRes("Unauthorized", 401);
+
+    const { sub: userId } = auth;
 
     const response = await createAddress(req, userId);
 

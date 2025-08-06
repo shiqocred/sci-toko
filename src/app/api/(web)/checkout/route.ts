@@ -5,8 +5,7 @@ import {
   db,
   orderDraft,
   orderDraftItems,
-  orderItems,
-  orders,
+  orderDraftShippings,
   productImages,
   products,
   productVariants,
@@ -135,13 +134,16 @@ export async function POST() {
     const userId = isAuth.user.id;
     const userRole = isAuth.user.role ?? "BASIC";
 
-    const checkoutExist = await db.query.orders.findFirst({
-      where: (o, { eq }) => eq(o.userId, userId),
-    });
+    await db
+      .update(orderDraft)
+      .set({ status: "ABANDONED" })
+      .where(
+        and(eq(orderDraft.userId, userId), eq(orderDraft.status, "ACTIVE"))
+      );
 
-    if (checkoutExist) {
-      await db.delete(orders).where(eq(orders.userId, userId));
-    }
+    await db
+      .delete(orderDraftShippings)
+      .where(eq(orderDraftShippings.userId, userId));
 
     const addressDefault = await db.query.addresses.findFirst({
       where: (a, { eq, and }) =>
@@ -211,7 +213,7 @@ export async function POST() {
   }
 }
 
-export async function PUT(req: NextRequest) {
+export async function PUT() {
   try {
     const { Invoice } = xendit;
 

@@ -141,12 +141,14 @@ async function insertShippingChoice({
   orderDraftId,
   addressId,
   weight,
+  userId,
 }: {
   name: "EXPRESS" | "REGULAR" | "ECONOMY";
   courier: Courier;
   orderDraftId: string;
   addressId: string;
   weight: string;
+  userId: string;
 }) {
   if (!courier) return null;
   const [result] = await db
@@ -160,6 +162,7 @@ async function insertShippingChoice({
       name,
       weight,
       orderDraftId,
+      userId,
     })
     .returning({
       id: orderDraftShippings.id,
@@ -311,6 +314,7 @@ export async function GET() {
         name: "EXPRESS",
         weight: totalWeight,
         orderDraftId: draftOrderExist.id,
+        userId,
       }),
       insertShippingChoice({
         addressId,
@@ -318,6 +322,7 @@ export async function GET() {
         name: "REGULAR",
         weight: totalWeight,
         orderDraftId: draftOrderExist.id,
+        userId,
       }),
       insertShippingChoice({
         addressId,
@@ -325,6 +330,7 @@ export async function GET() {
         name: "ECONOMY",
         weight: totalWeight,
         orderDraftId: draftOrderExist.id,
+        userId,
       }),
     ]);
 

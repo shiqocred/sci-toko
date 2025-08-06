@@ -1,5 +1,5 @@
 import { deleteAddress, detailAddress, updateAddress } from "@/lib/api";
-import { auth, errorRes, successRes } from "@/lib/auth";
+import { errorRes, isAuth, successRes } from "@/lib/auth";
 import { isResponse } from "@/lib/utils";
 import { NextRequest } from "next/server";
 
@@ -9,10 +9,12 @@ export async function GET(
 ) {
   try {
     const { addressId } = await params;
-    const isAuth = await auth();
-    if (!isAuth) return errorRes("Unauthorized", 401);
+    const auth = await isAuth(req);
 
-    const userId = isAuth.user.id;
+    if (!auth || auth.email || auth.password || !auth.sub)
+      throw errorRes("Unauthorized", 401);
+
+    const { sub: userId } = auth;
 
     const response = await detailAddress(userId, addressId);
 
@@ -31,10 +33,12 @@ export async function PUT(
 ) {
   try {
     const { addressId } = await params;
-    const isAuth = await auth();
-    if (!isAuth) return errorRes("Unauthorized", 401);
+    const auth = await isAuth(req);
 
-    const userId = isAuth.user.id;
+    if (!auth || auth.email || auth.password || !auth.sub)
+      throw errorRes("Unauthorized", 401);
+
+    const { sub: userId } = auth;
 
     const response = await updateAddress(req, userId, addressId);
 
@@ -52,10 +56,12 @@ export async function DELETE(
 ) {
   try {
     const { addressId } = await params;
-    const isAuth = await auth();
-    if (!isAuth) return errorRes("Unauthorized", 401);
+    const auth = await isAuth(req);
 
-    const userId = isAuth.user.id;
+    if (!auth || auth.email || auth.password || !auth.sub)
+      throw errorRes("Unauthorized", 401);
+
+    const { sub: userId } = auth;
 
     await deleteAddress(userId, addressId);
 

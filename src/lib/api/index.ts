@@ -16,3 +16,9 @@ export * from "./products/[productId]";
 
 export * from "./carts";
 export * from "./carts/[variantsId]";
+
+export * from "./user";
+export * from "./user/password";
+export * from "./user/addresses";
+export * from "./user/addresses/[addressId]";
+export * from "./user/addresses/[addressId]/default";
