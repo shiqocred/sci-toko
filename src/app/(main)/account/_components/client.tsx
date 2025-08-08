@@ -220,7 +220,7 @@ const Client = () => {
                     <Button>Shipping Address</Button>
                   </TabsTrigger>
                 </TabsList>
-                <OrderTab />
+                <OrderTab tab={tab} />
                 <ProfileTab user={user} update={update} />
                 <PasswordTab />
                 <AddressTab />

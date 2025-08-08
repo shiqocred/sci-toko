@@ -1,6 +1,7 @@
 import { errorRes } from "@/lib/auth";
-import { db } from "@/lib/db";
-import { verify } from "argon2";
+import { db, users } from "@/lib/db";
+import { hash, verify } from "argon2";
+import { eq, sql } from "drizzle-orm";
 import { NextRequest } from "next/server";
 import { z } from "zod/v4";
 
@@ -95,4 +96,12 @@ export const updatePassword = async (req: NextRequest, userId: string) => {
       ...passwordError,
       ...passwordMatch,
     });
+
+  await db
+    .update(users)
+    .set({
+      password: await hash(new_password),
+      updatedAt: sql`NOW()`,
+    })
+    .where(eq(users.id, userId));
 };

@@ -1,7 +1,7 @@
 import { biteshipAPI, biteshipUrl } from "@/config";
 import { auth, errorRes, successRes } from "@/lib/auth";
 import { db, orderDraft, orderDraftShippings } from "@/lib/db";
-import { and, eq } from "drizzle-orm";
+import { eq } from "drizzle-orm";
 import { NextRequest } from "next/server";
 type Courier = {
   name: string;
@@ -257,7 +257,7 @@ export async function GET() {
         columns: { value: true },
         where: (c, { eq }) => eq(c.isActive, true),
       }),
-      db.query.storeAddress.findFirst({
+      db.query.storeDetail.findFirst({
         columns: { latitude: true, longitude: true },
       }),
     ]);

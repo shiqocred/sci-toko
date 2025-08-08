@@ -3,9 +3,12 @@ import { auth, errorRes, successRes } from "@/lib/auth";
 import {
   carts,
   db,
+  invoices,
   orderDraft,
   orderDraftItems,
   orderDraftShippings,
+  orderItems,
+  orders,
   productImages,
   products,
   productVariants,
@@ -28,7 +31,7 @@ export async function GET() {
         where: (o, { eq, and }) =>
           and(eq(o.userId, userId), eq(o.status, "ACTIVE")),
       }),
-      db.query.storeAddress.findFirst(),
+      db.query.storeDetail.findFirst(),
     ]);
 
     if (!draftOrder) return errorRes("No draft order found", 400);
@@ -177,7 +180,7 @@ export async function POST() {
     };
 
     const totalWeight = variantSelected.reduce(
-      (arr, curr) => arr + Number(curr.weight ?? "0"),
+      (arr, curr) => arr + Number(curr.weight ?? "0") * Number(curr.qty ?? "0"),
       0
     );
 
@@ -213,838 +216,105 @@ export async function POST() {
   }
 }
 
-export async function PUT() {
+export async function PUT(req: NextRequest) {
   try {
     const { Invoice } = xendit;
+    // const isAuth = await auth();
+    // if (!isAuth) return errorRes("Unauthorized", 401);
 
-    const a = await Invoice.createInvoice({
+    // const userId = isAuth.user.id;
+
+    const userId = req.nextUrl.searchParams.get("userId") ?? "";
+
+    const orderDrafExist = await db.query.orderDraft.findFirst({
+      where: (od, { eq, and }) =>
+        and(eq(od.userId, userId), eq(od.status, "ACTIVE")),
+    });
+
+    if (!orderDrafExist)
+      return errorRes("Failed to checkout, Order draf not found.", 400);
+
+    const addressId = orderDrafExist.addressId;
+
+    if (!addressId)
+      return errorRes("Failed to checkout, no address selected", 400);
+
+    const storeDetail = await db.query.storeDetail.findFirst();
+
+    const addressSelected = await db.query.addresses.findFirst({
+      where: (a, { eq, and }) => and(eq(a.id, addressId), eq(a.userId, userId)),
+    });
+    const orderDraftShippingsExist =
+      await db.query.orderDraftShippings.findFirst({
+        where: (ods, { eq, and }) =>
+          and(eq(ods.orderDraftId, orderDrafExist.id), eq(ods.userId, userId)),
+      });
+    const orderDraftItemsExist = await db.query.orderDraftItems.findMany({
+      where: (odi, { eq }) => eq(odi.orderDraftId, orderDrafExist.id),
+    });
+
+    if (!storeDetail)
+      return errorRes("Store detail not found, please contact sales", 400);
+
+    if (!addressSelected)
+      return errorRes("Failed to checkout, no selected address found", 400);
+    if (!orderDraftShippingsExist)
+      return errorRes("Failed to checkout, no selected address found", 400);
+
+    const orderId = createId();
+
+    const totalPrice =
+      Number(orderDrafExist.totalPrice) +
+      Number(orderDraftShippingsExist.price);
+
+    const invoice = await Invoice.createInvoice({
       data: {
-        amount: 15000,
+        amount: totalPrice,
         currency: "IDR",
-        externalId: createId(),
+        externalId: orderId,
         successRedirectUrl:
-          "https://974a22b2ed29.ngrok-free.app/api/checkout/success",
+          "https://2c43c5d5e15b.ngrok-free.app/api/checkout/success",
         failureRedirectUrl:
-          "https://974a22b2ed29.ngrok-free.app/api/checkout/failed",
+          "https://2c43c5d5e15b.ngrok-free.app/api/checkout/failed",
+        // invoiceDuration: 60,
       },
     });
 
-    return successRes(a, "Success");
+    await db.transaction(async (tx) => {
+      await tx.insert(orders).values({
+        id: orderId,
+        userId,
+        productPrice: orderDrafExist.totalPrice,
+        shipingPrice: orderDraftShippingsExist.price,
+        totalPrice: totalPrice.toString(),
+      });
+
+      await Promise.all([
+        tx.insert(orderItems).values(
+          orderDraftItemsExist.map((item) => ({
+            orderId,
+            variantId: item.variantId,
+            price: item.price,
+            weight: item.weight,
+            quantity: item.quantity,
+          }))
+        ),
+        tx.insert(invoices).values({
+          amount: totalPrice.toString(),
+          orderId,
+        }),
+      ]);
+    });
+
+    const response = {
+      orderId,
+      payment_url: invoice.invoiceUrl,
+      payment_status: invoice.status,
+    };
+
+    return successRes(response, "Invoice successfully created");
   } catch (error) {
     console.log(error);
-  }
-}
-
-export async function PATCH(req: NextRequest) {
-  try {
-    const data = {
-      success: true,
-      object: "courier_pricing",
-      message: "Success to retrieve courier pricing",
-      code: 20001007,
-      origin: {
-        location_id: null,
-        latitude: "-6.291974",
-        longitude: " 106.801207",
-        postal_code: 12430,
-        country_name: "Indonesia",
-        country_code: "ID",
-        administrative_division_level_1_name: "DKI Jakarta",
-        administrative_division_level_1_type: "province",
-        administrative_division_level_2_name: "Jakarta Selatan",
-        administrative_division_level_2_type: "city",
-        administrative_division_level_3_name: "Cilandak",
-        administrative_division_level_3_type: "district",
-        administrative_division_level_4_name: "Cilandak Barat",
-        administrative_division_level_4_type: "subdistrict",
-        address: null,
-      },
-      stops: [],
-      destination: {
-        location_id: null,
-        latitude: "-6.288941",
-        longitude: " 106.806473",
-        postal_code: 12430,
-        country_name: "Indonesia",
-        country_code: "ID",
-        administrative_division_level_1_name: "DKI Jakarta",
-        administrative_division_level_1_type: "province",
-        administrative_division_level_2_name: "Jakarta Selatan",
-        administrative_division_level_2_type: "city",
-        administrative_division_level_3_name: "Cilandak",
-        administrative_division_level_3_type: "district",
-        administrative_division_level_4_name: "Cilandak Barat",
-        administrative_division_level_4_type: "subdistrict",
-        address: null,
-      },
-      pricing: [
-        {
-          available_collection_method: ["pickup"],
-          available_for_cash_on_delivery: false,
-          available_for_proof_of_delivery: false,
-          available_for_instant_waybill_id: true,
-          available_for_insurance: true,
-          company: "paxel",
-          courier_name: "Paxel",
-          courier_code: "paxel",
-          courier_service_name: "Small Package",
-          courier_service_code: "small",
-          currency: "IDR",
-          description: "Small (20 x 11 x 7 cm) Package Shipment",
-          duration: "8 - 12 hours",
-          shipment_duration_range: "8 - 12",
-          shipment_duration_unit: "hours",
-          service_type: "standard",
-          shipping_type: "parcel",
-          price: 15500,
-          tax_lines: [],
-          type: "small",
-        },
-        {
-          available_collection_method: ["pickup"],
-          available_for_cash_on_delivery: false,
-          available_for_proof_of_delivery: false,
-          available_for_instant_waybill_id: true,
-          available_for_insurance: true,
-          company: "paxel",
-          courier_name: "Paxel",
-          courier_code: "paxel",
-          courier_service_name: "Medium Package",
-          courier_service_code: "medium",
-          currency: "IDR",
-          description: "Medium (30 x 20 x 12 cm) Package Shipment",
-          duration: "8 - 12 hours",
-          shipment_duration_range: "8 - 12",
-          shipment_duration_unit: "hours",
-          service_type: "standard",
-          shipping_type: "parcel",
-          price: 17500,
-          tax_lines: [],
-          type: "medium",
-        },
-        {
-          available_collection_method: ["pickup"],
-          available_for_cash_on_delivery: false,
-          available_for_proof_of_delivery: false,
-          available_for_instant_waybill_id: true,
-          available_for_insurance: true,
-          company: "paxel",
-          courier_name: "Paxel",
-          courier_code: "paxel",
-          courier_service_name: "Large Package",
-          courier_service_code: "large",
-          currency: "IDR",
-          description: "Large (35 x 30 x 20 cm) Package Shipment",
-          duration: "8 - 12 hours",
-          shipment_duration_range: "8 - 12",
-          shipment_duration_unit: "hours",
-          service_type: "standard",
-          shipping_type: "parcel",
-          price: 20500,
-          tax_lines: [],
-          type: "large",
-        },
-        {
-          available_collection_method: ["pickup"],
-          available_for_cash_on_delivery: true,
-          available_for_proof_of_delivery: false,
-          available_for_instant_waybill_id: true,
-          available_for_insurance: true,
-          company: "jne",
-          courier_name: "JNE",
-          courier_code: "jne",
-          courier_service_name: "Reguler",
-          courier_service_code: "reg",
-          currency: "IDR",
-          description: "Layanan reguler",
-          duration: "1 - 2 days",
-          shipment_duration_range: "1 - 2",
-          shipment_duration_unit: "days",
-          service_type: "standard",
-          shipping_type: "parcel",
-          price: 10000,
-          tax_lines: [],
-          type: "reg",
-        },
-        {
-          available_collection_method: ["pickup"],
-          available_for_cash_on_delivery: false,
-          available_for_proof_of_delivery: false,
-          available_for_instant_waybill_id: true,
-          available_for_insurance: true,
-          company: "jne",
-          courier_name: "JNE",
-          courier_code: "jne",
-          courier_service_name: "JNE Trucking",
-          courier_service_code: "jtr",
-          currency: "IDR",
-          description: "Trucking with minimum weight of 10 kg",
-          duration: "3 - 4 days",
-          shipment_duration_range: "3 - 4",
-          shipment_duration_unit: "days",
-          service_type: "standard",
-          shipping_type: "freight",
-          price: 40000,
-          tax_lines: [],
-          type: "jtr",
-        },
-        {
-          available_collection_method: ["pickup"],
-          available_for_cash_on_delivery: false,
-          available_for_proof_of_delivery: false,
-          available_for_instant_waybill_id: true,
-          available_for_insurance: true,
-          company: "jne",
-          courier_name: "JNE",
-          courier_code: "jne",
-          courier_service_name: "Yakin Esok Sampai (YES)",
-          courier_service_code: "yes",
-          currency: "IDR",
-          description: "Yakin esok sampai",
-          duration: "1 - 1 days",
-          shipment_duration_range: "1 - 1",
-          shipment_duration_unit: "days",
-          service_type: "overnight",
-          shipping_type: "parcel",
-          price: 18000,
-          tax_lines: [],
-          type: "yes",
-        },
-        {
-          available_collection_method: ["pickup"],
-          available_for_cash_on_delivery: true,
-          available_for_proof_of_delivery: false,
-          available_for_instant_waybill_id: true,
-          available_for_insurance: true,
-          company: "idexpress",
-          courier_name: "IDexpress",
-          courier_code: "idexpress",
-          courier_service_name: "Reguler",
-          courier_service_code: "reg",
-          currency: "IDR",
-          description: "Layanan reguler",
-          duration: "2 - 3 days",
-          shipment_duration_range: "2 - 3",
-          shipment_duration_unit: "days",
-          service_type: "standard",
-          shipping_type: "parcel",
-          price: 9000,
-          tax_lines: [],
-          type: "reg",
-        },
-        {
-          available_collection_method: ["pickup"],
-          available_for_cash_on_delivery: true,
-          available_for_proof_of_delivery: true,
-          available_for_instant_waybill_id: true,
-          available_for_insurance: true,
-          company: "deliveree",
-          courier_name: "Deliveree",
-          courier_code: "deliveree",
-          courier_service_name: "Economy",
-          courier_service_code: "economy",
-          currency: "IDR",
-          description: "Economy",
-          duration: "1 - 3 hours",
-          shipment_duration_range: "1 - 3",
-          shipment_duration_unit: "hours",
-          service_type: "same_day",
-          shipping_type: "parcel",
-          price: 38640,
-          tax_lines: [],
-          type: "economy",
-        },
-        {
-          available_collection_method: ["pickup"],
-          available_for_cash_on_delivery: true,
-          available_for_proof_of_delivery: true,
-          available_for_instant_waybill_id: true,
-          available_for_insurance: true,
-          company: "deliveree",
-          courier_name: "Deliveree",
-          courier_code: "deliveree",
-          courier_service_name: "Van",
-          courier_service_code: "van",
-          currency: "IDR",
-          description: "Van",
-          duration: "2 - 4 hours",
-          shipment_duration_range: "2 - 4",
-          shipment_duration_unit: "hours",
-          service_type: "same_day",
-          shipping_type: "parcel",
-          price: 102360,
-          tax_lines: [],
-          type: "van",
-        },
-        {
-          available_collection_method: ["pickup"],
-          available_for_cash_on_delivery: true,
-          available_for_proof_of_delivery: true,
-          available_for_instant_waybill_id: true,
-          available_for_insurance: true,
-          company: "deliveree",
-          courier_name: "Deliveree",
-          courier_code: "deliveree",
-          courier_service_name: "Small Box Truck",
-          courier_service_code: "small_box",
-          currency: "IDR",
-          description: "Small Box",
-          duration: "2 - 4 hours",
-          shipment_duration_range: "2 - 4",
-          shipment_duration_unit: "hours",
-          service_type: "same_day",
-          shipping_type: "freight",
-          price: 168240,
-          tax_lines: [],
-          type: "small_box",
-        },
-        {
-          available_collection_method: ["pickup"],
-          available_for_cash_on_delivery: true,
-          available_for_proof_of_delivery: true,
-          available_for_instant_waybill_id: true,
-          available_for_insurance: true,
-          company: "deliveree",
-          courier_name: "Deliveree",
-          courier_code: "deliveree",
-          courier_service_name: "Engkel Box",
-          courier_service_code: "engkel_box",
-          currency: "IDR",
-          description: "Engkel Box",
-          duration: "4 - 8 hours",
-          shipment_duration_range: "4 - 8",
-          shipment_duration_unit: "hours",
-          service_type: "same_day",
-          shipping_type: "freight",
-          price: 337800,
-          tax_lines: [],
-          type: "engkel_box",
-        },
-        {
-          available_collection_method: ["pickup"],
-          available_for_cash_on_delivery: true,
-          available_for_proof_of_delivery: true,
-          available_for_instant_waybill_id: true,
-          available_for_insurance: true,
-          company: "deliveree",
-          courier_name: "Deliveree",
-          courier_code: "deliveree",
-          courier_service_name: "Engkel Pickup",
-          courier_service_code: "engkel_pickup",
-          currency: "IDR",
-          description: "Engkel Pickup",
-          duration: "4 - 8 hours",
-          shipment_duration_range: "4 - 8",
-          shipment_duration_unit: "hours",
-          service_type: "same_day",
-          shipping_type: "freight",
-          price: 343000,
-          tax_lines: [],
-          type: "engkel_pickup",
-        },
-        {
-          available_collection_method: ["pickup"],
-          available_for_cash_on_delivery: true,
-          available_for_proof_of_delivery: true,
-          available_for_instant_waybill_id: true,
-          available_for_insurance: true,
-          company: "deliveree",
-          courier_name: "Deliveree",
-          courier_code: "deliveree",
-          courier_service_name: "Double Engkel Box",
-          courier_service_code: "cdd_box",
-          currency: "IDR",
-          description: "CDD Box",
-          duration: "4 - 8 hours",
-          shipment_duration_range: "4 - 8",
-          shipment_duration_unit: "hours",
-          service_type: "same_day",
-          shipping_type: "freight",
-          price: 509000,
-          tax_lines: [],
-          type: "cdd_box",
-        },
-        {
-          available_collection_method: ["pickup"],
-          available_for_cash_on_delivery: true,
-          available_for_proof_of_delivery: true,
-          available_for_instant_waybill_id: true,
-          available_for_insurance: true,
-          company: "deliveree",
-          courier_name: "Deliveree",
-          courier_code: "deliveree",
-          courier_service_name: "Double Engkel Pickup",
-          courier_service_code: "cdd_pickup",
-          currency: "IDR",
-          description: "CDD Pickup",
-          duration: "4 - 8 hours",
-          shipment_duration_range: "4 - 8",
-          shipment_duration_unit: "hours",
-          service_type: "same_day",
-          shipping_type: "freight",
-          price: 522000,
-          tax_lines: [],
-          type: "cdd_pickup",
-        },
-        {
-          available_collection_method: ["pickup"],
-          available_for_cash_on_delivery: true,
-          available_for_proof_of_delivery: true,
-          available_for_instant_waybill_id: true,
-          available_for_insurance: true,
-          company: "deliveree",
-          courier_name: "Deliveree",
-          courier_code: "deliveree",
-          courier_service_name: "Fuso Lite",
-          courier_service_code: "fuso_light",
-          currency: "IDR",
-          description: "Fuso Light",
-          duration: "1 days",
-          shipment_duration_range: "1",
-          shipment_duration_unit: "days",
-          service_type: "same_day",
-          shipping_type: "freight",
-          price: 863050,
-          tax_lines: [],
-          type: "fuso_light",
-        },
-        {
-          available_collection_method: ["pickup"],
-          available_for_cash_on_delivery: true,
-          available_for_proof_of_delivery: true,
-          available_for_instant_waybill_id: true,
-          available_for_insurance: true,
-          company: "deliveree",
-          courier_name: "Deliveree",
-          courier_code: "deliveree",
-          courier_service_name: "Fuso Heavy",
-          courier_service_code: "fuso_heavy",
-          currency: "IDR",
-          description: "Fuso Heavy",
-          duration: "1 days",
-          shipment_duration_range: "1",
-          shipment_duration_unit: "days",
-          service_type: "same_day",
-          shipping_type: "freight",
-          price: 1062250,
-          tax_lines: [],
-          type: "fuso_heavy",
-        },
-        {
-          available_collection_method: ["pickup"],
-          available_for_cash_on_delivery: true,
-          available_for_proof_of_delivery: true,
-          available_for_instant_waybill_id: true,
-          available_for_insurance: true,
-          company: "deliveree",
-          courier_name: "Deliveree",
-          courier_code: "deliveree",
-          courier_service_name: "Tronton Wing Box",
-          courier_service_code: "tronton_wing_box",
-          currency: "IDR",
-          description: "Tronton WingBox",
-          duration: "1 days",
-          shipment_duration_range: "1",
-          shipment_duration_unit: "days",
-          service_type: "same_day",
-          shipping_type: "freight",
-          price: 1703000,
-          tax_lines: [],
-          type: "tronton_wing_box",
-        },
-        {
-          available_collection_method: ["pickup"],
-          available_for_cash_on_delivery: true,
-          available_for_proof_of_delivery: true,
-          available_for_instant_waybill_id: true,
-          available_for_insurance: true,
-          company: "deliveree",
-          courier_name: "Deliveree",
-          courier_code: "deliveree",
-          courier_service_name: "Tronton Box",
-          courier_service_code: "tronton_box",
-          currency: "IDR",
-          description: "Tronton Box",
-          duration: "1 days",
-          shipment_duration_range: "1",
-          shipment_duration_unit: "days",
-          service_type: "same_day",
-          shipping_type: "freight",
-          price: 1803000,
-          tax_lines: [],
-          type: "tronton_box",
-        },
-        {
-          available_collection_method: ["pickup"],
-          available_for_cash_on_delivery: true,
-          available_for_proof_of_delivery: false,
-          available_for_instant_waybill_id: true,
-          available_for_insurance: true,
-          company: "sicepat",
-          courier_name: "SiCepat",
-          courier_code: "sicepat",
-          courier_service_name: "Besok Sampai Tujuan",
-          courier_service_code: "best",
-          currency: "IDR",
-          description: "Besok sampai tujuan",
-          duration: "1 days",
-          shipment_duration_range: "1",
-          shipment_duration_unit: "days",
-          service_type: "overnight",
-          shipping_type: "parcel",
-          price: 14000,
-          tax_lines: [],
-          type: "best",
-        },
-        {
-          available_collection_method: ["pickup"],
-          available_for_cash_on_delivery: true,
-          available_for_proof_of_delivery: false,
-          available_for_instant_waybill_id: true,
-          available_for_insurance: true,
-          company: "sicepat",
-          courier_name: "SiCepat",
-          courier_code: "sicepat",
-          courier_service_name: "Reguler",
-          courier_service_code: "reg",
-          currency: "IDR",
-          description: "Layanan reguler",
-          duration: "1 - 2 days",
-          shipment_duration_range: "1 - 2",
-          shipment_duration_unit: "days",
-          service_type: "standard",
-          shipping_type: "parcel",
-          price: 11500,
-          tax_lines: [],
-          type: "reg",
-        },
-        {
-          available_collection_method: ["pickup"],
-          available_for_cash_on_delivery: false,
-          available_for_proof_of_delivery: false,
-          available_for_instant_waybill_id: false,
-          available_for_insurance: true,
-          company: "lalamove",
-          courier_name: "Lalamove",
-          courier_code: "lalamove",
-          courier_service_name: "Motorcycle",
-          courier_service_code: "motorcycle",
-          currency: "IDR",
-          description: "Delivery using bike",
-          duration: "1 - 3 Hours",
-          shipment_duration_range: "1 - 3",
-          shipment_duration_unit: "hours",
-          service_type: "same_day",
-          shipping_type: "parcel",
-          price: 12500,
-          tax_lines: [],
-          type: "motorcycle",
-        },
-        {
-          available_collection_method: ["pickup"],
-          available_for_cash_on_delivery: false,
-          available_for_proof_of_delivery: false,
-          available_for_instant_waybill_id: true,
-          available_for_insurance: true,
-          company: "jnt",
-          courier_name: "J&T",
-          courier_code: "jnt",
-          courier_service_name: "EZ",
-          courier_service_code: "ez",
-          currency: "IDR",
-          description: "Layanan reguler",
-          duration: "2 - 3 days",
-          shipment_duration_range: "2 - 3",
-          shipment_duration_unit: "days",
-          service_type: "standard",
-          shipping_type: "parcel",
-          price: 8000,
-          tax_lines: [],
-          type: "ez",
-        },
-        {
-          available_collection_method: ["pickup"],
-          available_for_cash_on_delivery: true,
-          available_for_proof_of_delivery: false,
-          available_for_instant_waybill_id: true,
-          available_for_insurance: true,
-          company: "sap",
-          courier_name: "SAP",
-          courier_code: "sap",
-          courier_service_name: "Regular Service",
-          courier_service_code: "reg",
-          currency: "IDR",
-          description: "Regular Service",
-          duration: "1 - 3 days",
-          shipment_duration_range: "1 - 3",
-          shipment_duration_unit: "days",
-          service_type: "standard",
-          shipping_type: "parcel",
-          price: 8000,
-          tax_lines: [],
-          type: "reg",
-        },
-        {
-          available_collection_method: ["pickup"],
-          available_for_cash_on_delivery: true,
-          available_for_proof_of_delivery: false,
-          available_for_instant_waybill_id: true,
-          available_for_insurance: true,
-          company: "sap",
-          courier_name: "SAP",
-          courier_code: "sap",
-          courier_service_name: "One Day Service",
-          courier_service_code: "ods",
-          currency: "IDR",
-          description: "One Day Service",
-          duration: "1 - 2 days",
-          shipment_duration_range: "1 - 2",
-          shipment_duration_unit: "days",
-          service_type: "overnight",
-          shipping_type: "parcel",
-          price: 15000,
-          tax_lines: [],
-          type: "ods",
-        },
-        {
-          available_collection_method: ["pickup"],
-          available_for_cash_on_delivery: true,
-          available_for_proof_of_delivery: false,
-          available_for_instant_waybill_id: true,
-          available_for_insurance: true,
-          company: "sap",
-          courier_name: "SAP",
-          courier_code: "sap",
-          courier_service_name: "Same Day Service",
-          courier_service_code: "sds",
-          currency: "IDR",
-          description: "Same Day Service",
-          duration: "0 - 1 days",
-          shipment_duration_range: "0 - 1",
-          shipment_duration_unit: "days",
-          service_type: "same_day",
-          shipping_type: "parcel",
-          price: 34000,
-          tax_lines: [],
-          type: "sds",
-        },
-        {
-          available_collection_method: ["pickup"],
-          available_for_cash_on_delivery: false,
-          available_for_proof_of_delivery: false,
-          available_for_instant_waybill_id: true,
-          available_for_insurance: true,
-          company: "rpx",
-          courier_name: "RPX",
-          courier_code: "rpx",
-          courier_service_name: "SameDay Package",
-          courier_service_code: "sdp",
-          currency: "IDR",
-          description: "Same Day Package (SDP)",
-          duration: "12 hours",
-          shipment_duration_range: "12",
-          shipment_duration_unit: "hours",
-          service_type: "same_day",
-          shipping_type: "parcel",
-          price: 57500,
-          tax_lines: [],
-          type: "sdp",
-        },
-        {
-          available_collection_method: ["pickup"],
-          available_for_cash_on_delivery: false,
-          available_for_proof_of_delivery: false,
-          available_for_instant_waybill_id: true,
-          available_for_insurance: true,
-          company: "rpx",
-          courier_name: "RPX",
-          courier_code: "rpx",
-          courier_service_name: "Heavy Weight Delivery",
-          courier_service_code: "hwp",
-          currency: "IDR",
-          description: "Heavy Weight Delivery (HWP)",
-          duration: "3 days",
-          shipment_duration_range: "3",
-          shipment_duration_unit: "days",
-          service_type: "cargo",
-          shipping_type: "cargo",
-          price: 80000,
-          tax_lines: [],
-          type: "hwp",
-        },
-        {
-          available_collection_method: ["pickup"],
-          available_for_cash_on_delivery: false,
-          available_for_proof_of_delivery: false,
-          available_for_instant_waybill_id: true,
-          available_for_insurance: true,
-          company: "rpx",
-          courier_name: "RPX",
-          courier_code: "rpx",
-          courier_service_name: "Economy Delivery",
-          courier_service_code: "ecp",
-          currency: "IDR",
-          description: "Economy Delivery (ECP)",
-          duration: "2 days",
-          shipment_duration_range: "2",
-          shipment_duration_unit: "days",
-          service_type: "standard",
-          shipping_type: "parcel",
-          price: 68000,
-          tax_lines: [],
-          type: "ecp",
-        },
-        {
-          available_collection_method: ["pickup"],
-          available_for_cash_on_delivery: false,
-          available_for_proof_of_delivery: false,
-          available_for_instant_waybill_id: true,
-          available_for_insurance: true,
-          company: "rpx",
-          courier_name: "RPX",
-          courier_code: "rpx",
-          courier_service_name: "Next Day Package",
-          courier_service_code: "ndp",
-          currency: "IDR",
-          description: "Next Day Package (NDP)",
-          duration: "1 day",
-          shipment_duration_range: "1",
-          shipment_duration_unit: "day",
-          service_type: "overnight",
-          shipping_type: "parcel",
-          price: 16500,
-          tax_lines: [],
-          type: "ndp",
-        },
-        {
-          available_collection_method: ["pickup"],
-          available_for_cash_on_delivery: false,
-          available_for_proof_of_delivery: false,
-          available_for_instant_waybill_id: true,
-          available_for_insurance: true,
-          company: "rpx",
-          courier_name: "RPX",
-          courier_code: "rpx",
-          courier_service_name: "MidDay Package",
-          courier_service_code: "mdp",
-          currency: "IDR",
-          description: "Mid Day Package (MDP)",
-          duration: "1 day",
-          shipment_duration_range: "1",
-          shipment_duration_unit: "day",
-          service_type: "overnight",
-          shipping_type: "parcel",
-          price: 30000,
-          tax_lines: [],
-          type: "mdp",
-        },
-        {
-          available_collection_method: ["pickup"],
-          available_for_cash_on_delivery: false,
-          available_for_proof_of_delivery: false,
-          available_for_instant_waybill_id: true,
-          available_for_insurance: true,
-          company: "rpx",
-          courier_name: "RPX",
-          courier_code: "rpx",
-          courier_service_name: "Regular Package",
-          courier_service_code: "rgp",
-          currency: "IDR",
-          description: "Regular Package (RGP)",
-          duration: "2 days",
-          shipment_duration_range: "2",
-          shipment_duration_unit: "days",
-          service_type: "standard",
-          shipping_type: "parcel",
-          price: 10000,
-          tax_lines: [],
-          type: "rgp",
-        },
-        {
-          available_collection_method: ["pickup", "drop_off"],
-          available_for_cash_on_delivery: false,
-          available_for_proof_of_delivery: false,
-          available_for_instant_waybill_id: true,
-          available_for_insurance: true,
-          company: "pos",
-          courier_name: "Pos Indonesia",
-          courier_code: "pos",
-          courier_service_name: "Pos Reguler",
-          courier_service_code: "reg",
-          currency: "IDR",
-          description: "Layanan Reguler",
-          duration: "2 days",
-          shipment_duration_range: "2",
-          shipment_duration_unit: "days",
-          service_type: "standard",
-          shipping_type: "parcel",
-          price: 8000,
-          tax_lines: [],
-          type: "reg",
-        },
-      ],
-    };
-
-    type Courier = {
-      name: string;
-      duration: string;
-      price: number;
-    };
-
-    type PricingItem = {
-      courier_name: string;
-      duration: string; // e.g. "1 - 3 hours", "0 - 1 days"
-      price: number;
-    };
-
-    /**
-     * Converts a duration string like "1 - 3 days" or "1 - 3 hours"
-     * to average hours (e.g. 2 days => 48 hours, 2 hours => 2 hours).
-     */
-    function getAverageDurationInHours(duration: string): number {
-      const matches = duration.match(/\d+/g);
-      const unit = duration.toLowerCase().includes("hour") ? "hour" : "day";
-
-      if (!matches || matches.length === 0) return 9999;
-
-      const min = parseInt(matches[0]);
-      const max = parseInt(matches[1] || matches[0]);
-      const avg = (min + max) / 2;
-
-      return unit === "day" ? avg * 24 : avg;
-    }
-
-    function getFastestAndCheapest(pricing: PricingItem[]): {
-      fastest: Courier;
-      cheapest: Courier;
-    } {
-      const fastest = pricing.reduce((a, b) =>
-        getAverageDurationInHours(a.duration) <=
-        getAverageDurationInHours(b.duration)
-          ? a
-          : b
-      );
-
-      const cheapest = pricing.reduce((a, b) => (a.price <= b.price ? a : b));
-
-      return {
-        fastest: {
-          name: fastest.courier_name,
-          duration: fastest.duration,
-          price: fastest.price,
-        },
-        cheapest: {
-          name: cheapest.courier_name,
-          duration: cheapest.duration,
-          price: cheapest.price,
-        },
-      };
-    }
-
-    const a = getFastestAndCheapest(data.pricing);
-
-    return successRes(a, "success");
-  } catch (error) {
-    console.log(error);
+    return errorRes("Internal Error", 500);
   }
 }

@@ -9,3 +9,4 @@ export * from "./mutation/use-set-default-address";
 
 export * from "./query/use-get-address";
 export * from "./query/use-get-addresses";
+export * from "./query/use-get-orders";
