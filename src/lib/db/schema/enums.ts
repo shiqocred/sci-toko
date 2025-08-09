@@ -60,3 +60,13 @@ export const paymentStatusEnum = pgEnum("payment_status", [
   "PAID",
   "EXPIRED",
 ]);
+
+export const shippingStatusEnum = pgEnum("shipping_status", [
+  "CONFIRMED",
+  "PICKING_UP",
+  "PICKED",
+  "DROPPING_OFF",
+  "DELIVERED",
+  "CANCELLED",
+  "PENDING",
+]);

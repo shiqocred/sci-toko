@@ -1,12 +1,7 @@
 import { createId } from "@paralleldrive/cuid2";
-import {
-  integer,
-  numeric,
-  pgTable,
-  text,
-  timestamp,
-} from "drizzle-orm/pg-core";
+import { numeric, pgTable, text, timestamp } from "drizzle-orm/pg-core";
 import { orders } from "./orders";
+import { shippingStatusEnum } from "./enums";
 
 export const shippings = pgTable("shippings", {
   id: text("id")
@@ -17,15 +12,23 @@ export const shippings = pgTable("shippings", {
     .notNull()
     .references(() => orders.id, { onDelete: "cascade" }),
 
-  waybillId: text("waybill_id").notNull(), // untuk cek tracking
+  name: text("name").notNull(),
+  phone: text("phone").notNull(),
+  address: text("address").notNull(),
+  address_note: text("address_note").notNull(),
+  latitude: text("latitude").notNull(),
+  longitude: text("longitude").notNull(),
+
+  trackingId: text("tracking_id"),
+
+  waybillId: text("waybill_id"), // untuk cek tracking
+  courierName: text("courier_name").notNull(), // grab, jne, etc
   courierCompany: text("courier_company").notNull(), // grab, jne, etc
+  courierType: text("courier_type").notNull(), // grab, jne, etc
 
-  trackingLink: text("tracking_link"),
-  orderRefId: text("order_ref_id"), // order_id dari Biteship
-
-  shippingCost: numeric("shipping_cost", { precision: 12, scale: 0 }),
-  estimatedDay: integer("estimated_day"),
-  status: text("status").default("WAITING"), // delivered, etc
+  price: numeric("price", { precision: 12, scale: 0 }).notNull(),
+  duration: text("duration").notNull(),
+  status: shippingStatusEnum("status").default("PENDING"), // delivered, etc
 
   createdAt: timestamp("created_at").defaultNow(),
   updatedAt: timestamp("updated_at").defaultNow(),

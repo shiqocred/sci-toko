@@ -12,6 +12,7 @@ import {
   productImages,
   products,
   productVariants,
+  shippings,
 } from "@/lib/db";
 import { xendit } from "@/lib/utils";
 import { createId } from "@paralleldrive/cuid2";
@@ -285,7 +286,7 @@ export async function PUT(req: NextRequest) {
         id: orderId,
         userId,
         productPrice: orderDrafExist.totalPrice,
-        shipingPrice: orderDraftShippingsExist.price,
+        shippingPrice: orderDraftShippingsExist.price,
         totalPrice: totalPrice.toString(),
       });
 
@@ -301,6 +302,20 @@ export async function PUT(req: NextRequest) {
         ),
         tx.insert(invoices).values({
           amount: totalPrice.toString(),
+          orderId,
+        }),
+        tx.insert(shippings).values({
+          name: addressSelected.name,
+          phone: addressSelected.phoneNumber,
+          address: `${addressSelected.address}, ${addressSelected.district}, ${addressSelected.city}, ${addressSelected.province}, Indonesia ${addressSelected.postalCode}`,
+          address_note: addressSelected.detail,
+          latitude: addressSelected.latitude,
+          longitude: addressSelected.longitude,
+          courierCompany: orderDraftShippingsExist.company,
+          courierType: orderDraftShippingsExist.type,
+          duration: orderDraftShippingsExist.duration,
+          price: orderDraftShippingsExist.price,
+          courierName: orderDraftShippingsExist.label,
           orderId,
         }),
       ]);

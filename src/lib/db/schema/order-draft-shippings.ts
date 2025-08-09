@@ -32,6 +32,7 @@ export const orderDraftShippings = pgTable(
     price: numeric("price", { precision: 12, scale: 0 }).notNull(),
 
     name: orderDraftShippingsEnum("name").notNull(),
+    label: text("label").notNull(),
     company: text("company").notNull(),
     type: text("type").notNull(),
     duration: text("duration").notNull(),

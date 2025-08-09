@@ -154,6 +154,7 @@ async function insertShippingChoice({
   const [result] = await db
     .insert(orderDraftShippings)
     .values({
+      label: courier.name,
       addressId,
       company: courier.company,
       duration: courier.duration,
@@ -167,6 +168,7 @@ async function insertShippingChoice({
     .returning({
       id: orderDraftShippings.id,
       name: orderDraftShippings.name,
+      label: orderDraftShippings.label,
       company: orderDraftShippings.company,
       price: orderDraftShippings.price,
       duration: orderDraftShippings.duration,

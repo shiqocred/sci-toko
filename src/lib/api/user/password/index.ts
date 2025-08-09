@@ -65,7 +65,7 @@ export const updatePassword = async (req: NextRequest, userId: string) => {
       errors[path] = err.message;
     });
 
-    return errorRes("Validation failed", 422, errors);
+    throw errorRes("Validation failed", 422, errors);
   }
 
   const { old_password, new_password, confirm_new_password } = result.data;
@@ -77,12 +77,13 @@ export const updatePassword = async (req: NextRequest, userId: string) => {
     where: (u, { eq }) => eq(u.id, userId),
   });
 
-  if (!userExist) return errorRes("Unauthorized", 401);
-  if (!userExist.password) return errorRes("Unauthorized", 401);
+  if (!userExist) throw errorRes("Unauthorized", 401);
+  if (!userExist.password) throw errorRes("Unauthorized", 401);
 
   const isPasswordMatch = await verify(userExist.password, old_password);
 
-  if (!isPasswordMatch) return errorRes("Unauthorized", 401);
+  if (!isPasswordMatch)
+    throw errorRes("Unauthorized Old Password not match", 401);
 
   const { failed, passwordError } = await validationPassword(new_password);
 
@@ -92,16 +93,19 @@ export const updatePassword = async (req: NextRequest, userId: string) => {
   );
 
   if (failed.length > 0 || passwordMatch)
-    return errorRes("Validation failed", 422, {
+    throw errorRes("Validation failed", 422, {
       ...passwordError,
       ...passwordMatch,
     });
 
-  await db
+  const a = await db
     .update(users)
     .set({
       password: await hash(new_password),
       updatedAt: sql`NOW()`,
     })
-    .where(eq(users.id, userId));
+    .where(eq(users.id, userId))
+    .returning();
+
+  console.log(a);
 };

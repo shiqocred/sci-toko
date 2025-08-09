@@ -22,7 +22,7 @@ export const orders = pgTable("orders", {
   status: orderStatusEnum("status").notNull().default("WAITING_PAYMENT"),
 
   productPrice: numeric("product_price", { precision: 12, scale: 0 }).notNull(),
-  shipingPrice: numeric("shipping_price", {
+  shippingPrice: numeric("shipping_price", {
     precision: 12,
     scale: 0,
   }).notNull(),
