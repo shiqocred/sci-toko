@@ -1,3 +1,4 @@
+import { r2Public } from "@/config";
 import { updateUser } from "@/lib/api";
 import { errorRes, isAuth, successRes } from "@/lib/auth";
 import { db } from "@/lib/db";
@@ -13,7 +14,7 @@ export async function GET(req: NextRequest) {
 
     const { sub: userId } = auth;
 
-    const response = await db.query.users.findFirst({
+    const userRes = await db.query.users.findFirst({
       columns: {
         id: true,
         email: true,
@@ -25,6 +26,13 @@ export async function GET(req: NextRequest) {
       },
       where: (u, { eq }) => eq(u.id, userId),
     });
+
+    if (!userRes) throw errorRes("User not found", 404);
+
+    const response = {
+      ...userRes,
+      image: userRes.image ? `${r2Public}/${userRes.image}` : null,
+    };
 
     return successRes(response, "Retrieve detail user");
   } catch (error) {

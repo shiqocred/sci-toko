@@ -277,7 +277,7 @@ export async function PUT(req: NextRequest) {
           "https://2c43c5d5e15b.ngrok-free.app/api/checkout/success",
         failureRedirectUrl:
           "https://2c43c5d5e15b.ngrok-free.app/api/checkout/failed",
-        // invoiceDuration: 60,
+        invoiceDuration: 10800,
       },
     });
 
