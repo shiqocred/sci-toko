@@ -2,7 +2,7 @@ import { r2Public } from "@/config";
 import { errorRes } from "@/lib/auth";
 import { convertToWebP } from "@/lib/convert-image";
 import { db, users } from "@/lib/db";
-import { uploadToR2 } from "@/lib/providers";
+import { deleteR2, uploadToR2 } from "@/lib/providers";
 import { eq, sql } from "drizzle-orm";
 import { NextRequest } from "next/server";
 import { z } from "zod/v4";
@@ -53,13 +53,17 @@ export const updateUser = async (req: NextRequest, userId: string) => {
 
   if (!userExist) throw errorRes("Unauthorized", 401);
 
-  let imageKey: string;
+  let imageKey: string = "";
 
   if (image) {
     // upload KTP
     const webpBufferKtp = await convertToWebP(image);
 
-    imageKey = `images/user/${userId}.webp`;
+    imageKey = `images/user/${userId}-${new Date().getTime()}.webp`;
+
+    if (userExist.image) {
+      await deleteR2(imageKey);
+    }
 
     const r2Upload = await uploadToR2({
       buffer: webpBufferKtp,
@@ -73,15 +77,23 @@ export const updateUser = async (req: NextRequest, userId: string) => {
     ? imageOld.replace(`${r2Public}/`, "")
     : "";
 
-  const imageSanitize = () => {
+  const imageSanitize = async () => {
     if (imageKey) {
       return imageKey;
-    } else if (imageOldFormatted === userExist.image) {
-      return userExist.image;
-    } else {
+    } else if (!imageKey && !userExist.image) {
       return null;
+    } else {
+      return userExist.image;
     }
   };
+
+  console.log(
+    await imageSanitize(),
+    imageKey,
+    imageOldFormatted === userExist.image,
+    imageOldFormatted,
+    userExist.image
+  );
   const [user] = await db
     .update(users)
     .set({
@@ -89,7 +101,7 @@ export const updateUser = async (req: NextRequest, userId: string) => {
       email,
       emailVerified: userExist.email !== email ? null : userExist.emailVerified,
       phoneNumber: phone,
-      image: imageSanitize(),
+      image: await imageSanitize(),
       updatedAt: sql`NOW()`,
     })
     .where(eq(users.id, userId))

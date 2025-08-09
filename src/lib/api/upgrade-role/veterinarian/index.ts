@@ -51,7 +51,7 @@ export const apiUpgradeToVeterinarian = async (
   // upload KTP
   const webpBufferKtp = await convertToWebP(ktp);
 
-  const keyKtp = `${baseKey}/ktp.webp`;
+  const keyKtp = `${baseKey}/ktp-${new Date().getTime()}.webp`;
 
   const r2UpKtp = await uploadToR2({ buffer: webpBufferKtp, key: keyKtp });
 
@@ -60,7 +60,7 @@ export const apiUpgradeToVeterinarian = async (
   // upload KTP
   const webpBufferKta = await convertToWebP(kta);
 
-  const keyKta = `${baseKey}/kta.webp`;
+  const keyKta = `${baseKey}/kta-${new Date().getTime()}.webp`;
 
   const r2UpKta = await uploadToR2({ buffer: webpBufferKta, key: keyKta });
 

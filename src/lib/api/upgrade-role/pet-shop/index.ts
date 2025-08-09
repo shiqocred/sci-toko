@@ -45,7 +45,7 @@ export const apiUpgradeToPetShop = async (req: NextRequest, userId: string) => {
   // upload ktp
   const webpBufferKTP = await convertToWebP(ktp);
 
-  const keyKTP = `${baseKey}/ktp.webp`;
+  const keyKTP = `${baseKey}/ktp-${new Date().getTime()}.webp`;
 
   const r2UpKTP = await uploadToR2({ buffer: webpBufferKTP, key: keyKTP });
 
@@ -54,7 +54,7 @@ export const apiUpgradeToPetShop = async (req: NextRequest, userId: string) => {
   // upload storefront
   const webpBufferStorefront = await convertToWebP(storefront);
 
-  const keyStorefront = `${baseKey}/storefront.webp`;
+  const keyStorefront = `${baseKey}/storefront-${new Date().getTime()}.webp`;
 
   const r2UpStorefront = await uploadToR2({
     buffer: webpBufferStorefront,
