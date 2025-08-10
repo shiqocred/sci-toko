@@ -200,6 +200,7 @@ export const addToCart = async (req: NextRequest, userId: string) => {
   });
 
   if (variantExist) {
+    console.log("aaa");
     await db
       .update(carts)
       .set({
@@ -209,6 +210,7 @@ export const addToCart = async (req: NextRequest, userId: string) => {
       })
       .where(eq(carts.id, variantExist.id));
   } else {
+    console.log("aaaa");
     await db.insert(carts).values({
       userId,
       quantity,
@@ -238,6 +240,7 @@ export const checkedCart = async (req: NextRequest, userId: string) => {
   await db
     .update(carts)
     .set({ checked })
-    .where(and(eq(carts.userId, userId), inArray(carts.variantId, variant_ids)))
-    .returning();
+    .where(
+      and(eq(carts.userId, userId), inArray(carts.variantId, variant_ids))
+    );
 };
