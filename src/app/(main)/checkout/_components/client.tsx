@@ -1,8 +1,13 @@
 // app/checkout/Client.tsx
 "use client";
 
-import { useMemo, useState } from "react";
-import { useGetAddresses, useGetCheckout, useGetOngkir } from "../_api";
+import { useEffect, useMemo, useState } from "react";
+import {
+  useCreateOrder,
+  useGetAddresses,
+  useGetCheckout,
+  useGetOngkir,
+} from "../_api";
 import { Address, CheckoutData } from "./types";
 import { AddressSection } from "./_sections/address-section";
 import { OrderListSection } from "./_sections/order-list-section";
@@ -12,19 +17,42 @@ import { CheckoutButton } from "./_sections/checkout-button";
 import { Button } from "@/components/ui/button";
 import { ArrowLeft } from "lucide-react";
 import Link from "next/link";
+import { useConfirm } from "@/hooks/use-confirm";
+import { useRouter } from "next/navigation";
+import { toast } from "sonner";
+import { parseAsString, useQueryState } from "nuqs";
 
 export default function Client() {
   const [shipping, setShipping] = useState("");
   const [open, setOpen] = useState(false);
+  const router = useRouter();
+  const [checkouted, setCheckouted] = useQueryState(
+    "checkout",
+    parseAsString.withDefault("")
+  );
+
+  const [OrderDialog, confirmOrder] = useConfirm(
+    "Confirm Your Order",
+    "Are you sure you want to proceed with this order? Please review your cart and shipping details",
+    "destructive"
+  );
+
+  const { mutate: createOrder, isPending: isCreating } = useCreateOrder();
 
   const { data: addressesRes, isPending: isPendingAddresses } =
     useGetAddresses();
-  const { data: checkoutRes, isPending: isPendingCheckout } = useGetCheckout();
+  const {
+    data: checkoutRes,
+    isPending: isPendingCheckout,
+    isError,
+    isSuccess,
+    isRefetching,
+  } = useGetCheckout();
   const {
     data: ongkir,
     isPending: isPendingOngkir,
     isRefetching: isRefetchingOngkir,
-  } = useGetOngkir();
+  } = useGetOngkir({ isSuccess, isPending: isPendingCheckout, isRefetching });
 
   const addresses = useMemo(
     () => addressesRes?.data as Address[],
@@ -49,8 +77,27 @@ export default function Client() {
 
   const isLoading = isPendingAddresses || isPendingCheckout || isPendingOngkir;
 
+  const handleOrder = async () => {
+    const ok = await confirmOrder();
+    if (!ok) return;
+    createOrder({}, { onSuccess: () => setCheckouted("order") });
+  };
+
+  useEffect(() => {
+    if (
+      isError &&
+      checkouted !== "order" &&
+      !isCreating &&
+      !isPendingCheckout
+    ) {
+      toast.error("Select Product to checkout first");
+      router.push("/cart");
+    }
+  }, [isError, isCreating, isPendingCheckout, checkouted]);
+
   return (
     <div className="bg-sky-50 h-full">
+      <OrderDialog />
       <div className="max-w-[1240px] mx-auto w-full flex flex-col gap-7 px-4 lg:px-8 py-14">
         <div className="flex items-center gap-2">
           <Button
@@ -94,7 +141,7 @@ export default function Client() {
             />
             <CheckoutButton
               disabled={!shipping || !checkout?.addressId || isLoading}
-              onClick={() => console.log("Checkout!")}
+              onClick={handleOrder}
             />
           </div>
         </div>

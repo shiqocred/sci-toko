@@ -1,4 +1,4 @@
-import { r2Public } from "@/config";
+import { baseUrl, r2Public } from "@/config";
 import { auth, errorRes, successRes } from "@/lib/auth";
 import {
   carts,
@@ -17,7 +17,6 @@ import {
 import { xendit } from "@/lib/utils";
 import { createId } from "@paralleldrive/cuid2";
 import { and, eq, inArray, sql } from "drizzle-orm";
-import { NextRequest } from "next/server";
 
 export async function GET() {
   try {
@@ -138,6 +137,7 @@ export async function POST() {
     const userId = isAuth.user.id;
     const userRole = isAuth.user.role ?? "BASIC";
 
+    // Update semua orderDraft aktif jadi ABANDONED
     await db
       .update(orderDraft)
       .set({ status: "ABANDONED" })
@@ -145,70 +145,85 @@ export async function POST() {
         and(eq(orderDraft.userId, userId), eq(orderDraft.status, "ACTIVE"))
       );
 
+    // Hapus orderDraftShippings user
     await db
       .delete(orderDraftShippings)
       .where(eq(orderDraftShippings.userId, userId));
 
-    const addressDefault = await db.query.addresses.findFirst({
-      where: (a, { eq, and }) =>
-        and(eq(a.userId, userId), eq(a.isDefault, true)),
-    });
+    // Ambil alamat default user dan variant sekaligus (bisa paralel)
+    const [addressDefault, variantSelected] = await Promise.all([
+      db.query.addresses.findFirst({
+        where: (a, { eq, and }) =>
+          and(eq(a.userId, userId), eq(a.isDefault, true)),
+      }),
+      db
+        .select({
+          variantId: carts.variantId,
+          qty: carts.quantity,
+          basicPrice: productVariants.basicPrice,
+          petShopPrice: productVariants.petShopPrice,
+          doctorPrice: productVariants.doctorPrice,
+          weight: productVariants.weight,
+          stock: productVariants.stock,
+        })
+        .from(carts)
+        .leftJoin(productVariants, eq(carts.variantId, productVariants.id))
+        .where(and(eq(carts.userId, userId), eq(carts.checked, true))),
+    ]);
 
-    const variantSelected = await db
-      .select({
-        variantId: carts.variantId,
-        qty: carts.quantity,
-        basicPrice: productVariants.basicPrice,
-        petShopPrice: productVariants.petShopPrice,
-        doctorPrice: productVariants.doctorPrice,
-        weight: productVariants.weight,
-      })
-      .from(carts)
-      .leftJoin(productVariants, eq(carts.variantId, productVariants.id))
-      .where(and(eq(carts.userId, userId), eq(carts.checked, true)));
+    // Filter variant dengan stok > 0 dan qty <= stok
+    const variantWithSufficientStock = variantSelected.filter(
+      ({ stock, qty }) => {
+        const s = Number(stock ?? 0);
+        const q = Number(qty ?? 0);
+        return s > 0 && q <= s;
+      }
+    );
 
-    const formatPrice = (item: {
-      variantId: string;
-      qty: string;
-      basicPrice: string | null;
-      petShopPrice: string | null;
-      doctorPrice: string | null;
-      weight: string | null;
-    }) => {
+    if (variantWithSufficientStock.length === 0) {
+      return errorRes("No items with sufficient stock to create checkout", 400);
+    }
+
+    // Function format price sekali saja
+    const getPrice = (item: (typeof variantWithSufficientStock)[0]) => {
       if (userRole === "PETSHOP") return Number(item.petShopPrice);
       if (userRole === "VETERINARIAN") return Number(item.doctorPrice);
       return Number(item.basicPrice);
     };
 
-    const totalWeight = variantSelected.reduce(
-      (arr, curr) => arr + Number(curr.weight ?? "0") * Number(curr.qty ?? "0"),
-      0
-    );
-
-    const totalPrice = variantSelected.reduce(
-      (acc, curr) => acc + formatPrice(curr) * Number(curr.qty),
-      0
-    );
+    // Hitung total berat dan harga secara reduce 1x saja
+    let totalWeight = 0;
+    let totalPrice = 0;
+    for (const item of variantWithSufficientStock) {
+      const qty = Number(item.qty ?? 0);
+      totalWeight += Number(item.weight ?? 0) * qty;
+      totalPrice += getPrice(item) * qty;
+    }
 
     const orderDraftId = createId();
 
+    // Insert orderDraft baru
     await db.insert(orderDraft).values({
       id: orderDraftId,
       userId,
       totalPrice: totalPrice.toString(),
       addressId: addressDefault?.id,
       totalWeight: totalWeight.toString(),
+      status: "ACTIVE",
     });
 
+    // Insert orderDraftItems hanya untuk variant yang stok cukup
     await db.insert(orderDraftItems).values(
-      variantSelected.map((item) => ({
+      variantWithSufficientStock.map((item) => ({
         orderDraftId,
         variantId: item.variantId,
-        price: formatPrice(item).toString(),
+        price: getPrice(item).toString(),
         quantity: item.qty,
         weight: item.weight ?? "0",
       }))
     );
+
+    // **Catatan: Tidak ada penghapusan cart di sini lagi**
 
     return successRes(null, "Checkout created");
   } catch (error) {
@@ -217,95 +232,113 @@ export async function POST() {
   }
 }
 
-export async function PUT(req: NextRequest) {
+export async function PUT() {
   try {
     const { Invoice } = xendit;
-    const userId = req.nextUrl.searchParams.get("userId") ?? "";
+    const isAuth = await auth();
+    if (!isAuth) return errorRes("Unauthorized", 401);
 
-    // 🔹 Cek order draft aktif
-    const orderDrafExist = await db.query.orderDraft.findFirst({
+    const userId = isAuth.user.id;
+
+    // Ambil orderDraft aktif sekaligus detail address dan shipping supaya 1x query
+    const orderDraftExist = await db.query.orderDraft.findFirst({
       where: (od, { eq, and }) =>
         and(eq(od.userId, userId), eq(od.status, "ACTIVE")),
+      columns: { id: true, addressId: true, totalPrice: true },
     });
-    if (!orderDrafExist)
-      return errorRes("Failed to checkout, Order draft not found.", 400);
 
-    const addressId = orderDrafExist.addressId;
+    if (!orderDraftExist)
+      return errorRes("Failed to checkout, Order draft not found.", 400);
+    const addressId = orderDraftExist.addressId;
     if (!addressId)
       return errorRes("Failed to checkout, no address selected", 400);
 
-    const storeDetail = await db.query.storeDetail.findFirst();
+    // Parallel fetch detail store, address, shipping, draft items
+    const [
+      storeDetail,
+      addressSelected,
+      orderDraftShippingsExist,
+      orderDraftItemsExist,
+    ] = await Promise.all([
+      db.query.storeDetail.findFirst(),
+      db.query.addresses.findFirst({
+        where: (a, { eq, and }) =>
+          and(eq(a.id, addressId), eq(a.userId, userId)),
+      }),
+      db.query.orderDraftShippings.findFirst({
+        where: (ods, { eq, and }) =>
+          and(eq(ods.orderDraftId, orderDraftExist.id), eq(ods.userId, userId)),
+      }),
+      db.query.orderDraftItems.findMany({
+        where: (odi, { eq }) => eq(odi.orderDraftId, orderDraftExist.id),
+      }),
+    ]);
+
     if (!storeDetail)
       return errorRes("Store detail not found, please contact sales", 400);
-
-    const addressSelected = await db.query.addresses.findFirst({
-      where: (a, { eq, and }) => and(eq(a.id, addressId), eq(a.userId, userId)),
-    });
     if (!addressSelected)
       return errorRes("Failed to checkout, no selected address found", 400);
-
-    const orderDraftShippingsExist =
-      await db.query.orderDraftShippings.findFirst({
-        where: (ods, { eq, and }) =>
-          and(eq(ods.orderDraftId, orderDrafExist.id), eq(ods.userId, userId)),
-      });
     if (!orderDraftShippingsExist)
       return errorRes("Failed to checkout, no selected shipping found", 400);
-
-    const orderDraftItemsExist = await db.query.orderDraftItems.findMany({
-      where: (odi, { eq }) => eq(odi.orderDraftId, orderDrafExist.id),
-    });
     if (!orderDraftItemsExist.length)
       return errorRes("Failed to checkout, no items in draft", 400);
 
-    // ==========================
-    // 1️⃣ CEK STOK SEBELUM TRANSAKSI
-    // ==========================
+    // Ambil stok varian sekaligus
     const variantIds = orderDraftItemsExist.map((item) => item.variantId);
     const variantsStock = await db.query.productVariants.findMany({
       where: (pv, { inArray }) => inArray(pv.id, variantIds),
       columns: { id: true, stock: true },
     });
 
-    const insufficientStock = orderDraftItemsExist.filter((item) => {
-      const variant = variantsStock.find((v) => v.id === item.variantId);
-      return Number(item.quantity) > Number(variant?.stock ?? 0);
-    });
+    // Filter item dengan stok cukup (stok > 0 dan qty <= stok)
+    const insufficientStock = new Set(
+      orderDraftItemsExist
+        .filter((item) => {
+          const variant = variantsStock.find((v) => v.id === item.variantId);
+          return (
+            variant &&
+            Number(variant.stock) > 0 &&
+            Number(item.quantity) > Number(variant.stock)
+          );
+        })
+        .map((item) => item.variantId)
+    );
 
-    if (insufficientStock.length > 0) {
-      return errorRes(`Some products have insufficient stock`, 400);
+    const itemsToCheckout = orderDraftItemsExist.filter(
+      (item) => !insufficientStock.has(item.variantId)
+    );
+
+    if (itemsToCheckout.length === 0) {
+      return errorRes("No items with sufficient stock to checkout", 400);
     }
 
-    // ==========================
-    // 2️⃣ BUAT INVOICE
-    // ==========================
-    const orderId = createId();
+    const totalProductPrice = itemsToCheckout.reduce(
+      (sum, item) => sum + Number(item.price) * Number(item.quantity),
+      0
+    );
+
     const totalPrice =
-      Number(orderDrafExist.totalPrice) +
-      Number(orderDraftShippingsExist.price);
+      totalProductPrice + Number(orderDraftShippingsExist.price);
+
+    const orderId = createId();
 
     const invoice = await Invoice.createInvoice({
       data: {
         amount: totalPrice,
         currency: "IDR",
         externalId: orderId,
-        successRedirectUrl:
-          "https://2c43c5d5e15b.ngrok-free.app/api/checkout/success",
-        failureRedirectUrl:
-          "https://2c43c5d5e15b.ngrok-free.app/api/checkout/failed",
+        successRedirectUrl: `${baseUrl}/account?order=processed`,
+        failureRedirectUrl: `${baseUrl}/account`,
         invoiceDuration: 10800,
       },
     });
 
-    // ==========================
-    // 3️⃣ TRANSAKSI + LOCK STOK
-    // ==========================
     await db.transaction(async (tx) => {
-      // Lock semua varian sebelum update stok
+      // Lock variant yang dicekout
       await Promise.all(
-        variantIds.map((id) =>
+        itemsToCheckout.map((item) =>
           tx.execute(
-            sql`SELECT * FROM product_variants WHERE id = ${id} FOR UPDATE`
+            sql`SELECT * FROM product_variants WHERE id = ${item.variantId} FOR UPDATE`
           )
         )
       );
@@ -314,14 +347,20 @@ export async function PUT(req: NextRequest) {
       await tx.insert(orders).values({
         id: orderId,
         userId,
-        productPrice: orderDrafExist.totalPrice,
+        productPrice: totalProductPrice.toString(),
         shippingPrice: orderDraftShippingsExist.price,
         totalPrice: totalPrice.toString(),
       });
 
-      // Insert item pesanan
+      // Update orderDraft jadi CHECKOUTED
+      await tx
+        .update(orderDraft)
+        .set({ status: "CHECKOUTED" })
+        .where(eq(orderDraft.id, orderDraftExist.id));
+
+      // Insert orderItems hanya yang cukup stok
       await tx.insert(orderItems).values(
-        orderDraftItemsExist.map((item) => ({
+        itemsToCheckout.map((item) => ({
           orderId,
           variantId: item.variantId,
           price: item.price,
@@ -352,9 +391,9 @@ export async function PUT(req: NextRequest) {
         orderId,
       });
 
-      // Update stok
+      // Update stok hanya untuk item yang cukup stok
       await Promise.all(
-        orderDraftItemsExist.map((item) =>
+        itemsToCheckout.map((item) =>
           tx
             .update(productVariants)
             .set({
@@ -363,11 +402,15 @@ export async function PUT(req: NextRequest) {
             .where(eq(productVariants.id, item.variantId))
         )
       );
+
+      // Hapus cart user untuk variant yang sudah dicekout
+      await tx
+        .delete(carts)
+        .where(
+          and(eq(carts.userId, userId), inArray(carts.variantId, variantIds))
+        );
     });
 
-    // ==========================
-    // 4️⃣ RETURN RESPONSE
-    // ==========================
     return successRes(
       {
         orderId,

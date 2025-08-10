@@ -22,10 +22,15 @@ import { useConfirm } from "@/hooks/use-confirm";
 import { CheckedState } from "@radix-ui/react-checkbox";
 import { useDebounce } from "@/hooks/use-debounce";
 import { TooltipText } from "@/providers/tooltip-provider";
+import { parseAsString, useQueryState } from "nuqs";
 
 const Client = () => {
   const [dialog, setDialog] = useState("");
   const [localQty, setLocalQty] = useState<Record<string, number>>({});
+  const [carted, setCarted] = useQueryState(
+    "carted",
+    parseAsString.withDefault("")
+  );
   const [DeleteDialog, confirmDelete] = useConfirm(
     "Delete Product From Cart?",
     "This action cannot be undone",
@@ -75,7 +80,7 @@ const Client = () => {
           ?.quantity ??
         0;
 
-      if (qty !== originalQty && qty > 0) {
+      if (qty !== originalQty && qty > 0 && carted !== "checkouted") {
         updateQty({
           params: { variantId },
           body: { qty: String(qty) },
@@ -111,7 +116,7 @@ const Client = () => {
     }));
   };
 
-  const handleQtyBlur = (variantId: string, originalQty: number) => {
+  const handleQtyBlur = (variantId: string) => {
     const newQty = localQty[variantId];
     if (newQty <= 0) {
       setDialog(variantId);
@@ -131,7 +136,7 @@ const Client = () => {
   };
 
   const handleCheckout = () => {
-    checkout({});
+    checkout({}, { onSuccess: () => setCarted("checkouted") });
   };
 
   return (
@@ -240,10 +245,7 @@ const Client = () => {
                               )
                             }
                             onBlur={() =>
-                              handleQtyBlur(
-                                cart.default_variant?.id ?? "0",
-                                cart.default_variant?.quantity ?? 0
-                              )
+                              handleQtyBlur(cart.default_variant?.id ?? "0")
                             }
                           />
                           <TooltipText
@@ -327,9 +329,7 @@ const Client = () => {
                                 onChange={(e) =>
                                   handleQtyChange(item.id, e.target.value)
                                 }
-                                onBlur={() =>
-                                  handleQtyBlur(item.id, item.quantity)
-                                }
+                                onBlur={() => handleQtyBlur(item.id)}
                               />
                               <TooltipText
                                 value={"Maximum available stock"}
