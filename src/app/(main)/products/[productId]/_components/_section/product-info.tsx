@@ -46,7 +46,15 @@ export const ProductInfo = ({ product }: ProductInfoProps) => {
   const handleAddToCart = (e: MouseEvent) => {
     e.preventDefault();
     if (status === "authenticated") {
-      addToCart({ body: input }, { onSuccess: () => setDialog(true) });
+      addToCart(
+        { body: input },
+        {
+          onSuccess: () => {
+            setDialog(true);
+            setInput({ variant_id: "", quantity: "1" });
+          },
+        }
+      );
     } else {
       router.push("/sign-in");
     }
@@ -254,27 +262,6 @@ export const ProductInfo = ({ product }: ProductInfoProps) => {
           {isAddingToCart && <Loader2 className="animate-spin" />}
           {status === "authenticated" ? "Add to Cart" : "Sign in"}
         </Button>
-      </div>
-      <Separator className="bg-gray-500" />
-      <div className="flex flex-col gap-2">
-        <div className="flex items-center gap-2 font-bold">
-          <Truck className="size-5" />
-          <p>Shipping Info</p>
-        </div>
-        <div className="flex flex-col pl-7 text-sm gap-1 text-gray-500">
-          <div className="flex items-center gap-1">
-            <p>Sent from:</p>
-            <p className="font-semibold">SCI Main Warehouse, Cakung</p>
-          </div>
-          <div className="flex items-center gap-1">
-            <p>Regular Shipping:</p>
-            <p className="font-semibold">Start from Rp20.000</p>
-          </div>
-          <div className="flex items-center gap-1">
-            <p>Estimated Shipping Process:</p>
-            <p className="font-semibold">2-3 Days</p>
-          </div>
-        </div>
       </div>
     </div>
   );

@@ -17,6 +17,7 @@ export async function POST(req: NextRequest) {
       .select({
         id: invoices.id,
         orderId: invoices.orderId,
+        status: invoices.status,
         email: users.email,
         name: users.name,
       })
@@ -27,8 +28,10 @@ export async function POST(req: NextRequest) {
       .limit(1);
 
     if (!externalIdExist) return errorRes("Payment id not found", 400);
-
-    console.log(externalIdExist, body, status === "EXPIRED", status);
+    if (externalIdExist.status === "CANCELLED")
+      return successRes(null, "Admin has been cancelled payment");
+    if (externalIdExist.status === "PAID")
+      return successRes(null, "Admin has been paid payment");
 
     if (status === "EXPIRED") {
       await Promise.all([

@@ -16,7 +16,7 @@ import {
 } from "@/lib/db";
 import { xendit } from "@/lib/utils";
 import { createId } from "@paralleldrive/cuid2";
-import { and, eq, inArray } from "drizzle-orm";
+import { and, eq, inArray, sql } from "drizzle-orm";
 import { NextRequest } from "next/server";
 
 export async function GET() {
@@ -220,50 +220,66 @@ export async function POST() {
 export async function PUT(req: NextRequest) {
   try {
     const { Invoice } = xendit;
-    // const isAuth = await auth();
-    // if (!isAuth) return errorRes("Unauthorized", 401);
-
-    // const userId = isAuth.user.id;
-
     const userId = req.nextUrl.searchParams.get("userId") ?? "";
 
+    // 🔹 Cek order draft aktif
     const orderDrafExist = await db.query.orderDraft.findFirst({
       where: (od, { eq, and }) =>
         and(eq(od.userId, userId), eq(od.status, "ACTIVE")),
     });
-
     if (!orderDrafExist)
-      return errorRes("Failed to checkout, Order draf not found.", 400);
+      return errorRes("Failed to checkout, Order draft not found.", 400);
 
     const addressId = orderDrafExist.addressId;
-
     if (!addressId)
       return errorRes("Failed to checkout, no address selected", 400);
 
     const storeDetail = await db.query.storeDetail.findFirst();
+    if (!storeDetail)
+      return errorRes("Store detail not found, please contact sales", 400);
 
     const addressSelected = await db.query.addresses.findFirst({
       where: (a, { eq, and }) => and(eq(a.id, addressId), eq(a.userId, userId)),
     });
+    if (!addressSelected)
+      return errorRes("Failed to checkout, no selected address found", 400);
+
     const orderDraftShippingsExist =
       await db.query.orderDraftShippings.findFirst({
         where: (ods, { eq, and }) =>
           and(eq(ods.orderDraftId, orderDrafExist.id), eq(ods.userId, userId)),
       });
+    if (!orderDraftShippingsExist)
+      return errorRes("Failed to checkout, no selected shipping found", 400);
+
     const orderDraftItemsExist = await db.query.orderDraftItems.findMany({
       where: (odi, { eq }) => eq(odi.orderDraftId, orderDrafExist.id),
     });
+    if (!orderDraftItemsExist.length)
+      return errorRes("Failed to checkout, no items in draft", 400);
 
-    if (!storeDetail)
-      return errorRes("Store detail not found, please contact sales", 400);
+    // ==========================
+    // 1️⃣ CEK STOK SEBELUM TRANSAKSI
+    // ==========================
+    const variantIds = orderDraftItemsExist.map((item) => item.variantId);
+    const variantsStock = await db.query.productVariants.findMany({
+      where: (pv, { inArray }) => inArray(pv.id, variantIds),
+      columns: { id: true, stock: true },
+    });
 
-    if (!addressSelected)
-      return errorRes("Failed to checkout, no selected address found", 400);
-    if (!orderDraftShippingsExist)
-      return errorRes("Failed to checkout, no selected address found", 400);
+    const insufficientStock = orderDraftItemsExist.filter((item) => {
+      const variant = variantsStock.find((v) => v.id === item.variantId);
+      return Number(item.quantity) > Number(variant?.stock ?? 0);
+    });
 
+    if (insufficientStock.length > 0) {
+      return errorRes(`Some products have insufficient stock`, 400);
+    }
+
+    // ==========================
+    // 2️⃣ BUAT INVOICE
+    // ==========================
     const orderId = createId();
-
     const totalPrice =
       Number(orderDrafExist.totalPrice) +
       Number(orderDraftShippingsExist.price);
@@ -281,7 +297,20 @@ export async function PUT(req: NextRequest) {
       },
     });
 
+    // ==========================
+    // 3️⃣ TRANSAKSI + LOCK STOK
+    // ==========================
     await db.transaction(async (tx) => {
+      // Lock semua varian sebelum update stok
+      await Promise.all(
+        variantIds.map((id) =>
+          tx.execute(
+            sql`SELECT * FROM product_variants WHERE id = ${id} FOR UPDATE`
+          )
+        )
+      );
+
+      // Insert order utama
       await tx.insert(orders).values({
         id: orderId,
         userId,
@@ -290,44 +319,63 @@ export async function PUT(req: NextRequest) {
         totalPrice: totalPrice.toString(),
       });
 
-      await Promise.all([
-        tx.insert(orderItems).values(
-          orderDraftItemsExist.map((item) => ({
-            orderId,
-            variantId: item.variantId,
-            price: item.price,
-            weight: item.weight,
-            quantity: item.quantity,
-          }))
-        ),
-        tx.insert(invoices).values({
-          amount: totalPrice.toString(),
+      // Insert item pesanan
+      await tx.insert(orderItems).values(
+        orderDraftItemsExist.map((item) => ({
           orderId,
-        }),
-        tx.insert(shippings).values({
-          name: addressSelected.name,
-          phone: addressSelected.phoneNumber,
-          address: `${addressSelected.address}, ${addressSelected.district}, ${addressSelected.city}, ${addressSelected.province}, Indonesia ${addressSelected.postalCode}`,
-          address_note: addressSelected.detail,
-          latitude: addressSelected.latitude,
-          longitude: addressSelected.longitude,
-          courierCompany: orderDraftShippingsExist.company,
-          courierType: orderDraftShippingsExist.type,
-          duration: orderDraftShippingsExist.duration,
-          price: orderDraftShippingsExist.price,
-          courierName: orderDraftShippingsExist.label,
-          orderId,
-        }),
-      ]);
+          variantId: item.variantId,
+          price: item.price,
+          weight: item.weight,
+          quantity: item.quantity,
+        }))
+      );
+
+      // Insert invoice
+      await tx.insert(invoices).values({
+        amount: totalPrice.toString(),
+        orderId,
+      });
+
+      // Insert shipping
+      await tx.insert(shippings).values({
+        name: addressSelected.name,
+        phone: addressSelected.phoneNumber,
+        address: `${addressSelected.address}, ${addressSelected.district}, ${addressSelected.city}, ${addressSelected.province}, Indonesia ${addressSelected.postalCode}`,
+        address_note: addressSelected.detail,
+        latitude: addressSelected.latitude,
+        longitude: addressSelected.longitude,
+        courierCompany: orderDraftShippingsExist.company,
+        courierType: orderDraftShippingsExist.type,
+        duration: orderDraftShippingsExist.duration,
+        price: orderDraftShippingsExist.price,
+        courierName: orderDraftShippingsExist.label,
+        orderId,
+      });
+
+      // Update stok
+      await Promise.all(
+        orderDraftItemsExist.map((item) =>
+          tx
+            .update(productVariants)
+            .set({
+              stock: sql`${productVariants.stock}::numeric - ${Number(item.quantity)}`,
+            })
+            .where(eq(productVariants.id, item.variantId))
+        )
+      );
     });
 
-    const response = {
-      orderId,
-      payment_url: invoice.invoiceUrl,
-      payment_status: invoice.status,
-    };
-
-    return successRes(response, "Invoice successfully created");
+    // ==========================
+    // 4️⃣ RETURN RESPONSE
+    // ==========================
+    return successRes(
+      {
+        orderId,
+        payment_url: invoice.invoiceUrl,
+        payment_status: invoice.status,
+      },
+      "Invoice successfully created"
+    );
   } catch (error) {
     console.log(error);
     return errorRes("Internal Error", 500);

@@ -21,7 +21,7 @@ export const cartsList = async (
   userId: string,
   userRole: "VETERINARIAN" | "BASIC" | "PETSHOP" | "ADMIN"
 ) => {
-  // 1. Ambil cart + variant + product sekaligus
+  // 1. Ambil cart + variant + product
   const cartItems = await db
     .select({
       variantId: carts.variantId,
@@ -42,12 +42,11 @@ export const cartsList = async (
     .innerJoin(products, eq(productVariants.productId, products.id))
     .where(eq(carts.userId, userId));
 
-  if (cartItems.length === 0) return successRes({ products: [] });
+  if (cartItems.length === 0)
+    return successRes({ in_stock: [], out_of_stock: [] });
 
-  // 2. Ekstrak productIds untuk ambil gambar
+  // 2. Ambil gambar
   const productIds = [...new Set(cartItems.map((c) => c.productId))];
-
-  // 3. Ambil 1 gambar pertama per produk (menggunakan subquery)
   const imageSubquery = db
     .select({
       productId: productImages.productId,
@@ -58,7 +57,6 @@ export const cartsList = async (
     .groupBy(productImages.productId)
     .as("image_subquery");
 
-  // Join dengan tabel asli untuk ambil url
   const firstImagesResult = await db
     .select({
       productId: productImages.productId,
@@ -71,35 +69,68 @@ export const cartsList = async (
     firstImagesResult.map((img) => [img.productId, img.url])
   );
 
-  // 4. Buat lookup untuk harga berdasarkan role
+  // 3. Fungsi ambil harga sesuai role
   const getPrice = (item: (typeof cartItems)[0]): string => {
     if (userRole === "VETERINARIAN") return item.doctorPrice || "0";
     if (userRole === "PETSHOP") return item.petShopPrice || "0";
     return item.basicPrice || "0";
   };
 
-  // 5. Bangun struktur produk langsung
-  const productMap = new Map<string, any>();
+  // 4. Map produk in-stock & out-of-stock
+  const inStockMap = new Map<string, any>();
+  const outOfStockMap = new Map<string, any>();
+
   let subtotal = 0;
 
   for (const item of cartItems) {
-    const price = getPrice(item);
-    const quantity = Number(item.quantity ?? 0);
-    const total = Number(price ?? 0) * quantity;
+    const stock = Number(item.stock ?? 0);
+    let quantity = Number(item.quantity ?? 0);
+
+    // Kalau stock 0 → masuk outOfStock
+    if (stock <= 0) {
+      addToMap(outOfStockMap, item, 0);
+      continue;
+    }
+
+    // Kalau quantity > stock → update carts dan pakai stock
+    if (quantity > stock) {
+      quantity = stock;
+      await db
+        .update(carts)
+        .set({ quantity: String(stock) })
+        .where(
+          and(eq(carts.userId, userId), eq(carts.variantId, item.variantId))
+        );
+    }
+
+    const price = Number(getPrice(item));
+    const total = price * quantity;
+
+    if (item.checked) subtotal += total;
+
+    addToMap(inStockMap, item, quantity, price, total, stock);
+  }
+
+  function addToMap(
+    map: Map<string, any>,
+    item: (typeof cartItems)[0],
+    quantity: number,
+    price?: number,
+    total?: number,
+    stock?: number
+  ) {
     const variant = {
       id: item.variantId,
       name: item.variantName,
       checked: item.checked,
       quantity,
-      stock: Number(item.stock ?? 0),
-      price: Number(price),
-      total,
+      stock: stock ?? Number(item.stock ?? 0),
+      price: price ?? Number(getPrice(item)),
+      total: total ?? 0,
     };
 
-    subtotal += item.checked ? total : 0;
-
-    if (!productMap.has(item.productId)) {
-      productMap.set(item.productId, {
+    if (!map.has(item.productId)) {
+      map.set(item.productId, {
         id: item.productId,
         name: item.productName,
         slug: item.productSlug,
@@ -111,7 +142,7 @@ export const cartsList = async (
       });
     }
 
-    const product = productMap.get(item.productId);
+    const product = map.get(item.productId);
     if (item.isDefault) {
       product.default_variant = variant;
     } else {
@@ -119,27 +150,27 @@ export const cartsList = async (
     }
   }
 
-  // 6. Finalisasi struktur: default_variant vs variants
-  const result = Array.from(productMap.values()).map((product) => {
-    if (product.default_variant) {
-      product.variants = null;
-    } else if (product.variants.length === 0) {
-      product.variants = null;
-    } else {
-      product.default_variant = null;
-    }
-    return product;
-  });
+  // 5. Format final
+  const formatProducts = (map: Map<string, any>) =>
+    Array.from(map.values()).map((product) => {
+      if (product.default_variant) {
+        product.variants = null;
+      } else if (!product.variants.length) {
+        product.variants = null;
+      } else {
+        product.default_variant = null;
+      }
+      return product;
+    });
 
-  const response = {
-    products: result,
+  return {
+    products: formatProducts(inStockMap),
+    out_of_stock: formatProducts(outOfStockMap),
     subtotal,
     total_cart_selected: cartItems.filter((item) => item.checked).length,
     total_cart: cartItems.length,
     total: subtotal,
   };
-
-  return response;
 };
 
 export const addToCart = async (req: NextRequest, userId: string) => {

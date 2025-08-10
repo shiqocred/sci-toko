@@ -127,8 +127,6 @@ export async function GET() {
       .innerJoin(products, eq(products.id, productVariants.productId))
       .where(eq(orders.userId, userId));
 
-    console.log(orderExists);
-
     const groupedByOrder: TransformedOrderGroup[] = [];
 
     for (const row of orderExists) {

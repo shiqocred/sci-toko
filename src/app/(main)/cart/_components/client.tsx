@@ -17,78 +17,110 @@ import {
   useUpdateQuantity,
 } from "../_api";
 import Link from "next/link";
-import { useDebounce } from "@/hooks/use-debounce";
 import { DialogRemoveProduct } from "./_dialogs";
 import { useConfirm } from "@/hooks/use-confirm";
 import { CheckedState } from "@radix-ui/react-checkbox";
+import { useDebounce } from "@/hooks/use-debounce";
+import { TooltipText } from "@/providers/tooltip-provider";
 
 const Client = () => {
-  const [input, setInput] = useState({
-    variantId: "",
-    qty: "",
-  });
-  const [inputField, setInputField] = useState({
-    variantId: "",
-    qty: "",
-  });
   const [dialog, setDialog] = useState("");
-
+  const [localQty, setLocalQty] = useState<Record<string, number>>({});
   const [DeleteDialog, confirmDelete] = useConfirm(
     "Delete Product From Cart?",
     "This action cannot be undone",
     "destructive"
   );
 
-  const debounceQty = useDebounce(input.qty);
-  const [isMounted, setIsMounted] = useState(false);
-
-  const { mutate: updateQty, isPending: isUpdating } = useUpdateQuantity();
-  const { mutate: deleteCart, isPending: isDeleting } = useDeleteCart();
-  const { mutate: checkCart, isPending: isChecking } = useUpdateCheck();
-  const { mutate: checkout, isPending: isCheckouting } = useCreateCheckout();
-
+  const { mutate: updateQty } = useUpdateQuantity();
+  const { mutate: deleteCart } = useDeleteCart();
+  const { mutate: checkCart } = useUpdateCheck();
+  const { mutate: checkout } = useCreateCheckout();
   const { data } = useGetCarts();
 
-  const dataCart = useMemo(() => {
-    return data?.data;
-  }, [data]);
-  const carts = useMemo(() => {
-    return data?.data.products;
-  }, [data]);
+  const dataCart = useMemo(() => data?.data, [data]);
+  const carts = useMemo(() => data?.data.products, [data]);
+  const outOfStock = useMemo(() => data?.data.out_of_stock, [data]);
 
-  const handleIncrease = (id: string, newQty?: number) => {
-    setInput((prev) => ({
-      variantId: id,
-      qty: newQty
-        ? (newQty + 1).toString()
-        : (parseFloat(prev.qty) + 1).toString(),
+  // Sync local qty setiap kali data cart baru datang
+  useEffect(() => {
+    if (carts) {
+      const qtyMap: Record<string, number> = {};
+      carts.forEach((cart) => {
+        if (cart.default_variant) {
+          qtyMap[cart.default_variant.id] = cart.default_variant.quantity;
+        }
+        cart.variants?.forEach((v) => {
+          qtyMap[v.id] = v.quantity;
+        });
+      });
+      setLocalQty(qtyMap);
+    }
+  }, [carts]);
+
+  // 🔹 DEBOUNCE untuk localQty
+  const debouncedLocalQty = useDebounce(localQty, 500);
+
+  // 🔹 Kirim perubahan qty ke server hanya saat debounce selesai
+  useEffect(() => {
+    Object.entries(debouncedLocalQty).forEach(([variantId, qty]) => {
+      // Ambil qty original dari carts
+      const originalQty =
+        carts?.find(
+          (c) =>
+            c.default_variant?.id === variantId ||
+            c.variants?.some((v) => v.id === variantId)
+        )?.default_variant?.quantity ??
+        carts?.flatMap((c) => c.variants ?? [])?.find((v) => v.id === variantId)
+          ?.quantity ??
+        0;
+
+      if (qty !== originalQty && qty > 0) {
+        updateQty({
+          params: { variantId },
+          body: { qty: String(qty) },
+        });
+      }
+    });
+  }, [debouncedLocalQty, carts, updateQty]);
+
+  const handleIncrease = (variantId: string) => {
+    setLocalQty((prev) => ({
+      ...prev,
+      [variantId]: (prev[variantId] ?? 0) + 1,
     }));
   };
 
-  const handleReduce = (id: string, newQty?: number) => {
-    setInput((prev) => ({
-      variantId: id,
-      qty: newQty
-        ? (newQty - 1).toString()
-        : (parseFloat(prev.qty) - 1).toString(),
+  const handleReduce = (variantId: string) => {
+    setLocalQty((prev) => {
+      const updated = (prev[variantId] ?? 0) - 1;
+      if (updated <= 0) {
+        setDialog(variantId);
+        return prev;
+      }
+      return { ...prev, [variantId]: updated };
+    });
+  };
+
+  const handleQtyChange = (variantId: string, value: string) => {
+    setLocalQty((prev) => ({
+      ...prev,
+      [variantId]: isNaN(parseFloat(value))
+        ? 0
+        : parseFloat(numericString(value)),
     }));
   };
 
-  const handleUpdateQty = (variantId: string, qty: string, onSuccess?: any) => {
-    updateQty(
-      {
-        params: { variantId },
-        body: { qty },
-      },
-      { onSuccess }
-    );
+  const handleQtyBlur = (variantId: string, originalQty: number) => {
+    const newQty = localQty[variantId];
+    if (newQty <= 0) {
+      setDialog(variantId);
+    }
   };
 
   const handleDelete = async (id: string) => {
     const ok = await confirmDelete();
-
     if (!ok) return;
-
     deleteCart({ params: { variantId: id } });
   };
 
@@ -102,321 +134,323 @@ const Client = () => {
     checkout({});
   };
 
-  useEffect(() => {
-    if (!!input.variantId && !!input.qty) {
-      if (parseFloat(input.qty) > 0) {
-        handleUpdateQty(
-          input.variantId,
-          input.qty,
-          setInput({ qty: "", variantId: "" })
-        );
-      } else {
-        setDialog(input.variantId);
-      }
-    }
-  }, [debounceQty]);
-
-  useEffect(() => {
-    if (!isMounted) {
-      setIsMounted(true);
-    }
-  }, []);
-  if (!isMounted) return;
   return (
     <div className="bg-sky-50 h-full">
       <DeleteDialog />
       <DialogRemoveProduct
         open={!!dialog}
-        onOpenChange={() => {
-          if (dialog) {
-            setDialog("");
-            setInputField({ qty: "", variantId: "" });
-            setInput({ qty: "", variantId: "" });
-          }
+        onOpenChange={() => setDialog("")}
+        onSubmit={() => {
+          updateQty({
+            params: { variantId: dialog },
+            body: { qty: "0" },
+          });
+          setDialog("");
         }}
-        onSubmit={() =>
-          handleUpdateQty(dialog, "0", () => {
-            setInput({ qty: "", variantId: "" });
-            setInputField({ qty: "", variantId: "" });
-            setDialog("");
-          })
-        }
       />
       <div className="max-w-[1240px] mx-auto w-full flex flex-col gap-7 px-4 lg:px-8 py-14">
         <div className="flex items-center gap-2">
-          <h1 className="text-3xl font-bold ">Your Cart</h1>
+          <h1 className="text-3xl font-bold">Your Cart</h1>
           <p className="text-gray-500">({dataCart?.total_cart})</p>
         </div>
         <div className="w-full grid grid-cols-7 gap-6">
-          <div className="col-span-5 w-full">
+          {/* CART LIST */}
+          <div className="col-span-5 w-full flex flex-col gap-6">
             <div className="flex flex-col gap-4">
-              {carts &&
-                carts.map((cart) => (
-                  <div
-                    key={cart.id}
-                    className={cn(
-                      "flex px-5 py-3 gap-3 bg-white rounded-lg shadow text-sm",
-                      cart.default_variant ? "items-center" : "flex-col"
-                    )}
-                  >
-                    <div className="flex items-center w-full gap-3">
-                      <div className="flex justify-center flex-none w-6">
-                        <Checkbox
-                          className="data-[state=checked]:bg-red-500 data-[state=checked]:border-red-500"
-                          checked={
-                            cart.default_variant?.checked ??
-                            cart.variants?.every((item) => item.checked)
+              {carts?.map((cart) => (
+                <div
+                  key={cart.id}
+                  className={cn(
+                    "flex px-5 py-3 gap-3 bg-white rounded-lg shadow text-sm",
+                    cart.default_variant ? "items-center" : "flex-col"
+                  )}
+                >
+                  <div className="flex items-center w-full gap-3">
+                    <div className="flex justify-center flex-none w-6">
+                      <Checkbox
+                        className="data-[state=checked]:bg-red-500 data-[state=checked]:border-red-500"
+                        checked={
+                          cart.default_variant?.checked ??
+                          cart.variants?.every((item) => item.checked)
+                        }
+                        onCheckedChange={(e) => {
+                          if (cart.default_variant) {
+                            handleChecked([cart.default_variant.id], e);
+                          } else if (cart.variants) {
+                            handleChecked(
+                              cart.variants.map((item) => item.id),
+                              e
+                            );
                           }
-                          onCheckedChange={(e) => {
-                            if (cart.default_variant) {
-                              handleChecked([`${cart.default_variant.id}`], e);
-                            } else if (cart.variants) {
-                              handleChecked(
-                                cart.variants.map((item) => item.id),
-                                e
-                              );
-                            }
-                          }}
+                        }}
+                      />
+                    </div>
+                    <div className="flex items-center w-full gap-2">
+                      <div className="relative h-20 aspect-square border rounded-md">
+                        <Image
+                          fill
+                          src={cart.image ?? `/assets/images/logo-sci.png`}
+                          alt="product"
+                          sizes={sizesImage}
+                          className="object-contain"
                         />
                       </div>
-                      <div className="flex items-center w-full gap-2">
-                        <div className="relative h-20 aspect-square border rounded-md">
-                          <Image
-                            fill
-                            src={cart.image ?? `/assets/images/logo-sci.png`}
-                            alt="product"
-                            sizes={sizesImage}
-                            className="object-contain"
-                          />
-                        </div>
-                        <div className="flex flex-col">
-                          <Link
-                            href={`/products/${cart.slug}`}
-                            className="line-clamp-1 text-base hover:underline hover:underline-offset-2"
-                          >
-                            {cart.name}
-                          </Link>
-                          {cart.default_variant && (
-                            <p className="font-semibold">
-                              {formatRupiah(cart.default_variant.price)}
-                            </p>
-                          )}
-                        </div>
+                      <div className="flex flex-col">
+                        <Link
+                          href={`/products/${cart.slug}`}
+                          className="line-clamp-1 text-base hover:underline hover:underline-offset-2"
+                        >
+                          {cart.name}
+                        </Link>
+                        {cart.default_variant && (
+                          <p className="font-semibold">
+                            {formatRupiah(cart.default_variant.price)}
+                          </p>
+                        )}
                       </div>
                     </div>
-                    {cart.default_variant && (
-                      <div className="flex items-center gap-3">
-                        <div className="flex items-center gap-3 w-44 flex-none">
-                          <div className="flex items-center">
-                            <Button
-                              variant={"outline"}
-                              size={"icon"}
-                              className="rounded-r-none disabled:opacity-100 group"
-                              onClick={() => {
-                                if (isNaN(parseFloat(input.qty))) {
-                                  handleReduce(
-                                    cart.default_variant?.id ?? "",
-                                    cart.default_variant?.quantity ?? 0
-                                  );
-                                } else {
-                                  handleReduce(cart.default_variant?.id ?? "");
-                                }
-                              }}
-                            >
-                              <Minus className="group-disabled:opacity-50" />
-                            </Button>
-                            <input
-                              className="h-9 focus-visible:outline-0 text-center w-14 border-y"
-                              type="number"
-                              value={
-                                inputField.qty
-                                  ? inputField.qty
-                                  : cart.default_variant.quantity
-                              }
-                              onFocus={() =>
-                                setInputField({
-                                  variantId: cart.default_variant?.id ?? "",
-                                  qty: (
-                                    cart.default_variant?.quantity ?? 0
-                                  ).toString(),
-                                })
-                              }
-                              onChange={(e) =>
-                                setInputField({
-                                  variantId: cart.default_variant?.id ?? "",
-                                  qty: isNaN(parseFloat(e.target.value))
-                                    ? "0"
-                                    : numericString(e.target.value),
-                                })
-                              }
-                              onBlur={() => {
-                                if (inputField.qty === "0") {
-                                  setDialog(cart.default_variant?.id ?? "");
-                                } else if (
-                                  parseFloat(inputField.qty) !==
-                                  cart.default_variant?.quantity
-                                ) {
-                                  handleUpdateQty(
-                                    inputField.variantId,
-                                    inputField.qty,
-                                    setInputField({
-                                      qty: "",
-                                      variantId: "",
-                                    })
-                                  );
-                                }
-                              }}
-                            />
-                            <Button
-                              variant={"outline"}
-                              size={"icon"}
-                              className="rounded-l-none disabled:opacity-100 group"
-                              onClick={() => {
-                                if (isNaN(parseFloat(input.qty))) {
-                                  handleIncrease(
-                                    cart.default_variant?.id ?? "",
-                                    cart.default_variant?.quantity ?? 0
-                                  );
-                                } else {
-                                  handleIncrease(
-                                    cart.default_variant?.id ?? ""
-                                  );
-                                }
-                              }}
-                            >
-                              <Plus className="group-disabled:opacity-50" />
-                            </Button>
-                          </div>
+                  </div>
+
+                  {/* DEFAULT VARIANT */}
+                  {cart.default_variant && (
+                    <div className="flex items-center gap-3">
+                      <div className="flex items-center gap-3 w-44 flex-none">
+                        <div className="flex items-center">
                           <Button
-                            className=" hover:bg-red-50 text-destructive hover:text-destructive size-8"
-                            variant={"ghost"}
-                            size={"icon"}
+                            variant="outline"
+                            size="icon"
+                            className="rounded-r-none"
                             onClick={() =>
-                              handleDelete(cart.default_variant?.id ?? "")
+                              handleReduce(cart.default_variant?.id ?? "0")
                             }
                           >
-                            <Trash2 />
+                            <Minus />
                           </Button>
-                        </div>
-                        <div className="whitespace-nowrap font-semibold w-32 flex-none">
-                          {formatRupiah(cart.default_variant.total)}
-                        </div>
-                      </div>
-                    )}
-                    {cart.variants && (
-                      <div className="flex flex-col border-t divide-y">
-                        {cart.variants.map((item) => (
-                          <div
-                            key={item.id}
-                            className="flex items-center gap-3 py-3"
+                          <input
+                            className="h-9 text-center w-14 border-y"
+                            type="number"
+                            value={
+                              localQty[cart.default_variant.id] ??
+                              cart.default_variant.quantity
+                            }
+                            onChange={(e) =>
+                              handleQtyChange(
+                                cart.default_variant?.id ?? "0",
+                                e.target.value
+                              )
+                            }
+                            onBlur={() =>
+                              handleQtyBlur(
+                                cart.default_variant?.id ?? "0",
+                                cart.default_variant?.quantity ?? 0
+                              )
+                            }
+                          />
+                          <TooltipText
+                            value={"Maximum available stock"}
+                            className={cn(
+                              "hidden",
+                              (localQty[cart.default_variant.id] ??
+                                cart.default_variant.quantity) >=
+                                cart.default_variant.stock && "flex"
+                            )}
                           >
-                            <div className="flex justify-center flex-none w-6">
-                              <Checkbox
-                                className="data-[state=checked]:bg-red-500 data-[state=checked]:border-red-500"
-                                checked={item.checked}
-                                onCheckedChange={(e) =>
-                                  handleChecked([`${item.id}`], e)
+                            <Button
+                              variant="outline"
+                              size="icon"
+                              className="rounded-l-none disabled:opacity-100 disabled:hover:bg-white disabled:pointer-events-auto disabled:cursor-not-allowed"
+                              onClick={() =>
+                                handleIncrease(cart.default_variant?.id ?? "0")
+                              }
+                              disabled={
+                                (localQty[cart.default_variant.id] ??
+                                  cart.default_variant.quantity) >=
+                                cart.default_variant.stock
+                              }
+                            >
+                              <Plus />
+                            </Button>
+                          </TooltipText>
+                        </div>
+                        <Button
+                          className="hover:bg-red-50 text-destructive"
+                          variant="ghost"
+                          size="icon"
+                          onClick={() =>
+                            handleDelete(cart.default_variant?.id ?? "0")
+                          }
+                        >
+                          <Trash2 />
+                        </Button>
+                      </div>
+                      <div className="whitespace-nowrap font-semibold w-32 flex-none">
+                        {formatRupiah(cart.default_variant.total)}
+                      </div>
+                    </div>
+                  )}
+
+                  {/* MULTI VARIANT */}
+                  {cart.variants && (
+                    <div className="flex flex-col border-t divide-y">
+                      {cart.variants.map((item) => (
+                        <div
+                          key={item.id}
+                          className="flex items-center gap-3 py-3"
+                        >
+                          <div className="flex justify-center flex-none w-6">
+                            <Checkbox
+                              className="data-[state=checked]:bg-red-500 data-[state=checked]:border-red-500"
+                              checked={item.checked}
+                              onCheckedChange={(e) =>
+                                handleChecked([item.id], e)
+                              }
+                            />
+                          </div>
+                          <p className="w-full">{item.name}</p>
+                          <p className="w-32 flex-none">
+                            {formatRupiah(item.price)}
+                          </p>
+                          <div className="flex items-center gap-3 w-44 flex-none">
+                            <div className="flex items-center">
+                              <Button
+                                variant="outline"
+                                size="icon"
+                                className="rounded-r-none"
+                                onClick={() => handleReduce(item.id)}
+                              >
+                                <Minus />
+                              </Button>
+                              <input
+                                className="h-9 text-center w-14 border-y"
+                                type="number"
+                                value={localQty[item.id] ?? item.quantity}
+                                onChange={(e) =>
+                                  handleQtyChange(item.id, e.target.value)
+                                }
+                                onBlur={() =>
+                                  handleQtyBlur(item.id, item.quantity)
                                 }
                               />
+                              <TooltipText
+                                value={"Maximum available stock"}
+                                className={cn(
+                                  "hidden",
+                                  (localQty[item.id] ?? item.quantity) >=
+                                    item.stock && "flex"
+                                )}
+                              >
+                                <Button
+                                  variant="outline"
+                                  size="icon"
+                                  className="rounded-l-none disabled:opacity-100 disabled:hover:bg-white disabled:pointer-events-auto disabled:cursor-not-allowed"
+                                  onClick={() => handleIncrease(item.id)}
+                                  disabled={
+                                    (localQty[item.id] ?? item.quantity) >=
+                                    item.stock
+                                  }
+                                >
+                                  <Plus />
+                                </Button>
+                              </TooltipText>
                             </div>
-                            <p className="w-full">{item.name}</p>
-                            <div className="flex items-center gap-3 w-44 flex-none">
-                              <div className="flex items-center">
-                                <Button
-                                  variant={"outline"}
-                                  size={"icon"}
-                                  className="rounded-r-none disabled:opacity-100 group"
-                                  onClick={() => {
-                                    if (isNaN(parseFloat(input.qty))) {
-                                      handleReduce(
-                                        item.id ?? "",
-                                        item.quantity ?? 0
-                                      );
-                                    } else {
-                                      handleReduce(item.id ?? "");
-                                    }
-                                  }}
-                                >
-                                  <Minus className="group-disabled:opacity-50" />
-                                </Button>
-                                <input
-                                  className="h-9 focus-visible:outline-0 text-center w-14 border-y"
-                                  type="number"
-                                  value={
-                                    inputField.qty
-                                      ? inputField.qty
-                                      : item.quantity
-                                  }
-                                  onFocus={() =>
-                                    setInputField({
-                                      variantId: item.id ?? "",
-                                      qty: (item.quantity ?? 0).toString(),
-                                    })
-                                  }
-                                  onChange={(e) =>
-                                    setInputField({
-                                      variantId: item.id ?? "",
-                                      qty: isNaN(parseFloat(e.target.value))
-                                        ? "0"
-                                        : numericString(e.target.value),
-                                    })
-                                  }
-                                  onBlur={() => {
-                                    if (inputField.qty === "0") {
-                                      setDialog(cart.default_variant?.id ?? "");
-                                    } else if (
-                                      parseFloat(inputField.qty) !==
-                                      item.quantity
-                                    ) {
-                                      handleUpdateQty(
-                                        inputField.variantId,
-                                        inputField.qty,
-                                        setInputField({
-                                          qty: "",
-                                          variantId: "",
-                                        })
-                                      );
-                                    }
-                                  }}
-                                />
-                                <Button
-                                  variant={"outline"}
-                                  size={"icon"}
-                                  className="rounded-l-none disabled:opacity-100 group"
-                                  onClick={() => {
-                                    if (isNaN(parseFloat(input.qty))) {
-                                      handleIncrease(
-                                        item.id ?? "",
-                                        item.quantity ?? 0
-                                      );
-                                    } else {
-                                      handleIncrease(item.id ?? "");
-                                    }
-                                  }}
-                                >
-                                  <Plus className="group-disabled:opacity-50" />
-                                </Button>
-                              </div>
+                            <Button
+                              className="hover:bg-red-50 text-destructive"
+                              variant="ghost"
+                              size="icon"
+                              onClick={() => handleDelete(item.id)}
+                            >
+                              <Trash2 />
+                            </Button>
+                          </div>
+                          <div className="whitespace-nowrap font-semibold w-32 flex-none">
+                            {formatRupiah(item.total)}
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              ))}
+            </div>
+            {outOfStock && outOfStock.length > 0 && (
+              <>
+                <div className="flex items-center gap-2">
+                  <h4 className="text-xl font-bold">Out of stock products</h4>
+                </div>
+                <div className="flex flex-col gap-4">
+                  {outOfStock?.map((out) => (
+                    <div
+                      key={out.id}
+                      className={cn(
+                        "flex px-5 py-3 gap-3 bg-white rounded-lg shadow text-sm",
+                        out.default_variant ? "items-center" : "flex-col"
+                      )}
+                    >
+                      <div className="flex items-center w-full gap-3 opacity-50">
+                        <div className="flex items-center w-full gap-2">
+                          <div className="relative h-20 aspect-square border rounded-md">
+                            <Image
+                              fill
+                              src={out.image ?? `/assets/images/logo-sci.png`}
+                              alt="product"
+                              sizes={sizesImage}
+                              className="object-contain"
+                            />
+                          </div>
+                          <Link
+                            href={`/products/${out.slug}`}
+                            className="line-clamp-1 text-base hover:underline hover:underline-offset-2"
+                          >
+                            {out.name}
+                          </Link>
+                        </div>
+                      </div>
+
+                      {/* DEFAULT VARIANT */}
+                      {out.default_variant && (
+                        <Button
+                          className="hover:bg-red-50 hover:text-destructive text-destructive"
+                          variant="ghost"
+                          size="icon"
+                          onClick={() =>
+                            handleDelete(out.default_variant?.id ?? "0")
+                          }
+                        >
+                          <Trash2 />
+                          Remove
+                        </Button>
+                      )}
+
+                      {/* MULTI VARIANT */}
+                      {out.variants && (
+                        <div className="flex flex-col border-t divide-y">
+                          {out.variants.map((item) => (
+                            <div
+                              key={item.id}
+                              className="flex items-center gap-3 py-3"
+                            >
+                              <p className="w-full opacity-50">{item.name}</p>
                               <Button
-                                className=" hover:bg-red-50 text-destructive hover:text-destructive size-8"
-                                variant={"ghost"}
-                                size={"icon"}
+                                className="hover:bg-red-50 hover:text-destructive text-destructive"
+                                variant="ghost"
+                                size="sm"
                                 onClick={() => handleDelete(item.id)}
                               >
                                 <Trash2 />
+                                Remove
                               </Button>
                             </div>
-                            <div className="whitespace-nowrap font-semibold w-32 flex-none">
-                              {formatRupiah(item.total)}
-                            </div>
-                          </div>
-                        ))}
-                      </div>
-                    )}
-                  </div>
-                ))}
-            </div>
+                          ))}
+                        </div>
+                      )}
+                    </div>
+                  ))}
+                </div>
+              </>
+            )}
           </div>
+
+          {/* SUMMARY */}
           <div className="w-full col-span-2">
             <div className="bg-white shadow rounded-lg p-5 flex flex-col gap-4 text-sm">
               <div className="flex justify-between items-center text-gray-500">
@@ -431,9 +465,9 @@ const Client = () => {
                 <div className="flex items-center">
                   <Input
                     placeholder="Please Enter Code"
-                    className="rounded-r-none border-r-0 shadow-none bg-gray-50 placeholder:text-xs focus-visible:ring-0"
+                    className="rounded-r-none border-r-0 bg-gray-50 placeholder:text-xs"
                   />
-                  <Button className="rounded-l-none shadow-none bg-green-600 hover:bg-green-700">
+                  <Button className="rounded-l-none bg-green-600 hover:bg-green-700">
                     Apply
                   </Button>
                 </div>
@@ -446,8 +480,8 @@ const Client = () => {
                 </p>
               </div>
               <Button
-                className="w-full flex-auto rounded-full"
-                variant={"destructive"}
+                className="w-full rounded-full"
+                variant="destructive"
                 disabled={dataCart && dataCart.total_cart_selected < 1}
                 onClick={handleCheckout}
               >

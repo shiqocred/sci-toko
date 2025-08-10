@@ -28,6 +28,32 @@ type Response = {
           }[]
         | null;
     }[];
+    out_of_stock: {
+      id: string;
+      name: string | null;
+      slug: string | null;
+      image: string | null;
+      default_variant: {
+        id: string;
+        name: string;
+        quantity: number;
+        stock: number;
+        checked: boolean;
+        price: number;
+        total: number;
+      } | null;
+      variants:
+        | {
+            id: string;
+            name: string;
+            quantity: number;
+            stock: number;
+            checked: boolean;
+            price: number;
+            total: number;
+          }[]
+        | null;
+    }[];
     subtotal: number;
     total_cart_selected: number;
     total_cart: number;

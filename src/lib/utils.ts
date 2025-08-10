@@ -47,7 +47,9 @@ export const timeNow = async () => {
 };
 
 export const numericString = (e: string) => {
-  return e.startsWith("0") ? e.replace(/^0+/, "") : e;
+  // Hapus semua leading zero kecuali kalau input cuma "0"
+  const cleaned = e.replace(/^0+(?=\d)/, "");
+  return cleaned === "" ? "0" : cleaned;
 };
 
 export function isResponse(obj: unknown): obj is Response {
