@@ -107,7 +107,7 @@ export const OrderList = ({
                     {product.variants.map((variant) => (
                       <div
                         key={variant.variant_name}
-                        className="first:border-t border-green-400 px-3 py-2 grid grid-cols-5"
+                        className="border-t border-green-400 px-3 py-2 grid grid-cols-5"
                       >
                         <div className="flex items-center gap-2">
                           <TagIcon className="size-3" />
@@ -139,19 +139,24 @@ export const OrderList = ({
               {formatRupiah(order.total_price)}
             </p>
           </div>
-          {state === "failed" && <Button variant={"sci"}>Buy Again</Button>}
-          {state === "unpaid" && <Button variant={"sci"}>Pay Now</Button>}
-          {(state === "shipping" || state === "completed") && (
-            <Button variant={"sciOutline"}>Track Order</Button>
-          )}
-          {(state === "shipping" || state === "completed") && (
-            <Button variant={"sciOutline"}>Track Order</Button>
-          )}
-          {state !== "unpaid" && state !== "failed" && (
-            <Button variant={state === "processed" ? "sci" : "sciOutline"}>
-              Detail Order
-            </Button>
-          )}
+          <div className="flex items-center gap-3">
+            {state === "failed" && <Button variant={"sci"}>Buy Again</Button>}
+            {state === "unpaid" && (
+              <>
+                <Button variant={"sciOutline"}>Cancel Order</Button>
+                <Button variant={"sci"}>Pay Now</Button>
+              </>
+            )}
+            {state === "completed" && (
+              <Button variant="sciOutline">Review</Button>
+            )}
+            {(state === "shipping" || state === "completed") && (
+              <Button variant={"sciOutline"}>Track Order</Button>
+            )}
+            {state !== "unpaid" && state !== "failed" && (
+              <Button variant="sci">Detail Order</Button>
+            )}
+          </div>
         </div>
       </CardContent>
     </Card>

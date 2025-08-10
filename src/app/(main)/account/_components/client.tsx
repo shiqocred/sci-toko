@@ -8,9 +8,11 @@ import {
   CheckCircle,
   ChevronRight,
   Crown,
+  Headset,
   Loader2,
   LogOut,
   MailWarning,
+  ScrollText,
   Stethoscope,
   Store,
   User2,
@@ -187,7 +189,15 @@ const Client = () => {
                 </div>
               </div>
             )}
-            <div className="bg-white text-black items-center shadow flex flex-col gap-3 p-5 rounded-lg h-auto">
+            <div className="bg-white text-black items-center shadow flex flex-col gap-1 p-3 rounded-lg h-auto">
+              <Button className="w-full justify-start" variant={"ghost"}>
+                <Headset />
+                FAQ&apos;s
+              </Button>
+              <Button className="w-full justify-start" variant={"ghost"}>
+                <ScrollText />
+                Policy
+              </Button>
               <Button
                 className="w-full text-red-400 hover:bg-red-50 hover:text-red-500 justify-start"
                 variant={"ghost"}

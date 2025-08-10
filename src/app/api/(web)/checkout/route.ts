@@ -385,6 +385,8 @@ export async function PUT() {
         longitude: addressSelected.longitude,
         courierCompany: orderDraftShippingsExist.company,
         courierType: orderDraftShippingsExist.type,
+        fastestEstimate: orderDraftShippingsExist.fastestEstimate,
+        longestEstimate: orderDraftShippingsExist.longestEstimate,
         duration: orderDraftShippingsExist.duration,
         price: orderDraftShippingsExist.price,
         courierName: orderDraftShippingsExist.label,

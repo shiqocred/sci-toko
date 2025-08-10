@@ -1,12 +1,15 @@
 import { biteshipAPI, biteshipUrl } from "@/config";
 import { auth, errorRes, successRes } from "@/lib/auth";
 import { db, orderDraft, orderDraftShippings } from "@/lib/db";
+import { format } from "date-fns";
+import { id } from "date-fns/locale";
 import { eq } from "drizzle-orm";
 import { NextRequest } from "next/server";
 type Courier = {
   name: string;
   company: string;
-  duration: string;
+  shipment_duration_range: string;
+  shipment_duration_unit: string;
   price: number;
   type: string;
 } | null;
@@ -14,22 +17,28 @@ type Courier = {
 type PricingItem = {
   courier_name: string;
   company: string;
-  duration: string;
+  shipment_duration_range: string;
+  shipment_duration_unit: string;
   price: number;
   type: string;
 };
 
-function getAverageDurationInHours(duration: string): number {
-  const [min, max] = (duration.match(/\d+/g) || []).map(Number);
+function getAverageDurationInHours(range: string, unit: string): number {
+  const [min, max] = (range.match(/\d+/g) || []).map(Number);
   const avg = (min + (max || min)) / 2;
-  return duration.toLowerCase().includes("day") ? avg * 24 : avg;
+  if (unit.toLowerCase().startsWith("day")) {
+    return avg * 24;
+  }
+  // misal unit 'hours' langsung return avg
+  return avg;
 }
 
 function isSameCourier(a: PricingItem, b: PricingItem) {
   return (
     a.courier_name === b.courier_name &&
     a.company === b.company &&
-    a.duration === b.duration &&
+    a.shipment_duration_range === b.shipment_duration_range &&
+    a.shipment_duration_unit === b.shipment_duration_unit &&
     a.price === b.price &&
     a.type === b.type
   );
@@ -40,9 +49,19 @@ function getFastestAndCheapest(pricing: PricingItem[]): {
   cheapest: Courier;
   middle: Courier;
 } {
+  if (pricing.length === 0) {
+    return { fastest: null, cheapest: null, middle: null };
+  }
+
   const fastest = pricing.reduce((a, b) =>
-    getAverageDurationInHours(a.duration) <=
-    getAverageDurationInHours(b.duration)
+    getAverageDurationInHours(
+      a.shipment_duration_range,
+      a.shipment_duration_unit
+    ) <=
+    getAverageDurationInHours(
+      b.shipment_duration_range,
+      b.shipment_duration_unit
+    )
       ? a
       : b
   );
@@ -52,8 +71,14 @@ function getFastestAndCheapest(pricing: PricingItem[]): {
   const top3Fastest = [...pricing]
     .sort(
       (a, b) =>
-        getAverageDurationInHours(a.duration) -
-        getAverageDurationInHours(b.duration)
+        getAverageDurationInHours(
+          a.shipment_duration_range,
+          a.shipment_duration_unit
+        ) -
+        getAverageDurationInHours(
+          b.shipment_duration_range,
+          b.shipment_duration_unit
+        )
     )
     .slice(0, 3);
 
@@ -63,8 +88,14 @@ function getFastestAndCheapest(pricing: PricingItem[]): {
 
   const fastestFromCheapest = [...top3Cheapest].sort(
     (a, b) =>
-      getAverageDurationInHours(a.duration) -
-      getAverageDurationInHours(b.duration)
+      getAverageDurationInHours(
+        a.shipment_duration_range,
+        a.shipment_duration_unit
+      ) -
+      getAverageDurationInHours(
+        b.shipment_duration_range,
+        b.shipment_duration_unit
+      )
   )[0];
 
   const cheapestFromFastest = [...top3Fastest].sort(
@@ -72,8 +103,14 @@ function getFastestAndCheapest(pricing: PricingItem[]): {
   )[0];
 
   const middleCandidate =
-    getAverageDurationInHours(fastestFromCheapest.duration) <=
-    getAverageDurationInHours(cheapestFromFastest.duration)
+    getAverageDurationInHours(
+      fastestFromCheapest.shipment_duration_range,
+      fastestFromCheapest.shipment_duration_unit
+    ) <=
+    getAverageDurationInHours(
+      cheapestFromFastest.shipment_duration_range,
+      cheapestFromFastest.shipment_duration_unit
+    )
       ? fastestFromCheapest
       : cheapestFromFastest;
 
@@ -88,7 +125,8 @@ function getFastestAndCheapest(pricing: PricingItem[]): {
       cheapest: {
         name: cheapest.courier_name,
         company: cheapest.company,
-        duration: cheapest.duration,
+        shipment_duration_range: cheapest.shipment_duration_range,
+        shipment_duration_unit: cheapest.shipment_duration_unit,
         price: cheapest.price,
         type: cheapest.type,
       },
@@ -103,7 +141,8 @@ function getFastestAndCheapest(pricing: PricingItem[]): {
       cheapest: {
         name: cheapest.courier_name,
         company: cheapest.company,
-        duration: cheapest.duration,
+        shipment_duration_range: cheapest.shipment_duration_range,
+        shipment_duration_unit: cheapest.shipment_duration_unit,
         price: cheapest.price,
         type: cheapest.type,
       },
@@ -114,25 +153,85 @@ function getFastestAndCheapest(pricing: PricingItem[]): {
     fastest: {
       name: fastest.courier_name,
       company: fastest.company,
-      duration: fastest.duration,
+      shipment_duration_range: fastest.shipment_duration_range,
+      shipment_duration_unit: fastest.shipment_duration_unit,
       price: fastest.price,
       type: fastest.type,
     },
     cheapest: {
       name: cheapest.courier_name,
       company: cheapest.company,
-      duration: cheapest.duration,
+      shipment_duration_range: cheapest.shipment_duration_range,
+      shipment_duration_unit: cheapest.shipment_duration_unit,
       price: cheapest.price,
       type: cheapest.type,
     },
     middle: {
       name: middleCandidate.courier_name,
       company: middleCandidate.company,
-      duration: middleCandidate.duration,
+      shipment_duration_range: middleCandidate.shipment_duration_range,
+      shipment_duration_unit: middleCandidate.shipment_duration_unit,
       price: middleCandidate.price,
       type: middleCandidate.type,
     },
   };
+}
+
+function parseDurationToDateOrTime(
+  shipment_duration_range: string,
+  shipment_duration_unit: string
+): {
+  fastest: Date;
+  longest: Date;
+  durationType: "DAY" | "HOUR";
+} {
+  const numbers = shipment_duration_range.match(/\d+/g)?.map(Number) ?? [];
+
+  if (numbers.length === 0) {
+    numbers.push(1);
+  }
+
+  if (numbers.length === 1) {
+    numbers.push(numbers[0]);
+  }
+
+  const fastestNum = Math.min(numbers[0], numbers[1]);
+  const longestNum = Math.max(numbers[0], numbers[1]);
+
+  const now = new Date();
+
+  if (/hour/i.test(shipment_duration_unit)) {
+    // Jam, mulai dari sekarang
+    const fastest = new Date(now.getTime() + fastestNum * 60 * 60 * 1000);
+    const longest = new Date(now.getTime() + longestNum * 60 * 60 * 1000);
+    return { fastest, longest, durationType: "HOUR" };
+  } else if (/day/i.test(shipment_duration_unit)) {
+    // Hari, mulai dari awal hari besok
+    const baseDate = new Date(now);
+    baseDate.setDate(now.getDate() + 1);
+    baseDate.setHours(0, 0, 0, 0);
+
+    const fastest = new Date(baseDate);
+    fastest.setDate(baseDate.getDate() + fastestNum);
+
+    const longest = new Date(baseDate);
+    longest.setDate(baseDate.getDate() + longestNum);
+
+    return { fastest, longest, durationType: "DAY" };
+  } else {
+    // Default anggap hari
+    const baseDate = new Date(now);
+    baseDate.setDate(now.getDate() + 1);
+    baseDate.setHours(0, 0, 0, 0);
+
+    const fastest = new Date(baseDate);
+    fastest.setDate(baseDate.getDate() + fastestNum);
+
+    const longest = new Date(baseDate);
+    longest.setDate(baseDate.getDate() + longestNum);
+
+    return { fastest, longest, durationType: "DAY" };
+  }
 }
 
 async function insertShippingChoice({
@@ -151,15 +250,22 @@ async function insertShippingChoice({
   userId: string;
 }) {
   if (!courier) return null;
+  const { fastest, longest, durationType } = parseDurationToDateOrTime(
+    courier.shipment_duration_range,
+    courier.shipment_duration_unit
+  );
+  console.log(fastest, longest, durationType);
   const [result] = await db
     .insert(orderDraftShippings)
     .values({
       label: courier.name,
       addressId,
       company: courier.company,
-      duration: courier.duration,
+      fastestEstimate: fastest,
+      longestEstimate: longest,
       price: courier.price.toString(),
       type: courier.type,
+      duration: durationType,
       name,
       weight,
       orderDraftId,
@@ -171,9 +277,13 @@ async function insertShippingChoice({
       label: orderDraftShippings.label,
       company: orderDraftShippings.company,
       price: orderDraftShippings.price,
-      duration: orderDraftShippings.duration,
+      fastest: orderDraftShippings.fastestEstimate,
+      longest: orderDraftShippings.longestEstimate,
+      durationType: orderDraftShippings.duration,
       type: orderDraftShippings.type,
     });
+
+  console.log(result);
 
   return result;
 }
@@ -221,6 +331,8 @@ export async function GET() {
         addressId: true,
         name: true,
         company: true,
+        fastestEstimate: true,
+        longestEstimate: true,
         duration: true,
         price: true,
         type: true,
@@ -235,18 +347,60 @@ export async function GET() {
 
     console.log(shippingAddress);
 
-    if (shippingAddress.length > 1)
+    if (shippingAddress.length > 1) {
+      const express = shippingAddress.find((item) => item.name === "EXPRESS");
+      const regular = shippingAddress.find((item) => item.name === "REGULAR");
+      const economy = shippingAddress.find((item) => item.name === "ECONOMY");
       return successRes(
         {
-          express:
-            shippingAddress.find((item) => item.name === "EXPRESS") ?? null,
-          regular:
-            shippingAddress.find((item) => item.name === "REGULAR") ?? null,
-          economy:
-            shippingAddress.find((item) => item.name === "ECONOMY") ?? null,
+          express: express
+            ? {
+                ...express,
+                fastest:
+                  express.duration === "HOUR"
+                    ? format(express.fastestEstimate, "HH:mm", { locale: id })
+                    : format(express.fastestEstimate, "PP", { locale: id }),
+                longest:
+                  express &&
+                  (express.duration === "HOUR"
+                    ? format(express.longestEstimate, "HH:mm", { locale: id })
+                    : format(express.longestEstimate, "PP", { locale: id })),
+              }
+            : null,
+          regular: regular
+            ? {
+                ...regular,
+                fastest:
+                  regular &&
+                  (regular.duration === "HOUR"
+                    ? format(regular.fastestEstimate, "HH:mm", { locale: id })
+                    : format(regular.fastestEstimate, "PP", { locale: id })),
+                longest:
+                  regular &&
+                  (regular.duration === "HOUR"
+                    ? format(regular.longestEstimate, "HH:mm", { locale: id })
+                    : format(regular.longestEstimate, "PP", { locale: id })),
+              }
+            : null,
+          economy: economy
+            ? {
+                ...economy,
+                fastest:
+                  economy &&
+                  (economy.duration === "HOUR"
+                    ? format(economy.fastestEstimate, "HH:mm", { locale: id })
+                    : format(economy.fastestEstimate, "PP", { locale: id })),
+                longest:
+                  economy &&
+                  (economy.duration === "HOUR"
+                    ? format(economy.longestEstimate, "HH:mm", { locale: id })
+                    : format(economy.longestEstimate, "PP", { locale: id })),
+              }
+            : null,
         },
         "Ongkir detail 1"
       );
+    }
 
     console.time("checkout");
 
@@ -310,35 +464,81 @@ export async function GET() {
     console.log(biteshipRes);
 
     const [express, regular, economy] = await Promise.all([
-      insertShippingChoice({
-        addressId,
-        courier: fastest,
-        name: "EXPRESS",
-        weight: totalWeight,
-        orderDraftId: draftOrderExist.id,
-        userId,
-      }),
-      insertShippingChoice({
-        addressId,
-        courier: middle,
-        name: "REGULAR",
-        weight: totalWeight,
-        orderDraftId: draftOrderExist.id,
-        userId,
-      }),
-      insertShippingChoice({
-        addressId,
-        courier: cheapest,
-        name: "ECONOMY",
-        weight: totalWeight,
-        orderDraftId: draftOrderExist.id,
-        userId,
-      }),
+      fastest &&
+        insertShippingChoice({
+          addressId,
+          courier: fastest,
+          name: "EXPRESS",
+          weight: totalWeight,
+          orderDraftId: draftOrderExist.id,
+          userId,
+        }),
+      middle &&
+        insertShippingChoice({
+          addressId,
+          courier: middle,
+          name: "REGULAR",
+          weight: totalWeight,
+          orderDraftId: draftOrderExist.id,
+          userId,
+        }),
+      cheapest &&
+        insertShippingChoice({
+          addressId,
+          courier: cheapest,
+          name: "ECONOMY",
+          weight: totalWeight,
+          orderDraftId: draftOrderExist.id,
+          userId,
+        }),
     ]);
 
     console.timeEnd("checkout");
 
-    return successRes({ express, regular, economy }, "Ongkir detail");
+    return successRes(
+      {
+        express: {
+          ...express,
+          fastest:
+            express &&
+            (express.durationType === "HOUR"
+              ? format(express.fastest, "HH:mm", { locale: id })
+              : format(express.fastest, "PP", { locale: id })),
+          longest:
+            express &&
+            (express.durationType === "HOUR"
+              ? format(express.longest, "HH:mm", { locale: id })
+              : format(express.longest, "PP", { locale: id })),
+        },
+        regular: {
+          ...regular,
+          fastest:
+            regular &&
+            (regular.durationType === "HOUR"
+              ? format(regular.fastest, "HH:mm", { locale: id })
+              : format(regular.fastest, "PP", { locale: id })),
+          longest:
+            regular &&
+            (regular.durationType === "HOUR"
+              ? format(regular.longest, "HH:mm", { locale: id })
+              : format(regular.longest, "PP", { locale: id })),
+        },
+        economy: {
+          ...economy,
+          fastest:
+            economy &&
+            (economy.durationType === "HOUR"
+              ? format(economy.fastest, "HH:mm", { locale: id })
+              : format(economy.fastest, "PP", { locale: id })),
+          longest:
+            economy &&
+            (economy.durationType === "HOUR"
+              ? format(economy.longest, "HH:mm", { locale: id })
+              : format(economy.longest, "PP", { locale: id })),
+        },
+      },
+      "Ongkir detail"
+    );
   } catch (error) {
     console.error("Checkout Error", error);
     return errorRes("Internal server error", 500);
