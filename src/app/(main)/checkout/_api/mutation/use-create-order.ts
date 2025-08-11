@@ -2,10 +2,14 @@ import { invalidateQuery, useMutate } from "@/lib/query";
 import { useQueryClient } from "@tanstack/react-query";
 import { useRouter } from "next/navigation";
 
+type Body = {
+  note: string;
+};
+
 export const useCreateOrder = () => {
   const router = useRouter();
   const queryClient = useQueryClient();
-  const mutation = useMutate({
+  const mutation = useMutate<Body>({
     endpoint: "/checkout",
     method: "put",
     onSuccess: async ({ data }) => {

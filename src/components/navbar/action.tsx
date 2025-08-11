@@ -28,7 +28,7 @@ export const Action = async () => {
       ) : (
         <div className="flex items-center gap-2">
           <ButtonIcon icon={ShoppingCart} href={"/cart"} />
-          <ButtonIcon icon={UserCircleIcon} href={"/account"} />
+          <ButtonIcon icon={UserCircleIcon} href={"/account/orders"} />
         </div>
       )}
     </div>

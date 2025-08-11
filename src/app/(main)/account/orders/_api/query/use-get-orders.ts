@@ -19,6 +19,7 @@ export type TransformedOrderGroup = {
   id: string;
   status: string;
   total_price: string;
+  expired: string | null;
   items: OrderItem[];
 };
 

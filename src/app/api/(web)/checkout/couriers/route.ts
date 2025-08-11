@@ -497,45 +497,51 @@ export async function GET() {
 
     return successRes(
       {
-        express: {
-          ...express,
-          fastest:
-            express &&
-            (express.durationType === "HOUR"
-              ? format(express.fastest, "HH:mm", { locale: id })
-              : format(express.fastest, "PP", { locale: id })),
-          longest:
-            express &&
-            (express.durationType === "HOUR"
-              ? format(express.longest, "HH:mm", { locale: id })
-              : format(express.longest, "PP", { locale: id })),
-        },
-        regular: {
-          ...regular,
-          fastest:
-            regular &&
-            (regular.durationType === "HOUR"
-              ? format(regular.fastest, "HH:mm", { locale: id })
-              : format(regular.fastest, "PP", { locale: id })),
-          longest:
-            regular &&
-            (regular.durationType === "HOUR"
-              ? format(regular.longest, "HH:mm", { locale: id })
-              : format(regular.longest, "PP", { locale: id })),
-        },
-        economy: {
-          ...economy,
-          fastest:
-            economy &&
-            (economy.durationType === "HOUR"
-              ? format(economy.fastest, "HH:mm", { locale: id })
-              : format(economy.fastest, "PP", { locale: id })),
-          longest:
-            economy &&
-            (economy.durationType === "HOUR"
-              ? format(economy.longest, "HH:mm", { locale: id })
-              : format(economy.longest, "PP", { locale: id })),
-        },
+        express: express
+          ? {
+              ...express,
+              fastest:
+                express &&
+                (express.durationType === "HOUR"
+                  ? format(express.fastest, "HH:mm", { locale: id })
+                  : format(express.fastest, "PP", { locale: id })),
+              longest:
+                express &&
+                (express.durationType === "HOUR"
+                  ? format(express.longest, "HH:mm", { locale: id })
+                  : format(express.longest, "PP", { locale: id })),
+            }
+          : null,
+        regular: regular
+          ? {
+              ...regular,
+              fastest:
+                regular &&
+                (regular.durationType === "HOUR"
+                  ? format(regular.fastest, "HH:mm", { locale: id })
+                  : format(regular.fastest, "PP", { locale: id })),
+              longest:
+                regular &&
+                (regular.durationType === "HOUR"
+                  ? format(regular.longest, "HH:mm", { locale: id })
+                  : format(regular.longest, "PP", { locale: id })),
+            }
+          : null,
+        economy: economy
+          ? {
+              ...economy,
+              fastest:
+                economy &&
+                (economy.durationType === "HOUR"
+                  ? format(economy.fastest, "HH:mm", { locale: id })
+                  : format(economy.fastest, "PP", { locale: id })),
+              longest:
+                economy &&
+                (economy.durationType === "HOUR"
+                  ? format(economy.longest, "HH:mm", { locale: id })
+                  : format(economy.longest, "PP", { locale: id })),
+            }
+          : null,
       },
       "Ongkir detail"
     );

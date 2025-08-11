@@ -17,6 +17,7 @@ import {
 import { xendit } from "@/lib/utils";
 import { createId } from "@paralleldrive/cuid2";
 import { and, eq, inArray, sql } from "drizzle-orm";
+import { NextRequest } from "next/server";
 
 export async function GET() {
   try {
@@ -232,13 +233,15 @@ export async function POST() {
   }
 }
 
-export async function PUT() {
+export async function PUT(req: NextRequest) {
   try {
     const { Invoice } = xendit;
     const isAuth = await auth();
     if (!isAuth) return errorRes("Unauthorized", 401);
 
     const userId = isAuth.user.id;
+
+    const { note } = await req.json();
 
     // Ambil orderDraft aktif sekaligus detail address dan shipping supaya 1x query
     const orderDraftExist = await db.query.orderDraft.findFirst({
@@ -333,6 +336,8 @@ export async function PUT() {
       },
     });
 
+    console.log(invoice);
+
     await db.transaction(async (tx) => {
       // Lock variant yang dicekout
       await Promise.all(
@@ -350,6 +355,7 @@ export async function PUT() {
         productPrice: totalProductPrice.toString(),
         shippingPrice: orderDraftShippingsExist.price,
         totalPrice: totalPrice.toString(),
+        note,
       });
 
       // Update orderDraft jadi CHECKOUTED
@@ -373,6 +379,7 @@ export async function PUT() {
       await tx.insert(invoices).values({
         amount: totalPrice.toString(),
         orderId,
+        paymentId: invoice.id,
       });
 
       // Insert shipping

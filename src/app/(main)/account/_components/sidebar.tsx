@@ -1,0 +1,33 @@
+"use client";
+
+import { Button } from "@/components/ui/button";
+import { Headset, LogOut, ScrollText } from "lucide-react";
+import { signOut } from "next-auth/react";
+import React, { MouseEvent } from "react";
+
+export const Sidebar = () => {
+  const handleLogout = async (e: MouseEvent) => {
+    e.preventDefault();
+    await signOut({ redirect: true, redirectTo: "/" });
+  };
+  return (
+    <div className="bg-white text-black items-center shadow flex flex-col gap-1 p-3 rounded-lg h-auto">
+      <Button className="w-full justify-start" variant={"ghost"}>
+        <Headset />
+        FAQ&apos;s
+      </Button>
+      <Button className="w-full justify-start" variant={"ghost"}>
+        <ScrollText />
+        Policy
+      </Button>
+      <Button
+        className="w-full text-red-400 hover:bg-red-50 hover:text-red-500 justify-start"
+        variant={"ghost"}
+        onClick={handleLogout}
+      >
+        <LogOut />
+        Logout
+      </Button>
+    </div>
+  );
+};

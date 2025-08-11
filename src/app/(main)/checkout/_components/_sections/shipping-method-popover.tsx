@@ -14,6 +14,8 @@ import { Button } from "@/components/ui/button";
 import { Check, ChevronDown } from "lucide-react";
 import { cn, formatRupiah } from "@/lib/utils";
 import { OngkirData } from "../types";
+import { format } from "date-fns";
+import { id } from "date-fns/locale";
 
 interface Props {
   ongkir: OngkirData;
@@ -84,9 +86,24 @@ export function ShippingMethodPopover({
 function ShippingDisplay({ courier, name }: { courier: any; name: string }) {
   return (
     <div className="flex items-center justify-between w-full">
-      <div className="flex flex-col">
+      <div className="flex flex-col gap-1">
         <p className="font-medium">{name}</p>
-        <p className="text-sm">{courier.duration}</p>
+        <p className="text-xs text-gray-700 font-normal">
+          Estimate{" "}
+          {courier && courier.duration === "DAY"
+            ? format(
+                new Date(courier.longestEstimate ?? new Date().getTime()),
+                "PP",
+                { locale: id }
+              )
+            : format(
+                new Date(courier.longestEstimate ?? new Date().getTime()),
+                "HH:mm",
+                {
+                  locale: id,
+                }
+              )}
+        </p>
       </div>
       <p className="font-medium">{formatRupiah(courier.price)}</p>
     </div>
@@ -117,9 +134,24 @@ function ShippingOption({
       >
         {selected && <Check className="size-3 text-white stroke-3" />}
       </div>
-      <div className="flex flex-col flex-1">
+      <div className="flex flex-col flex-1 gap-1">
         <p className="font-medium">{name}</p>
-        <p className="text-sm">{courier.duration}</p>
+        <p className="text-xs text-gray-700">
+          Estimate{" "}
+          {courier && courier.duration === "DAY"
+            ? format(
+                new Date(courier.longestEstimate ?? new Date().getTime()),
+                "PP",
+                { locale: id }
+              )
+            : format(
+                new Date(courier.longestEstimate ?? new Date().getTime()),
+                "HH:mm",
+                {
+                  locale: id,
+                }
+              )}
+        </p>
       </div>
       <p className="font-medium">{formatRupiah(courier.price)}</p>
     </CommandItem>

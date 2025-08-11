@@ -8,7 +8,9 @@ import {
   productVariants,
   productImages,
 } from "@/lib/db";
-import { eq, sql } from "drizzle-orm";
+import { add, format } from "date-fns";
+import { id } from "date-fns/locale";
+import { desc, eq, sql } from "drizzle-orm";
 
 // --- TYPES ---
 type Variant = {
@@ -29,6 +31,7 @@ type TransformedOrderGroup = {
   id: string;
   status: string;
   total_price: string;
+  expired: string | null;
   items: OrderItem[];
 };
 
@@ -53,6 +56,14 @@ function findOrCreateOrderByID(
       id: row.id,
       status: row.status,
       total_price: row.total_price,
+      expired:
+        row.status === "WAITING_PAYMENT"
+          ? format(
+              add(new Date(row.created), { seconds: 10800 }),
+              "dd-LL-yyyy HH:mm",
+              { locale: id }
+            )
+          : null,
       items: [],
     };
     grouped.push(orderGroup);
@@ -97,9 +108,7 @@ function groupByStatus(groupedOrders: TransformedOrderGroup[]) {
 export async function GET() {
   try {
     const session = await auth();
-    if (!session || !session.user?.id) {
-      return errorRes("Unauthorized", 401);
-    }
+    if (!session || !session.user?.id) return errorRes("Unauthorized", 401);
 
     const userId = session.user.id;
 
@@ -120,12 +129,14 @@ export async function GET() {
         variant_isDefault: productVariants.isDefault,
         status: orders.status,
         total_price: orders.totalPrice,
+        created: orders.createdAt,
       })
       .from(orders)
       .innerJoin(orderItems, eq(orderItems.orderId, orders.id))
       .innerJoin(productVariants, eq(productVariants.id, orderItems.variantId))
       .innerJoin(products, eq(products.id, productVariants.productId))
-      .where(eq(orders.userId, userId));
+      .where(eq(orders.userId, userId))
+      .orderBy(desc(orders.createdAt));
 
     const groupedByOrder: TransformedOrderGroup[] = [];
 
@@ -138,7 +149,7 @@ export async function GET() {
 
     return successRes(result, "Orders retrieved with product thumbnails");
   } catch (error) {
-    console.error("ERROR_GET_CHECKOUT", error);
+    console.error("ERROR_GET_ORDERS", error);
     return errorRes("Internal Server Error", 500);
   }
 }

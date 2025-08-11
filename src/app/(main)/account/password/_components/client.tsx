@@ -1,13 +1,14 @@
-import { LabelInput } from "@/components/label-input";
-import { MessageInputError } from "@/components/message-input-error";
-import { Button } from "@/components/ui/button";
-import { TabsContent } from "@/components/ui/tabs";
-import { cn } from "@/lib/utils";
-import React, { FormEvent, useMemo, useState } from "react";
-import { ValidationView } from "./validation-view";
-import { useUpdatePassword } from "../../_api";
+"use client";
 
-export const PasswordTab = () => {
+import React, { FormEvent, useMemo, useState } from "react";
+import { useUpdatePassword } from "../_api";
+import { LabelInput } from "@/components/label-input";
+import { cn } from "@/lib/utils";
+import { MessageInputError } from "@/components/message-input-error";
+import { ValidationView } from "./_section/validation-view";
+import { Button } from "@/components/ui/button";
+
+const Client = () => {
   const [isFocus, setIsFocus] = useState(false);
   const [inputPassword, setInputPassword] = useState({
     old_password: "",
@@ -85,8 +86,9 @@ export const PasswordTab = () => {
       }
     );
   };
+
   return (
-    <TabsContent value="password" className="bg-white p-5">
+    <div className="bg-white p-5">
       <form onSubmit={handleSubmit} className="flex flex-col text-sm gap-3">
         <div className="flex flex-col w-full gap-1.5">
           <LabelInput
@@ -174,6 +176,8 @@ export const PasswordTab = () => {
           Save New Password
         </Button>
       </form>
-    </TabsContent>
+    </div>
   );
 };
+
+export default Client;

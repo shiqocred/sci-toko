@@ -1,6 +1,3 @@
-import { useAddAddress, useGetAddress } from "@/app/(main)/account/_api";
-import { useUpdateAddress } from "@/app/(main)/account/_api/mutation/use-update-address";
-import { MapPicker } from "@/app/(main)/account/_components/_tabs/address";
 import { LabelInput } from "@/components/label-input";
 import { MessageInputError } from "@/components/message-input-error";
 import { Badge } from "@/components/ui/badge";
@@ -19,7 +16,13 @@ import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { cn } from "@/lib/utils";
 import { ArrowLeft, Loader, LocateOff, PlusCircle, Send } from "lucide-react";
 import React, { FormEvent, MouseEvent, useEffect, useState } from "react";
-import { useSelectedAddress } from "../../_api";
+import { useGetAddress, useSelectedAddress } from "../../_api";
+import {
+  useAddAddress,
+  useUpdateAddress,
+} from "@/app/(main)/account/addresses/_api";
+import { MapPicker } from "@/app/(main)/account/addresses/_components/_section/map-picked";
+import { TooltipText } from "@/providers/tooltip-provider";
 
 const initialValue = {
   address: "",
@@ -347,16 +350,31 @@ export const DialogSelectAddress = ({
                 <MessageInputError error={errors?.detail} />
               </div>
 
-              <Label className="flex items-center gap-3">
-                <Checkbox
-                  className="border-gray-500"
-                  checked={input.is_default}
-                  onCheckedChange={(e) =>
-                    setInput((prev) => ({ ...prev, is_default: e }))
-                  }
-                />
-                <p className="text-sm font-medium">Set default address</p>
-              </Label>
+              <TooltipText
+                value="Unavailable to undefault address"
+                className={cn(
+                  "hidden",
+                  detailAddress?.data.isDefault && "flex"
+                )}
+                side="right"
+              >
+                <Label
+                  className={cn(
+                    "flex items-center gap-3 w-fit",
+                    detailAddress?.data.isDefault && "cursor-not-allowed"
+                  )}
+                >
+                  <Checkbox
+                    className="border-gray-500 disabled:opacity-100 disabled:pointer-events-auto disabled:cursor-not-allowed"
+                    checked={input.is_default}
+                    onCheckedChange={(e) =>
+                      setInput((prev) => ({ ...prev, is_default: e }))
+                    }
+                    disabled={detailAddress?.data.isDefault || isLoading}
+                  />
+                  <p className="text-sm font-medium">Set default address</p>
+                </Label>
+              </TooltipText>
             </div>
             <DialogFooter className="px-5 py-3 border-t">
               <Button

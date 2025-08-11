@@ -1,6 +1,6 @@
 // components/checkout/AddressSection.tsx
 import { Button } from "@/components/ui/button";
-import { MapPinned } from "lucide-react";
+import { Loader, MapPinned } from "lucide-react";
 import { Address } from "../types";
 import { DialogSelectAddress } from "../_dialogs";
 
@@ -21,47 +21,51 @@ export function AddressSection({
 }: Props) {
   const selected = addresses?.find((a) => a.id === addressId);
 
-  if (isLoading || !addresses) return null;
-
   return (
-    <>
-      <div className="w-full rounded-lg shadow p-5 bg-white border flex flex-col gap-4">
-        <div className="flex items-center justify-between">
-          <h3 className="font-semibold text-lg flex items-center gap-2">
-            <MapPinned className="size-5" />
-            Shipping Address
-          </h3>
-          <Button
-            variant="outline"
-            className="hover:bg-green-50"
-            onClick={() => setOpen(true)}
-          >
-            Select
-          </Button>
-        </div>
-
-        {selected && (
-          <div className="flex flex-col border rounded-md overflow-hidden gap-0">
-            <div className="flex items-center justify-between border-b py-2 px-3 bg-green-50">
-              <div className="flex items-center gap-2">
-                <p className="font-semibold">{selected.name}</p>
-                <span>|</span>
-                <p className="text-xs">{selected.phone}</p>
-              </div>
-              {selected.isDefault && (
-                <span className="text-xs bg-sci px-2 py-0.5 rounded-full text-white">
-                  Default
-                </span>
-              )}
-            </div>
-            <div className="p-3 text-sm">
-              <p className="text-gray-500">{selected.detail}</p>
-              <p>{selected.address}</p>
-            </div>
-          </div>
-        )}
+    <div className="w-full rounded-lg shadow p-5 bg-white border flex flex-col gap-4">
+      <div className="flex items-center justify-between">
+        <h3 className="font-semibold text-lg flex items-center gap-2">
+          <MapPinned className="size-5" />
+          Shipping Address
+        </h3>
+        <Button
+          variant="outline"
+          className="hover:bg-green-50"
+          onClick={() => setOpen(true)}
+        >
+          Select
+        </Button>
       </div>
 
+      {isLoading ? (
+        <div className="h-24 flex items-center justify-center flex-col gap-1">
+          <Loader className="animate-spin size-5" />
+          <p className="ml-1 text-sm">Loading...</p>
+        </div>
+      ) : (
+        <div className="w-full">
+          {selected && (
+            <div className="flex flex-col border rounded-md overflow-hidden gap-0">
+              <div className="flex items-center justify-between border-b py-2 px-3 bg-green-50">
+                <div className="flex items-center gap-2">
+                  <p className="font-semibold">{selected.name}</p>
+                  <span>|</span>
+                  <p className="text-xs">{selected.phone}</p>
+                </div>
+                {selected.isDefault && (
+                  <span className="text-xs bg-sci px-2 py-0.5 rounded-full text-white">
+                    Default
+                  </span>
+                )}
+              </div>
+              <div className="p-3 text-sm">
+                <p className="text-gray-500">{selected.detail}</p>
+                <p>{selected.address}</p>
+              </div>
+            </div>
+          )}
+        </div>
+      )}
       <DialogSelectAddress
         open={open}
         onOpenChange={() => {
@@ -72,6 +76,6 @@ export function AddressSection({
         addressId={addressId}
         listAddresses={addresses}
       />
-    </>
+    </div>
   );
 }

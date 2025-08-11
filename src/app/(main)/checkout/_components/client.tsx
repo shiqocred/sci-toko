@@ -15,16 +15,18 @@ import { ShippingMethodSection } from "./_sections/shipping-method-section";
 import { OrderSummarySection } from "./_sections/order-summary-section";
 import { CheckoutButton } from "./_sections/checkout-button";
 import { Button } from "@/components/ui/button";
-import { ArrowLeft } from "lucide-react";
+import { ArrowLeft, NotebookPen } from "lucide-react";
 import Link from "next/link";
 import { useConfirm } from "@/hooks/use-confirm";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 import { parseAsString, useQueryState } from "nuqs";
+import { Textarea } from "@/components/ui/textarea";
 
 export default function Client() {
   const [shipping, setShipping] = useState("");
   const [open, setOpen] = useState(false);
+  const [input, setInput] = useState("");
   const router = useRouter();
   const [checkouted, setCheckouted] = useQueryState(
     "checkout",
@@ -80,7 +82,10 @@ export default function Client() {
   const handleOrder = async () => {
     const ok = await confirmOrder();
     if (!ok) return;
-    createOrder({}, { onSuccess: () => setCheckouted("order") });
+    createOrder(
+      { body: { note: input } },
+      { onSuccess: () => setCheckouted("order") }
+    );
   };
 
   useEffect(() => {
@@ -124,6 +129,7 @@ export default function Client() {
             <OrderListSection
               products={checkout?.products || []}
               totalItems={checkout?.total_item || 0}
+              isLoading={isPendingCheckout}
             />
           </div>
 
@@ -134,6 +140,18 @@ export default function Client() {
               setShipping={setShipping}
               isLoading={isPendingOngkir || isRefetchingOngkir}
             />
+            <div className="w-full rounded-lg shadow p-5 bg-white border flex flex-col gap-4">
+              <h3 className="font-semibold text-lg flex items-center gap-2">
+                <NotebookPen className="size-5" />
+                Note for seller
+              </h3>
+              <Textarea
+                className="border-gray-300 focus-visible:ring-0 focus-visible:border-gray-400 row-span-6 min-h-20 resize-none"
+                placeholder="Please leave a note..."
+                value={input}
+                onChange={(e) => setInput(e.target.value)}
+              />
+            </div>
             <OrderSummarySection
               subtotal={checkout?.price || 0}
               shippingPrice={shippingPrice}
