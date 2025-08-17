@@ -136,93 +136,117 @@ export async function POST() {
     if (!isAuth) return errorRes("Unauthorized", 401);
 
     const userId = isAuth.user.id;
-    const userRole = isAuth.user.role ?? "BASIC";
-
-    // Update semua orderDraft aktif jadi ABANDONED
-    await db
-      .update(orderDraft)
-      .set({ status: "ABANDONED" })
-      .where(
-        and(eq(orderDraft.userId, userId), eq(orderDraft.status, "ACTIVE"))
-      );
-
-    // Hapus orderDraftShippings user
-    await db
-      .delete(orderDraftShippings)
-      .where(eq(orderDraftShippings.userId, userId));
-
-    // Ambil alamat default user dan variant sekaligus (bisa paralel)
-    const [addressDefault, variantSelected] = await Promise.all([
-      db.query.addresses.findFirst({
-        where: (a, { eq, and }) =>
-          and(eq(a.userId, userId), eq(a.isDefault, true)),
-      }),
-      db
-        .select({
-          variantId: carts.variantId,
-          qty: carts.quantity,
-          basicPrice: productVariants.basicPrice,
-          petShopPrice: productVariants.petShopPrice,
-          doctorPrice: productVariants.doctorPrice,
-          weight: productVariants.weight,
-          stock: productVariants.stock,
-        })
-        .from(carts)
-        .leftJoin(productVariants, eq(carts.variantId, productVariants.id))
-        .where(and(eq(carts.userId, userId), eq(carts.checked, true))),
-    ]);
-
-    // Filter variant dengan stok > 0 dan qty <= stok
-    const variantWithSufficientStock = variantSelected.filter(
-      ({ stock, qty }) => {
-        const s = Number(stock ?? 0);
-        const q = Number(qty ?? 0);
-        return s > 0 && q <= s;
-      }
-    );
-
-    if (variantWithSufficientStock.length === 0) {
-      return errorRes("No items with sufficient stock to create checkout", 400);
-    }
-
-    // Function format price sekali saja
-    const getPrice = (item: (typeof variantWithSufficientStock)[0]) => {
-      if (userRole === "PETSHOP") return Number(item.petShopPrice);
-      if (userRole === "VETERINARIAN") return Number(item.doctorPrice);
-      return Number(item.basicPrice);
-    };
-
-    // Hitung total berat dan harga secara reduce 1x saja
-    let totalWeight = 0;
-    let totalPrice = 0;
-    for (const item of variantWithSufficientStock) {
-      const qty = Number(item.qty ?? 0);
-      totalWeight += Number(item.weight ?? 0) * qty;
-      totalPrice += getPrice(item) * qty;
-    }
-
-    const orderDraftId = createId();
-
-    // Insert orderDraft baru
-    await db.insert(orderDraft).values({
-      id: orderDraftId,
-      userId,
-      totalPrice: totalPrice.toString(),
-      addressId: addressDefault?.id,
-      totalWeight: totalWeight.toString(),
-      status: "ACTIVE",
+    const user = await db.query.users.findFirst({
+      columns: { role: true },
+      where: (u, { eq }) => eq(u.id, userId),
     });
 
-    // Insert orderDraftItems hanya untuk variant yang stok cukup
-    await db.insert(orderDraftItems).values(
-      variantWithSufficientStock.map((item) => ({
-        orderDraftId,
-        variantId: item.variantId,
-        price: getPrice(item).toString(),
-        quantity: item.qty,
-        weight: item.weight ?? "0",
-      }))
-    );
+    if (!user) throw errorRes("Unauthorized", 401);
+    // Update semua orderDraft aktif jadi ABANDONED
+
+    await db.transaction(async (tx) => {
+      await Promise.all([
+        tx
+          .update(orderDraft)
+          .set({ status: "ABANDONED" })
+          .where(
+            and(eq(orderDraft.userId, userId), eq(orderDraft.status, "ACTIVE"))
+          ),
+
+        // Hapus orderDraftShippings user
+        tx
+          .delete(orderDraftShippings)
+          .where(eq(orderDraftShippings.userId, userId)),
+      ]);
+
+      // Ambil alamat default user dan variant sekaligus (bisa paralel)
+      const [addressDefault, variantSelected] = await Promise.all([
+        tx.query.addresses.findFirst({
+          where: (a, { eq, and }) =>
+            and(eq(a.userId, userId), eq(a.isDefault, true)),
+        }),
+        tx
+          .select({
+            variantId: carts.variantId,
+            qty: carts.quantity,
+            weight: productVariants.weight,
+            stock: productVariants.stock,
+          })
+          .from(carts)
+          .leftJoin(productVariants, eq(carts.variantId, productVariants.id))
+          .where(and(eq(carts.userId, userId), eq(carts.checked, true))),
+      ]);
+
+      const variantIds = variantSelected.map((i) => i.variantId);
+
+      const pricing = await db.query.productVariantPrices.findMany({
+        where: (pp, { inArray }) => inArray(pp.variantId, variantIds),
+      });
+
+      // Filter variant dengan stok > 0 dan qty <= stok
+      const variantWithSufficientStock = variantSelected.filter(
+        ({ stock, qty }) => {
+          const s = Number(stock ?? 0);
+          const q = Number(qty ?? 0);
+          return s > 0 && q <= s;
+        }
+      );
+
+      if (variantWithSufficientStock.length === 0) {
+        return errorRes(
+          "No items with sufficient stock to create checkout",
+          400
+        );
+      }
+
+      // Function format price sekali saja
+      const getPrice = (item?: typeof pricing) => {
+        if (item === undefined) return 0;
+        if (user.role === "PETSHOP")
+          return Number(item.find((i) => i.role === "PETSHOP")?.price || "0");
+        if (user.role === "VETERINARIAN")
+          return Number(
+            item.find((i) => i.role === "VETERINARIAN")?.price || "0"
+          );
+        return Number(item.find((i) => i.role === "BASIC")?.price || "0");
+      };
+
+      // Hitung total berat dan harga secara reduce 1x saja
+      let totalWeight = 0;
+      let totalPrice = 0;
+      for (const item of variantWithSufficientStock) {
+        const qty = Number(item.qty ?? 0);
+        totalWeight += Number(item.weight ?? 0) * qty;
+        totalPrice += getPrice(
+          pricing.filter((i) => i.variantId === item.variantId)
+        );
+      }
+
+      const orderDraftId = createId();
+
+      // Insert orderDraft baru
+      await tx.insert(orderDraft).values({
+        id: orderDraftId,
+        userId,
+        totalPrice: totalPrice.toString(),
+        addressId: addressDefault?.id,
+        totalWeight: totalWeight.toString(),
+        status: "ACTIVE",
+      });
+
+      // Insert orderDraftItems hanya untuk variant yang stok cukup
+      await tx.insert(orderDraftItems).values(
+        variantWithSufficientStock.map((item) => ({
+          orderDraftId,
+          variantId: item.variantId,
+          price: getPrice(
+            pricing.filter((i) => i.variantId === item.variantId)
+          ).toString(),
+          quantity: item.qty,
+          weight: item.weight ?? "0",
+        }))
+      );
+    });
 
     // **Catatan: Tidak ada penghapusan cart di sini lagi**
 
@@ -265,12 +289,10 @@ export async function PUT(req: NextRequest) {
     ] = await Promise.all([
       db.query.storeDetail.findFirst(),
       db.query.addresses.findFirst({
-        where: (a, { eq, and }) =>
-          and(eq(a.id, addressId), eq(a.userId, userId)),
+        where: (a, { eq }) => eq(a.id, addressId),
       }),
       db.query.orderDraftShippings.findFirst({
-        where: (ods, { eq, and }) =>
-          and(eq(ods.orderDraftId, orderDraftExist.id), eq(ods.userId, userId)),
+        where: (ods, { eq }) => eq(ods.orderDraftId, orderDraftExist.id),
       }),
       db.query.orderDraftItems.findMany({
         where: (odi, { eq }) => eq(odi.orderDraftId, orderDraftExist.id),
@@ -335,8 +357,6 @@ export async function PUT(req: NextRequest) {
         invoiceDuration: 10800,
       },
     });
-
-    console.log(invoice);
 
     await db.transaction(async (tx) => {
       // Lock variant yang dicekout

@@ -12,9 +12,7 @@ export async function GET(
     const isAuth = await auth();
     if (!isAuth) return errorRes("Unauthorized", 401);
 
-    const userId = isAuth.user.id;
-
-    const response = await detailAddress(userId, addressId);
+    const response = await detailAddress(addressId);
 
     return successRes(response, "Address Detail");
   } catch (error) {

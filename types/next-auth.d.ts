@@ -7,7 +7,6 @@ declare module "next-auth" {
       id: string;
       name: string | null;
       email: string | null;
-      role: "BASIC" | "PETSHOP" | "VETERINARIAN" | "ADMIN";
       emailVerified: Date | null;
       phone: string | null;
       image: string | null;
@@ -18,7 +17,6 @@ declare module "next-auth" {
     id: string;
     name: string | null;
     email: string | null;
-    role: "BASIC" | "PETSHOP" | "VETERINARIAN" | "ADMIN";
     emailVerified: Date | null;
     phone: string | null;
     image: string | null;
@@ -30,7 +28,6 @@ declare module "next-auth/jwt" {
     id: string;
     name: string | null;
     email: string | null;
-    role: "BASIC" | "PETSHOP" | "VETERINARIAN" | "ADMIN";
     emailVerified: Date | null;
     phone: string | null;
     image: string | null;

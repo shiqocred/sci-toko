@@ -11,7 +11,7 @@ export const useUpgradePetShop = () => {
     method: "put",
     onSuccess: async ({ data }) => {
       toast.success(data.message);
-      await invalidateQuery(queryClient, [["status-app-petshop"]]);
+      await invalidateQuery(queryClient, [["status-app-petshop"], ["user"]]);
     },
     onError: {
       title: "REGISTER",

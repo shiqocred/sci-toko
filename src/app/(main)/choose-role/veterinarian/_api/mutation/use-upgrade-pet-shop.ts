@@ -11,7 +11,10 @@ export const useUpgradeVeterinarian = () => {
     method: "put",
     onSuccess: async ({ data }) => {
       toast.success(data.message);
-      await invalidateQuery(queryClient, [["status-app-veterinarian"]]);
+      await invalidateQuery(queryClient, [
+        ["status-app-veterinarian"],
+        ["user"],
+      ]);
     },
     onError: {
       title: "REGISTER",

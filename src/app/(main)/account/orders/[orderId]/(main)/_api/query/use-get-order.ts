@@ -7,7 +7,7 @@ type Variant = {
   quantity: string;
 };
 
-type ProductOutput = {
+export type ProductOutput = {
   id: string | null;
   name: string | null;
   image: string | null;
@@ -15,25 +15,27 @@ type ProductOutput = {
   variant: Variant[] | null;
 };
 
+export type HistoryStatus =
+  | "CONFIRMED"
+  | "SCHEDULED"
+  | "ALLOCATED"
+  | "PICKING_UP"
+  | "PICKED"
+  | "CANCELLED"
+  | "ON_HOLD"
+  | "DROPPING_OFF"
+  | "RETURN_IN_TRANSIT"
+  | "RETURNED"
+  | "REJECTED"
+  | "DISPOSED"
+  | "COURIER_NOT_FOUND"
+  | "DELIVERED"
+  | "PENDING";
+
 type HistoriesExist = {
   id: string;
   updatedAt: Date | null;
-  status:
-    | "CONFIRMED"
-    | "SCHEDULED"
-    | "ALLOCATED"
-    | "PICKING_UP"
-    | "PICKED"
-    | "CANCELLED"
-    | "ON_HOLD"
-    | "DROPPING_OFF"
-    | "RETURN_IN_TRANSIT"
-    | "RETURNED"
-    | "REJECTED"
-    | "DISPOSED"
-    | "COURIER_NOT_FOUND"
-    | "DELIVERED"
-    | "PENDING";
+  status: HistoryStatus;
   shippingId: string;
   note: string | null;
   serviceType: string | null;

@@ -406,8 +406,7 @@ export async function GET() {
 
     const [address, couriersRaw, storeLocation] = await Promise.all([
       db.query.addresses.findFirst({
-        where: (a, { eq, and }) =>
-          and(eq(a.userId, userId), eq(a.id, addressId)),
+        where: (a, { eq }) => eq(a.id, addressId),
       }),
       db.query.couriers.findMany({
         columns: { value: true },

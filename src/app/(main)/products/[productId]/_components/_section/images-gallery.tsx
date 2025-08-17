@@ -24,7 +24,7 @@ export const ImagesGallery = ({
 }: ImagesGalleryProps) => {
   return (
     <div className="flex flex-col gap-4 w-full">
-      <div className="w-full relative aspect-square bg-white rounded overflow-hidden shadow">
+      <div className="w-full relative aspect-square bg-white rounded-lg overflow-hidden shadow">
         <Image
           alt="product"
           fill
@@ -55,7 +55,7 @@ export const ImagesGallery = ({
               <CarouselItem key={item} className="basis-1/3 pl-4 select-none">
                 <div
                   className={cn(
-                    "w-full relative aspect-square bg-white rounded overflow-hidden shadow",
+                    "w-full relative aspect-square bg-white rounded-lg overflow-hidden shadow",
                     item === imageHighlight && "border border-sci"
                   )}
                   onMouseEnter={() => setImageHighlight(item)}

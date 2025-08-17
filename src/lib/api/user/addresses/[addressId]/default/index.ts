@@ -11,7 +11,7 @@ export const updateStatusAddress = async (
       id: true,
       isDefault: true,
     },
-    where: (a, { eq, and }) => and(eq(a.id, addressId), eq(a.userId, userId)),
+    where: (a, { eq }) => eq(a.id, addressId),
   });
 
   if (!isDefault) throw errorRes("Address is required", 404);

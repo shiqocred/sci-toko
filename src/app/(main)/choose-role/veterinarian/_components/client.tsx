@@ -12,7 +12,6 @@ import {
   useReset,
   useUpgradeVeterinarian,
 } from "../_api";
-import { useSession } from "next-auth/react";
 import { useRouter } from "next/navigation";
 import { FormView } from "./views/form-view";
 import { PendingView } from "./views/pending-view";
@@ -39,7 +38,6 @@ const initialErrors = {
 };
 
 const Client = () => {
-  const { update } = useSession();
   const router = useRouter();
   const [input, setInput] = useState(initialValue);
   const [errors, setErrors] = useState(initialErrors);
@@ -95,7 +93,6 @@ const Client = () => {
   const handleActivate = async (e: MouseEvent) => {
     e.preventDefault();
 
-    await update({ role: formData?.role });
     router.push("/");
   };
   return (

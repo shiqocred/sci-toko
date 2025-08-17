@@ -9,10 +9,9 @@ export async function GET(
 ) {
   try {
     const isAuth = await auth();
-    const userRole = isAuth?.user.role ?? "BASIC";
     const userId = isAuth?.user.id;
 
-    const response = await productDetail(params, userId, userRole);
+    const response = await productDetail(params, userId);
 
     return successRes(response, "Product detail");
   } catch (error) {

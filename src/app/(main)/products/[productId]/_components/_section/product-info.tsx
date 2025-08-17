@@ -5,21 +5,13 @@ import { useState, useEffect, MouseEvent } from "react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
-import {
-  StarIcon,
-  Tag,
-  PawPrint,
-  Truck,
-  Minus,
-  Plus,
-  Loader2,
-} from "lucide-react";
+import { StarIcon, Tag, PawPrint, Minus, Plus, Loader2 } from "lucide-react";
 import { cn, formatRupiah, numericString } from "@/lib/utils";
-import { ProductDetailProps, Variant } from "../client";
-import { useAddToCart } from "../../_api";
+import { ProductDetailProps, useAddToCart, Variant } from "../../_api";
 import { DialogAddedToCart } from "../_dialogs";
 import { useSession } from "next-auth/react";
 import { useRouter } from "next/navigation";
+import Link from "next/link";
 
 // Props for the ProductInfo component
 interface ProductInfoProps {
@@ -64,16 +56,37 @@ export const ProductInfo = ({ product }: ProductInfoProps) => {
     ? formatRupiah(parseFloat(input.quantity) * parseFloat(data.newPrice))
     : "-";
 
+  const isSame = data.oldPrice === data.newPrice;
+  const isNoPrice = Number(data.newPrice) < 1;
+  const available = product.available;
+
   const priceFormatted = (type: "old" | "new") => {
+    // price selected
     const price = type === "old" ? data.oldPrice : data.newPrice;
-    const defaultVariant =
+    // data variant
+    const dataVariant =
       type === "old"
         ? product?.data_variant.oldPrice
         : product?.data_variant.newPrice;
-    if (isNaN(parseFloat(price))) {
-      return defaultVariant.map((item) => formatRupiah(item)).join(" - ");
+
+    if (available) {
+      if (product.default_variant) {
+        return formatRupiah(price);
+      } else if (product.variants && product.variants.length > 0) {
+        if (isNaN(parseFloat(price))) {
+          return dataVariant.map((item) => formatRupiah(item)).join(" - ");
+        } else {
+          return formatRupiah(price);
+        }
+      }
     } else {
-      return formatRupiah(price);
+      if (isNaN(parseFloat(price))) {
+        return product?.data_variant.oldPrice
+          .map((item) => formatRupiah(item))
+          .join(" - ");
+      } else {
+        return formatRupiah(data.oldPrice);
+      }
     }
   };
 
@@ -137,131 +150,162 @@ export const ProductInfo = ({ product }: ProductInfoProps) => {
   }, [product]);
 
   return (
-    <div className="w-full bg-white shadow rounded p-5 flex flex-col gap-3.5">
+    <div className="w-full flex flex-col">
       <DialogAddedToCart open={dialog} onOpenChange={setDialog} />
-      <div className="flex flex-col gap-2">
-        <h2 className="text-2xl font-bold">{product?.name}</h2>
-        <div className="flex items-center gap-3">
-          <StarIcon className="size-4 fill-yellow-400 text-transparent" />
-          <div className="flex items-center text-xs gap-2 text-gray-500">
-            <span>4.8</span>
-            <span className="h-4 w-px bg-gray-500" />
-            <span>100 Sold</span>
+      <div className="flex flex-col gap-4 bg-white shadow rounded-lg p-5 ">
+        <div className="flex flex-col gap-2">
+          <h2 className="text-2xl font-bold">{product?.name}</h2>
+          <div className="flex items-center gap-3">
+            <StarIcon className="size-4 fill-yellow-400 text-transparent" />
+            <div className="flex items-center text-xs gap-2 text-gray-500">
+              <span>4.8</span>
+              <span className="h-4 w-px bg-gray-500" />
+              <span>100 Sold</span>
+            </div>
           </div>
-        </div>
-        <div className="flex items-center flex-wrap gap-2">
-          <Badge
-            variant={"outline"}
-            className="px-3 py-1 rounded border-gray-500 text-gray-500 gap-2"
-          >
-            <Tag />
-            {product?.category.name}
-          </Badge>
-          {product?.pets.map((item) => (
+          <div className="flex items-center flex-wrap gap-2">
             <Badge
-              key={item.name}
               variant={"outline"}
               className="px-3 py-1 rounded border-gray-500 text-gray-500 gap-2"
+              asChild
             >
-              <PawPrint />
-              {item.name}
+              <Link href={`/products?categories=${product?.category.slug}`}>
+                <Tag />
+                {product?.category.name}
+              </Link>
             </Badge>
-          ))}
-        </div>
-      </div>
-      <Separator className="bg-gray-500" />
-      <div className="flex flex-col gap-4">
-        <div className="flex flex-col">
-          <div className="flex items-center gap-2">
-            <p className="text-xl font-bold">{priceFormatted("new")}</p>
-            {discountFormatted()}
-          </div>
-          <div className="flex items-center gap-2">
-            <p className="text-sm text-gray-500 line-through">
-              {priceFormatted("old")}
-            </p>
-          </div>
-        </div>
-        {product?.variants && product?.variants.length > 0 && (
-          <div className="flex flex-wrap items-center gap-2">
-            {product.variants.map((item) => (
-              <Button
-                key={item.id}
-                size={"sm"}
+            {product?.pets.map((item) => (
+              <Badge
+                key={item.name}
                 variant={"outline"}
-                className={cn(
-                  "text-xs",
-                  item.id === input.variant_id && "border-gray-500"
-                )}
-                disabled={parseFloat(item.stock) < 1}
-                onClick={() => handleSelectVariant(item)}
+                className="px-3 py-1 rounded border-gray-500 text-gray-500 gap-2"
+                asChild
               >
-                {item.name}
-              </Button>
+                <Link href={`/products?pets=${item.slug}`}>
+                  <PawPrint />
+                  {item.name}
+                </Link>
+              </Badge>
             ))}
           </div>
-        )}
-        <div className="flex items-center gap-3">
-          <div className="flex items-center">
-            <Button
-              variant={"outline"}
-              size={"icon"}
-              className="rounded-r-none disabled:opacity-100 group"
-              disabled={parseFloat(input.quantity) <= 1}
-              onClick={() => handleQuantity("reduce")}
-            >
-              <Minus className="group-disabled:opacity-50" />
-            </Button>
-            <input
-              className="h-9 focus-visible:outline-0 text-center w-14 border-y"
-              type="number"
-              value={input.quantity}
-              onChange={(e) =>
-                setInput((prev) => ({
-                  ...prev,
-                  quantity:
-                    parseFloat(e.target.value) >= parseFloat(data.stock)
-                      ? parseFloat(data.stock).toString()
-                      : numericString(e.target.value),
-                }))
-              }
-            />
-            <Button
-              variant={"outline"}
-              size={"icon"}
-              className="rounded-l-none disabled:opacity-100 group"
-              onClick={() => handleQuantity("increase")}
-              disabled={parseFloat(input.quantity) === parseFloat(data.stock)}
-            >
-              <Plus className="group-disabled:opacity-50" />
-            </Button>
-          </div>
-          <p
-            className={cn(
-              "text-xs",
-              isNaN(parseFloat(data.stock)) && "font-semibold"
+        </div>
+        <Separator className="bg-gray-500" />
+        <div className="flex flex-col gap-4">
+          <div className="flex flex-col">
+            <div className="flex items-center gap-2">
+              <p className="text-xl font-bold">{priceFormatted("new")}</p>
+              {available && !isSame && !isNoPrice && discountFormatted()}
+            </div>
+            {available && !isSame && !isNoPrice && (
+              <div className="flex items-center gap-2">
+                <p className="text-sm text-gray-500 line-through">
+                  {priceFormatted("old")}
+                </p>
+              </div>
             )}
+          </div>
+          {product?.variants && product?.variants.length > 0 && (
+            <div className="flex flex-wrap items-center gap-2">
+              {product.variants.map((item) => (
+                <Button
+                  key={item.id}
+                  size={"sm"}
+                  variant={"outline"}
+                  className={cn(
+                    "text-xs",
+                    item.id === input.variant_id && "border-gray-500"
+                  )}
+                  disabled={parseFloat(item.stock) < 1}
+                  onClick={() => handleSelectVariant(item)}
+                >
+                  {item.name}
+                </Button>
+              ))}
+            </div>
+          )}
+          <div className="flex items-center gap-3">
+            {available && (
+              <div className="flex items-center">
+                <Button
+                  variant={"outline"}
+                  size={"icon"}
+                  className="rounded-r-none disabled:opacity-100 group"
+                  disabled={parseFloat(input.quantity) <= 1}
+                  onClick={() => handleQuantity("reduce")}
+                >
+                  <Minus className="group-disabled:opacity-50" />
+                </Button>
+                <input
+                  className="h-9 focus-visible:outline-0 text-center w-14 border-y"
+                  type="number"
+                  value={input.quantity}
+                  onChange={(e) =>
+                    setInput((prev) => ({
+                      ...prev,
+                      quantity:
+                        parseFloat(e.target.value) >= parseFloat(data.stock)
+                          ? parseFloat(data.stock).toString()
+                          : numericString(e.target.value),
+                    }))
+                  }
+                />
+                <Button
+                  variant={"outline"}
+                  size={"icon"}
+                  className="rounded-l-none disabled:opacity-100 group"
+                  onClick={() => handleQuantity("increase")}
+                  disabled={
+                    parseFloat(input.quantity) === parseFloat(data.stock)
+                  }
+                >
+                  <Plus className="group-disabled:opacity-50" />
+                </Button>
+              </div>
+            )}
+            <p
+              className={cn(
+                "text-xs",
+                isNaN(parseFloat(data.stock)) && "font-semibold"
+              )}
+            >
+              {!isNaN(parseFloat(data.stock)) && "Stock: "}
+              {data.stock}
+            </p>
+          </div>
+          {available && (
+            <div className="flex items-center justify-between text-sm gap-2">
+              <p>Subtotal</p>
+              <p className="font-semibold text-lg">{subtotal}</p>
+            </div>
+          )}
+          <Button
+            variant={"destructive"}
+            className="flex-auto w-full rounded-full"
+            onClick={handleAddToCart}
+            disabled={
+              ((!input.variant_id || parseFloat(data.stock) < 1) &&
+                status === "authenticated") ||
+              !available
+            }
           >
-            {!isNaN(parseFloat(data.stock)) && "Stock: "}
-            {data.stock}
-          </p>
+            {isAddingToCart && <Loader2 className="animate-spin" />}
+            {status === "authenticated" && available && "Add to Cart"}
+            {status === "unauthenticated" && available && "Sign in"}
+            {status === "authenticated" &&
+              !available &&
+              `Available for ${product.availableFor
+                .map((i) => {
+                  if (i === "BASIC") {
+                    return "Pet Owner";
+                  } else if (i === "PETSHOP") {
+                    return "Pet Shop";
+                  } else if (i === "VETERINARIAN") {
+                    return "Pet Clinic";
+                  }
+                })
+                .join(" & ")}`}
+          </Button>
         </div>
-        <div className="flex items-center justify-between text-sm gap-2">
-          <p>Subtotal</p>
-          <p className="font-semibold text-lg">{subtotal}</p>
-        </div>
-        <Button
-          variant={"destructive"}
-          className="flex-auto w-full rounded-full"
-          onClick={handleAddToCart}
-          disabled={
-            (!input.variant_id || parseFloat(data.stock) < 1) &&
-            status === "authenticated"
-          }
-        >
-          {isAddingToCart && <Loader2 className="animate-spin" />}
-          {status === "authenticated" ? "Add to Cart" : "Sign in"}
-        </Button>
       </div>
     </div>
   );

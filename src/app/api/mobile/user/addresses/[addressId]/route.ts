@@ -14,9 +14,7 @@ export async function GET(
     if (!auth || auth.email || auth.password || !auth.sub)
       throw errorRes("Unauthorized", 401);
 
-    const { sub: userId } = auth;
-
-    const response = await detailAddress(userId, addressId);
+    const response = await detailAddress(addressId);
 
     return successRes(response, "Address Detail");
   } catch (error) {

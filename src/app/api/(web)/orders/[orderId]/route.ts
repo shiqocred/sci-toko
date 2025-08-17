@@ -158,8 +158,6 @@ export async function GET(
     const session = await auth();
     if (!session || !session.user?.id) return errorRes("Unauthorized", 401);
 
-    const userId = session.user.id;
-
     const { orderId } = await params;
 
     console.log(orderId);
@@ -197,7 +195,7 @@ export async function GET(
       .from(orders)
       .leftJoin(invoices, eq(invoices.orderId, orders.id))
       .leftJoin(shippings, eq(shippings.orderId, orders.id))
-      .where(and(eq(orders.id, orderId), eq(orders.userId, userId)))
+      .where(eq(orders.id, orderId))
       .limit(1);
 
     if (!orderRes) return errorRes("Order not found", 400);

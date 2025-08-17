@@ -3,7 +3,7 @@
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
 import Link from "next/link";
-import { ProductDetailProps } from "../client";
+import { ProductDetailProps } from "../../_api";
 
 interface DetailProductProps {
   product: ProductDetailProps;
@@ -14,7 +14,7 @@ export const DetailProduct = ({ product }: DetailProductProps) => {
     <div className="w-full ">
       <Tabs
         defaultValue="detail"
-        className="gap-0 h-fit shadow rounded overflow-hidden"
+        className="gap-0 h-fit shadow rounded-lg overflow-hidden"
       >
         <TabsList className="w-full bg-transparent gap-1 p-0 shadow-none *:w-full *:flex-auto *:rounded-none *:shadow-none *:text-gray-500 *:bg-white *:hover:bg-green-50 *:hover:text-green-600 *:border-0 *:border-b-2 *:border-gray-300 *:data-[state=active]:shadow-none *:data-[state=active]:border-green-600 *:data-[state=active]:text-green-600 *:hover:data-[state=active]:bg-green-50">
           <TabsTrigger value="detail" asChild>
@@ -34,21 +34,29 @@ export const DetailProduct = ({ product }: DetailProductProps) => {
           <span className="text-gray-500 ">{product?.description}</span>
           <div className="flex flex-col">
             <p className="font-bold">Indication</p>
-            <div
-              className="text-sm text-gray-500 leading-relaxed prose prose-sm max-w-none"
-              dangerouslySetInnerHTML={{
-                __html: product?.indication ?? "",
-              }}
-            />
+            {product?.indication ? (
+              <div
+                className="text-sm text-gray-500 leading-relaxed prose prose-sm max-w-none"
+                dangerouslySetInnerHTML={{
+                  __html: product?.indication,
+                }}
+              />
+            ) : (
+              "-"
+            )}
           </div>
           <div className="flex flex-col">
             <p className="font-bold">Dosage & Usage</p>
-            <div
-              className="text-sm text-gray-500 leading-relaxed prose prose-sm max-w-none"
-              dangerouslySetInnerHTML={{
-                __html: product?.dosage_usage ?? "",
-              }}
-            />
+            {product?.dosage_usage ? (
+              <div
+                className="text-sm text-gray-500 leading-relaxed prose prose-sm max-w-none"
+                dangerouslySetInnerHTML={{
+                  __html: product?.dosage_usage,
+                }}
+              />
+            ) : (
+              "-"
+            )}
           </div>
         </TabsContent>
         <TabsContent
@@ -78,23 +86,29 @@ export const DetailProduct = ({ product }: DetailProductProps) => {
           <div className="flex flex-col">
             <span className="font-bold">Storage Instruction</span>
             <span className="text-gray-500 ">
-              {product?.storage_instruction}
+              {product?.storage_instruction
+                ? product?.storage_instruction
+                : "-"}
             </span>
           </div>
           <div className="flex flex-col">
             <span className="font-bold">Packaging</span>
-            <span className="text-gray-500 ">{product?.packaging}</span>
+            <span className="text-gray-500 ">
+              {product?.packaging ? product?.packaging : "-"}
+            </span>
           </div>
           <div className="flex flex-col">
             <span className="font-bold">Registration Number </span>
             <span className="text-gray-500 ">
-              {product?.registration_number}
+              {product?.registration_number
+                ? product?.registration_number
+                : "-"}
             </span>
           </div>
           <div className="flex flex-col">
             <span className="font-bold">Produced by</span>
             <Link
-              href={"#"}
+              href={`/products?suppliers=${product?.supplier.slug}`}
               className="text-gray-500 hover:underline underline-offset-2 hover:text-gray-700"
             >
               {product?.supplier.name}

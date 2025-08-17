@@ -1,56 +1,10 @@
 "use client";
 
 import React, { useEffect, useMemo, useState } from "react";
-import { useGetProduct } from "../_api";
+import { ProductDetailProps, useGetProduct } from "../_api";
 import { useParams } from "next/navigation";
 import { DetailProduct, ImagesGallery, ProductInfo } from "./_section";
 import { DialogUnavailable } from "./_dialogs";
-
-export interface VariantDefault {
-  id: string;
-  old_price: string;
-  new_price: string;
-  stock: string;
-  weight: string;
-  discount: string;
-}
-
-export interface Variant extends VariantDefault {
-  name: string;
-}
-export interface ProductDetailProps {
-  name: string;
-  description: string;
-  indication: string;
-  dosage_usage: string;
-  packaging: string;
-  registration_number: string;
-  storage_instruction: string;
-  supplier: {
-    name: string;
-    slug: string;
-  };
-  category: {
-    name: string;
-    slug: string;
-  };
-  compositions: {
-    value: string;
-    name: string;
-  }[];
-  images: string[];
-  pets: {
-    name: string;
-    slug: string;
-  }[];
-  data_variant: {
-    oldPrice: [string] | [string, string];
-    newPrice: [string] | [string, string];
-    discount: string;
-  };
-  variants: Variant[] | null;
-  default_variant: VariantDefault | null;
-}
 
 const Client = () => {
   const { productId } = useParams();

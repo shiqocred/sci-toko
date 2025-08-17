@@ -1,56 +1,56 @@
 import { useApiQuery } from "@/lib/query/use-query";
 
-type Response = {
-  data: {
+export interface VariantDefault {
+  id: string;
+  old_price: string;
+  new_price: string;
+  stock: string;
+  weight: string;
+  discount: string;
+}
+
+export interface Variant extends VariantDefault {
+  name: string;
+}
+
+export type ProductDetailProps = {
+  name: string;
+  description: string;
+  indication: string;
+  dosage_usage: string;
+  packaging: string;
+  registration_number: string;
+  storage_instruction: string;
+  available: boolean;
+  availableFor: ("BASIC" | "PETSHOP" | "VETERINARIAN")[];
+  supplier: {
     name: string;
-    description: string;
-    indication: string;
-    dosage_usage: string;
-    packaging: string;
-    registration_number: string;
-    storage_instruction: string;
-    supplier: {
-      name: string;
-      slug: string;
-    };
-    category: {
-      name: string;
-      slug: string;
-    };
-    compositions: {
-      value: string;
-      name: string;
-    }[];
-    images: string[];
-    pets: {
-      name: string;
-      slug: string;
-    }[];
-    data_variant: {
-      oldPrice: [string] | [string, string];
-      newPrice: [string] | [string, string];
-      discount: string;
-    };
-    variants:
-      | {
-          id: string;
-          name: string;
-          old_price: string;
-          new_price: string;
-          stock: string;
-          weight: string;
-          discount: string;
-        }[]
-      | null;
-    default_variant: {
-      id: string;
-      old_price: string;
-      new_price: string;
-      stock: string;
-      weight: string;
-      discount: string;
-    } | null;
+    slug: string;
   };
+  category: {
+    name: string;
+    slug: string;
+  };
+  compositions: {
+    value: string;
+    name: string;
+  }[];
+  images: string[];
+  pets: {
+    name: string;
+    slug: string;
+  }[];
+  data_variant: {
+    oldPrice: string[];
+    newPrice: string[];
+    discount: string;
+  };
+  variants: Variant[] | null;
+  default_variant: VariantDefault | null;
+};
+
+type Response = {
+  data: ProductDetailProps;
 };
 
 export const useGetProduct = ({ productId }: { productId: string }) => {

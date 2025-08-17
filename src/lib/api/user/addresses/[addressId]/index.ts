@@ -20,7 +20,7 @@ const addressSchema = z.object({
   is_default: z.boolean(),
 });
 
-export const detailAddress = async (userId: string, addressId: string) => {
+export const detailAddress = async (addressId: string) => {
   const address = await db.query.addresses.findFirst({
     columns: {
       id: true,
@@ -36,7 +36,7 @@ export const detailAddress = async (userId: string, addressId: string) => {
       latitude: true,
       longitude: true,
     },
-    where: (a, { eq, and }) => and(eq(a.userId, userId), eq(a.id, addressId)),
+    where: (a, { eq }) => eq(a.id, addressId),
   });
 
   if (!address) throw errorRes("Address not found", 404);
@@ -107,7 +107,5 @@ export const updateAddress = async (
 };
 
 export const deleteAddress = async (userId: string, addressId: string) => {
-  await db
-    .delete(addresses)
-    .where(and(eq(addresses.id, addressId), eq(addresses.userId, userId)));
+  await db.delete(addresses).where(eq(addresses.id, addressId));
 };

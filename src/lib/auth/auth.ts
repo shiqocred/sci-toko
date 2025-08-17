@@ -2,7 +2,14 @@ import NextAuth, { CredentialsSignin } from "next-auth";
 import Google from "next-auth/providers/google";
 import Credentials from "next-auth/providers/credentials";
 import { DrizzleAdapter } from "@auth/drizzle-adapter";
-import { db, accounts, sessions, users, verificationTokens } from "../db";
+import {
+  db,
+  accounts,
+  sessions,
+  users,
+  verificationTokens,
+  userRoleDetails,
+} from "../db";
 import { verify } from "argon2";
 import { eq } from "drizzle-orm";
 import { r2Public } from "@/config";
@@ -25,8 +32,11 @@ export async function authorizeWithCredentials(
       name: users.name,
       phone: users.phoneNumber,
       image: users.image,
+      upgradeStatus: userRoleDetails.status,
+      newRole: userRoleDetails.newRole,
     })
     .from(users)
+    .innerJoin(userRoleDetails, eq(userRoleDetails.userId, users.id))
     .where(eq(users.email, email));
 
   if (!user) return null;
@@ -44,6 +54,10 @@ export async function authorizeWithCredentials(
     emailVerified: user.emailVerified,
     phone: user.phone,
     image: user.image ? `${r2Public}/${user.image}` : null,
+    upgradeStatus:
+      user.upgradeStatus && user.newRole
+        ? `${user.upgradeStatus}_${user.newRole}`
+        : null,
   };
 }
 
@@ -93,7 +107,6 @@ export const { handlers, auth, unstable_update } = NextAuth({
         token.id = user.id;
         token.email = user.email;
         token.name = user.name;
-        token.role = user.role;
         token.emailVerified = user.emailVerified;
         token.phone = user.phone;
         token.image = user.image;
@@ -101,9 +114,6 @@ export const { handlers, auth, unstable_update } = NextAuth({
       if (trigger === "update") {
         if (session?.emailVerified !== undefined) {
           token.emailVerified = session.emailVerified;
-        }
-        if (session?.role !== undefined) {
-          token.role = session.role;
         }
         if (session?.name !== undefined) {
           token.name = session.name;
@@ -125,7 +135,6 @@ export const { handlers, auth, unstable_update } = NextAuth({
         id: token.id as string,
         email: token.email as string,
         name: token.name as string,
-        role: token.role as "BASIC" | "PETSHOP" | "VETERINARIAN" | "ADMIN",
         emailVerified: token.emailVerified as Date | null,
         phone: token.phone as string | null,
         image: token.image as string | null,

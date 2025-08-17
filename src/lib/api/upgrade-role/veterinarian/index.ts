@@ -29,41 +29,29 @@ export const apiUpgradeToVeterinarian = async (
   };
 
   const result = upgradeRoleVeterinarian.safeParse(body);
-
   if (!result.success) {
     const errors: Record<string, string> = {};
-
     result.error.issues.forEach((err) => {
-      const path = err.path.join(".");
-      errors[path] = err.message;
+      errors[err.path.join(".")] = err.message;
     });
-
     throw errorRes("Validation failed", 422, errors);
   }
 
   const { nik, no_kta, full_name } = result.data;
-
   const ktp = formData.get("ktp") as File;
   const kta = formData.get("kta") as File;
-
   const baseKey = `images/roles/veterinarian/${userId}`;
 
-  // upload KTP
+  // Upload KTP
   const webpBufferKtp = await convertToWebP(ktp);
-
-  const keyKtp = `${baseKey}/ktp-${new Date().getTime()}.webp`;
-
+  const keyKtp = `${baseKey}/ktp-${Date.now()}.webp`;
   const r2UpKtp = await uploadToR2({ buffer: webpBufferKtp, key: keyKtp });
-
   if (!r2UpKtp) throw errorRes("Upload Failed", 422, r2UpKtp);
 
-  // upload KTP
+  // Upload KTA
   const webpBufferKta = await convertToWebP(kta);
-
-  const keyKta = `${baseKey}/kta-${new Date().getTime()}.webp`;
-
+  const keyKta = `${baseKey}/kta-${Date.now()}.webp`;
   const r2UpKta = await uploadToR2({ buffer: webpBufferKta, key: keyKta });
-
   if (!r2UpKta) throw errorRes("Upload Failed", 422, r2UpKta);
 
   const [role] = await db
@@ -85,11 +73,9 @@ export const apiUpgradeToVeterinarian = async (
       status: userRoleDetails.status,
     });
 
-  const response = {
+  return {
     id: userId,
     newRole: role.newRole,
     status_role: role.status,
   };
-
-  return response;
 };

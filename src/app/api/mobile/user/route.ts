@@ -42,6 +42,7 @@ export async function GET(req: NextRequest) {
     return errorRes("Internal Error", 500);
   }
 }
+
 export async function PUT(req: NextRequest) {
   try {
     const auth = await isAuth(req);

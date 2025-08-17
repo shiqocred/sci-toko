@@ -24,43 +24,32 @@ export const apiUpgradeToPetShop = async (req: NextRequest, userId: string) => {
   };
 
   const result = upgradeRolePetshop.safeParse(body);
-
   if (!result.success) {
     const errors: Record<string, string> = {};
-
     result.error.issues.forEach((err) => {
-      const path = err.path.join(".");
-      errors[path] = err.message;
+      errors[err.path.join(".")] = err.message;
     });
-
     throw errorRes("Validation failed", 400, errors);
   }
 
   const { nik, full_name } = result.data;
   const ktp = formData.get("ktp") as File;
   const storefront = formData.get("storefront") as File;
-
   const baseKey = `images/roles/petshop/${userId}`;
 
-  // upload ktp
+  // Upload KTP
   const webpBufferKTP = await convertToWebP(ktp);
-
-  const keyKTP = `${baseKey}/ktp-${new Date().getTime()}.webp`;
-
+  const keyKTP = `${baseKey}/ktp-${Date.now()}.webp`;
   const r2UpKTP = await uploadToR2({ buffer: webpBufferKTP, key: keyKTP });
-
   if (!r2UpKTP) throw errorRes("Upload Failed", 400, r2UpKTP);
 
-  // upload storefront
+  // Upload Storefront
   const webpBufferStorefront = await convertToWebP(storefront);
-
-  const keyStorefront = `${baseKey}/storefront-${new Date().getTime()}.webp`;
-
+  const keyStorefront = `${baseKey}/storefront-${Date.now()}.webp`;
   const r2UpStorefront = await uploadToR2({
     buffer: webpBufferStorefront,
     key: keyStorefront,
   });
-
   if (!r2UpStorefront) throw errorRes("Upload Failed", 400, r2UpStorefront);
 
   const [role] = await db
@@ -81,11 +70,9 @@ export const apiUpgradeToPetShop = async (req: NextRequest, userId: string) => {
       status: userRoleDetails.status,
     });
 
-  const response = {
+  return {
     id: userId,
     new_role: role.newRole,
     status_role: role.status,
   };
-
-  return response;
 };

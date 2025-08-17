@@ -17,11 +17,15 @@ const cartEditSchema = z.object({
   checked: z.boolean(),
 });
 
-export const cartsList = async (
-  userId: string,
-  userRole: "VETERINARIAN" | "BASIC" | "PETSHOP" | "ADMIN"
-) => {
-  // 1. Ambil cart + variant + product
+export const cartsList = async (userId: string) => {
+  // 1. Ambil role user
+  const user = await db.query.users.findFirst({
+    columns: { role: true },
+    where: (u, { eq }) => eq(u.id, userId),
+  });
+  if (!user) throw errorRes("Unauthorized", 401);
+
+  // 2. Ambil cart + variant + product
   const cartItems = await db
     .select({
       variantId: carts.variantId,
@@ -30,9 +34,6 @@ export const cartsList = async (
       productId: productVariants.productId,
       variantName: productVariants.name,
       stock: productVariants.stock,
-      basicPrice: productVariants.basicPrice,
-      petShopPrice: productVariants.petShopPrice,
-      doctorPrice: productVariants.doctorPrice,
       isDefault: productVariants.isDefault,
       productName: products.name,
       productSlug: products.slug,
@@ -42,11 +43,14 @@ export const cartsList = async (
     .innerJoin(products, eq(productVariants.productId, products.id))
     .where(eq(carts.userId, userId));
 
-  if (cartItems.length === 0)
+  if (!cartItems.length) {
     return successRes({ in_stock: [], out_of_stock: [] });
+  }
 
-  // 2. Ambil gambar
+  // 3. Ambil image pertama per product
   const productIds = [...new Set(cartItems.map((c) => c.productId))];
+  const variantIds = [...new Set(cartItems.map((c) => c.variantId))];
+
   const imageSubquery = db
     .select({
       productId: productImages.productId,
@@ -69,30 +73,42 @@ export const cartsList = async (
     firstImagesResult.map((img) => [img.productId, img.url])
   );
 
-  // 3. Fungsi ambil harga sesuai role
-  const getPrice = (item: (typeof cartItems)[0]): string => {
-    if (userRole === "VETERINARIAN") return item.doctorPrice || "0";
-    if (userRole === "PETSHOP") return item.petShopPrice || "0";
-    return item.basicPrice || "0";
+  // 4. Ambil semua pricing → bikin Map variantId -> rolePrices
+  const pricings = await db.query.productVariantPrices.findMany({
+    where: (pp, { inArray }) => inArray(pp.variantId, variantIds),
+  });
+
+  const pricingMap = new Map<string, Record<string, string>>();
+  for (const p of pricings) {
+    if (!pricingMap.has(p.variantId)) pricingMap.set(p.variantId, {});
+    pricingMap.get(p.variantId)![p.role] = p.price;
+  }
+
+  const getPrice = (variantId: string): number => {
+    const prices = pricingMap.get(variantId);
+    if (!prices) return 0;
+    return Number(
+      prices[user.role] ??
+        prices["BASIC"] ?? // fallback
+        0
+    );
   };
 
-  // 4. Map produk in-stock & out-of-stock
+  // 5. Loop cartItems → bagi in-stock & out-of-stock
   const inStockMap = new Map<string, any>();
   const outOfStockMap = new Map<string, any>();
-
   let subtotal = 0;
 
   for (const item of cartItems) {
     const stock = Number(item.stock ?? 0);
     let quantity = Number(item.quantity ?? 0);
 
-    // Kalau stock 0 → masuk outOfStock
     if (stock <= 0) {
       addToMap(outOfStockMap, item, 0);
       continue;
     }
 
-    // Kalau quantity > stock → update carts dan pakai stock
+    // Jika quantity > stock → sync ke DB
     if (quantity > stock) {
       quantity = stock;
       await db
@@ -103,7 +119,7 @@ export const cartsList = async (
         );
     }
 
-    const price = Number(getPrice(item));
+    const price = getPrice(item.variantId);
     const total = price * quantity;
 
     if (item.checked) subtotal += total;
@@ -111,12 +127,13 @@ export const cartsList = async (
     addToMap(inStockMap, item, quantity, price, total, stock);
   }
 
+  // helper addToMap
   function addToMap(
     map: Map<string, any>,
     item: (typeof cartItems)[0],
     quantity: number,
-    price?: number,
-    total?: number,
+    price: number = 0,
+    total: number = 0,
     stock?: number
   ) {
     const variant = {
@@ -125,8 +142,8 @@ export const cartsList = async (
       checked: item.checked,
       quantity,
       stock: stock ?? Number(item.stock ?? 0),
-      price: price ?? Number(getPrice(item)),
-      total: total ?? 0,
+      price,
+      total,
     };
 
     if (!map.has(item.productId)) {
@@ -143,23 +160,16 @@ export const cartsList = async (
     }
 
     const product = map.get(item.productId);
-    if (item.isDefault) {
-      product.default_variant = variant;
-    } else {
-      product.variants.push(variant);
-    }
+    if (item.isDefault) product.default_variant = variant;
+    else product.variants.push(variant);
   }
 
-  // 5. Format final
+  // 6. Format final product
   const formatProducts = (map: Map<string, any>) =>
     Array.from(map.values()).map((product) => {
-      if (product.default_variant) {
-        product.variants = null;
-      } else if (!product.variants.length) {
-        product.variants = null;
-      } else {
-        product.default_variant = null;
-      }
+      if (product.default_variant) product.variants = null;
+      else if (!product.variants.length) product.variants = null;
+      else product.default_variant = null;
       return product;
     });
 
@@ -167,54 +177,69 @@ export const cartsList = async (
     products: formatProducts(inStockMap),
     out_of_stock: formatProducts(outOfStockMap),
     subtotal,
-    total_cart_selected: cartItems.filter((item) => item.checked).length,
+    total_cart_selected: cartItems.filter((i) => i.checked).length,
     total_cart: cartItems.length,
     total: subtotal,
   };
 };
 
 export const addToCart = async (req: NextRequest, userId: string) => {
+  // 🔹 1. Parse user
+  const user = await db.query.users.findFirst({
+    where: (u, { eq }) => eq(u.id, userId),
+    columns: { id: true, role: true },
+  });
+  if (!user) throw errorRes("Unauthorized", 401);
+
+  // 🔹 2. Parse body (validation dengan Zod)
   const body = await req.json();
-
   const result = cartSchema.safeParse(body);
-
   if (!result.success) {
-    const errors: Record<string, string> = {};
-
-    result.error.issues.forEach((err) => {
-      const path = err.path.join(".");
-      errors[path] = err.message;
-    });
-
+    const errors = Object.fromEntries(
+      result.error.issues.map((err) => [err.path.join("."), err.message])
+    );
     throw errorRes("Validation failed", 422, errors);
   }
 
   const { quantity, variant_id } = result.data;
 
-  const variantExist = await db.query.carts.findFirst({
-    columns: {
-      id: true,
-      quantity: true,
-    },
-    where: (c, { eq }) => eq(c.variantId, variant_id),
+  // 🔹 3. Cari variant & sekaligus productId
+  const variant = await db.query.productVariants.findFirst({
+    where: (v, { eq }) => eq(v.id, variant_id),
+    columns: { id: true, productId: true },
+  });
+  if (!variant) throw errorRes("Variant not found", 404);
+
+  // 🔹 4. Cek role availability
+  const availableRoles = await db.query.productAvailableRoles.findMany({
+    where: (pa, { eq }) => eq(pa.productId, variant.productId),
+    columns: { role: true },
   });
 
-  if (variantExist) {
-    console.log("aaa");
+  if (!availableRoles.some((i) => i.role === user.role)) {
+    throw errorRes("Unavailable to buy", 400);
+  }
+
+  // 🔹 5. Cek cart existing (khusus user & variant_id)
+  const existingCart = await db.query.carts.findFirst({
+    columns: { id: true, quantity: true },
+    where: (c, { and, eq }) =>
+      and(eq(c.variantId, variant_id), eq(c.userId, userId)),
+  });
+
+  // 🔹 6. Update kalau sudah ada, insert kalau belum
+  if (existingCart) {
+    const newQty = parseFloat(existingCart.quantity) + parseFloat(quantity);
+
     await db
       .update(carts)
-      .set({
-        quantity: (
-          parseFloat(variantExist.quantity) + parseFloat(quantity)
-        ).toString(),
-      })
-      .where(eq(carts.id, variantExist.id));
+      .set({ quantity: newQty.toString() })
+      .where(eq(carts.id, existingCart.id));
   } else {
-    console.log("aaaa");
     await db.insert(carts).values({
       userId,
-      quantity,
       variantId: variant_id,
+      quantity,
     });
   }
 };

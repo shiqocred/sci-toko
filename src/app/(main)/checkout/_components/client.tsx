@@ -15,13 +15,14 @@ import { ShippingMethodSection } from "./_sections/shipping-method-section";
 import { OrderSummarySection } from "./_sections/order-summary-section";
 import { CheckoutButton } from "./_sections/checkout-button";
 import { Button } from "@/components/ui/button";
-import { ArrowLeft, NotebookPen } from "lucide-react";
+import { ArrowLeft, BadgePercent, NotebookPen } from "lucide-react";
 import Link from "next/link";
 import { useConfirm } from "@/hooks/use-confirm";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 import { parseAsString, useQueryState } from "nuqs";
 import { Textarea } from "@/components/ui/textarea";
+import { Input } from "@/components/ui/input";
 
 export default function Client() {
   const [shipping, setShipping] = useState("");
@@ -126,6 +127,12 @@ export default function Client() {
               setOpen={setOpen}
               isLoading={isPendingAddresses}
             />
+            <ShippingMethodSection
+              ongkir={ongkir}
+              shipping={shipping}
+              setShipping={setShipping}
+              isLoading={isPendingOngkir || isRefetchingOngkir}
+            />
             <OrderListSection
               products={checkout?.products || []}
               totalItems={checkout?.total_item || 0}
@@ -134,12 +141,6 @@ export default function Client() {
           </div>
 
           <div className="col-span-2 flex flex-col gap-4">
-            <ShippingMethodSection
-              ongkir={ongkir}
-              shipping={shipping}
-              setShipping={setShipping}
-              isLoading={isPendingOngkir || isRefetchingOngkir}
-            />
             <div className="w-full rounded-lg shadow p-5 bg-white border flex flex-col gap-4">
               <h3 className="font-semibold text-lg flex items-center gap-2">
                 <NotebookPen className="size-5" />
@@ -152,6 +153,22 @@ export default function Client() {
                 onChange={(e) => setInput(e.target.value)}
               />
             </div>
+            <div className="w-full rounded-lg shadow p-5 bg-white border flex flex-col gap-2">
+              <h3 className="font-semibold text-lg flex items-center gap-2">
+                <BadgePercent className="size-5" />
+                Voucher
+              </h3>
+              <div className="flex items-center">
+                <Input
+                  className="border-gray-300 focus-visible:ring-0 focus-visible:border-gray-400 shadow-none rounded-r-none border-r-0"
+                  placeholder="Type voucher..."
+                />
+                <Button className="rounded-l-none" variant={"sci"}>
+                  Apply
+                </Button>
+              </div>
+            </div>
+
             <OrderSummarySection
               subtotal={checkout?.price || 0}
               shippingPrice={shippingPrice}

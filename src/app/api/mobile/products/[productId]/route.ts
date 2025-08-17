@@ -26,15 +26,7 @@ export async function GET(
       userId = sub;
     }
 
-    const userExist = await db.query.users.findFirst({
-      where: (u, { eq }) => eq(u.id, userId),
-    });
-
-    const response = await productDetail(
-      params,
-      userId,
-      userExist?.role ?? "BASIC"
-    );
+    const response = await productDetail(params, userId);
 
     return successRes(response, "Product detail");
   } catch (error) {

@@ -9,9 +9,8 @@ export async function GET() {
     if (!isAuth) return errorRes("Unauthorized", 401);
 
     const userId = isAuth.user.id;
-    const userRole = isAuth.user.role ?? "BASIC";
 
-    const response = await cartsList(userId, userRole);
+    const response = await cartsList(userId);
 
     return successRes(response, "Carts list");
   } catch (error) {

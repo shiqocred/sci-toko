@@ -1,6 +1,5 @@
 import { addToCart, cartsList, checkedCart } from "@/lib/api";
 import { errorRes, isAuth, successRes } from "@/lib/auth";
-import { db } from "@/lib/db";
 import { isResponse } from "@/lib/utils";
 import { NextRequest } from "next/server";
 
@@ -12,14 +11,7 @@ export async function GET(req: NextRequest) {
 
     const { sub: userId } = auth;
 
-    const user = await db.query.users.findFirst({
-      columns: {
-        role: true,
-      },
-      where: (u, { eq }) => eq(u.id, userId),
-    });
-
-    const response = await cartsList(userId, user?.role ?? "BASIC");
+    const response = await cartsList(userId);
 
     return successRes(response, "Carts list");
   } catch (error) {

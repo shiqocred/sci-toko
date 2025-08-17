@@ -198,8 +198,16 @@ export const OrderList = ({
                 <Button variant={"sciOutline"}>Track Order</Button>
               )}
               {state !== "unpaid" && state !== "failed" && (
-                <Button variant="sci" asChild>
-                  <Link href={`/account/orders/${order.id}`}>Detail Order</Link>
+                <Button
+                  variant="sci"
+                  onClick={() =>
+                    window.scrollTo({ top: 0, behavior: "smooth" })
+                  }
+                  asChild
+                >
+                  <Link href={`/account/orders/${order.id}?tab=${state}`}>
+                    Detail Order
+                  </Link>
                 </Button>
               )}
             </div>
