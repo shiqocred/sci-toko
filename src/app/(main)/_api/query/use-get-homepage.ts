@@ -1,10 +1,32 @@
 import { useApiQuery } from "@/lib/query/use-query";
 
+export type ProductProps = {
+  image: string | null;
+  title: string;
+  slug: string;
+  description: string;
+};
+
+export type SupplierCategoryPromoProps = {
+  image: string | null;
+  name: string;
+  slug: string;
+};
+
+export type BannerProps = {
+  type: "DETAIL" | "PETS" | "PROMOS" | "SUPPLIERS" | "CATEGORIES";
+  name: string;
+  image: string | null;
+  target: string[];
+};
+
 type Response = {
   data: {
-    products: any[];
-    suppliers: any[];
-    categories: any[];
+    products: ProductProps[];
+    suppliers: SupplierCategoryPromoProps[];
+    categories: SupplierCategoryPromoProps[];
+    banners: BannerProps[];
+    promos: SupplierCategoryPromoProps[];
   };
 };
 

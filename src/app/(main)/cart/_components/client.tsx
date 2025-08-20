@@ -2,9 +2,6 @@
 
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { Separator } from "@/components/ui/separator";
 import { cn, formatRupiah, numericString, sizesImage } from "@/lib/utils";
 import {
   Loader,
@@ -33,6 +30,7 @@ import { parseAsString, useQueryState } from "nuqs";
 
 const Client = () => {
   const [dialog, setDialog] = useState("");
+  const [isTyping, setIsTyping] = useState(false);
   const [localQty, setLocalQty] = useState<Record<string, number>>({});
   const [carted, setCarted] = useQueryState(
     "carted",
@@ -76,7 +74,6 @@ const Client = () => {
   // 🔹 Kirim perubahan qty ke server hanya saat debounce selesai
   useEffect(() => {
     Object.entries(debouncedLocalQty).forEach(([variantId, qty]) => {
-      // Ambil qty original dari carts
       const originalQty =
         carts?.find(
           (c) =>
@@ -87,14 +84,19 @@ const Client = () => {
           ?.quantity ??
         0;
 
-      if (qty !== originalQty && qty > 0 && carted !== "checkouted") {
+      if (
+        qty !== originalQty &&
+        qty > 0 &&
+        carted !== "checkouted" &&
+        !isTyping
+      ) {
         updateQty({
           params: { variantId },
           body: { qty: String(qty) },
         });
       }
     });
-  }, [debouncedLocalQty, carts, updateQty]);
+  }, [debouncedLocalQty, carts, updateQty, isTyping]);
 
   const handleIncrease = (variantId: string) => {
     setLocalQty((prev) => ({
@@ -108,7 +110,7 @@ const Client = () => {
       const updated = (prev[variantId] ?? 0) - 1;
       if (updated <= 0) {
         setDialog(variantId);
-        return prev;
+        return prev; // jangan ubah qty dulu
       }
       return { ...prev, [variantId]: updated };
     });
@@ -117,13 +119,12 @@ const Client = () => {
   const handleQtyChange = (variantId: string, value: string) => {
     setLocalQty((prev) => ({
       ...prev,
-      [variantId]: isNaN(parseFloat(value))
-        ? 0
-        : parseFloat(numericString(value)),
+      [variantId]: parseFloat(numericString(value)),
     }));
   };
 
   const handleQtyBlur = (variantId: string) => {
+    setIsTyping(false);
     const newQty = localQty[variantId];
     if (newQty <= 0) {
       setDialog(variantId);
@@ -151,7 +152,15 @@ const Client = () => {
       <DeleteDialog />
       <DialogRemoveProduct
         open={!!dialog}
-        onOpenChange={() => setDialog("")}
+        onOpenChange={() => {
+          if (dialog) {
+            setLocalQty((prev) => ({
+              ...prev,
+              [dialog]: 1,
+            }));
+            setDialog("");
+          }
+        }}
         onSubmit={() => {
           updateQty({
             params: { variantId: dialog },
@@ -179,7 +188,7 @@ const Client = () => {
                   <div className="flex flex-col gap-4">
                     {carts.map((cart) => (
                       <div
-                        key={cart.id}
+                        key={cart.slug}
                         className={cn(
                           "flex px-5 py-3 gap-3 bg-white rounded-lg shadow text-sm",
                           cart.default_variant ? "items-center" : "flex-col"
@@ -254,9 +263,14 @@ const Client = () => {
                                   className="h-9 text-center w-14 border-y"
                                   type="number"
                                   value={
-                                    localQty[cart.default_variant.id] ??
+                                    localQty[cart.default_variant.id]
+                                      ?.toString()
+                                      .replace(/^0+(?=\d)/, "") ??
                                     cart.default_variant.quantity
+                                      ?.toString()
+                                      .replace(/^0+(?=\d)/, "")
                                   }
+                                  onFocus={() => setIsTyping(true)}
                                   onChange={(e) =>
                                     handleQtyChange(
                                       cart.default_variant?.id ?? "0",
@@ -348,7 +362,14 @@ const Client = () => {
                                     <input
                                       className="h-9 text-center w-14 border-y"
                                       type="number"
-                                      value={localQty[item.id] ?? item.quantity}
+                                      value={
+                                        localQty[item.id]
+                                          ?.toString()
+                                          .replace(/^0+(?=\d)/, "") ??
+                                        item.quantity
+                                          ?.toString()
+                                          .replace(/^0+(?=\d)/, "")
+                                      }
                                       onChange={(e) =>
                                         handleQtyChange(item.id, e.target.value)
                                       }
@@ -430,7 +451,7 @@ const Client = () => {
                     <div className="flex flex-col gap-4">
                       {outOfStock?.map((out) => (
                         <div
-                          key={out.id}
+                          key={out.slug}
                           className={cn(
                             "flex px-5 py-3 gap-3 bg-white rounded-lg shadow text-sm",
                             out.default_variant ? "items-center" : "flex-col"
@@ -463,7 +484,7 @@ const Client = () => {
                             <Button
                               className="hover:bg-red-50 hover:text-destructive text-destructive"
                               variant="ghost"
-                              size="icon"
+                              size="sm"
                               onClick={() =>
                                 handleDelete(out.default_variant?.id ?? "0")
                               }

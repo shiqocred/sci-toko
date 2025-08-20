@@ -1,5 +1,6 @@
+import { trackOrder } from "@/lib/api";
 import { auth, errorRes, successRes } from "@/lib/auth";
-import { db } from "@/lib/db";
+import { isResponse } from "@/lib/utils";
 import { NextRequest } from "next/server";
 
 export async function GET(
@@ -8,24 +9,16 @@ export async function GET(
 ) {
   try {
     const session = await auth();
-    if (!session) return errorRes("Unauthorized", 401);
+    if (!session || !session.user?.id) throw errorRes("Unauthorized", 401);
 
-    const { orderId } = await params;
+    const userId = session.user.id;
 
-    const shipping = await db.query.shippings.findFirst({
-      columns: { id: true },
-      where: (s, { eq }) => eq(s.orderId, orderId),
-    });
+    const response = await trackOrder(params, userId);
 
-    if (!shipping) return errorRes("Shipping Id not found");
-
-    const histories = await db.query.shippingHistories.findMany({
-      where: (sh, { eq }) => eq(sh.shippingId, shipping.id),
-    });
-
-    return successRes(histories, "Retrieve re-payment url");
+    return successRes(response, "Retrieve track order");
   } catch (error) {
-    console.error("ERROR_REPAYMENT", error);
+    if (isResponse(error)) return error;
+    console.error("ERROR_GET_TRACK_ORDER", error);
     return errorRes("Internal Server Error", 500);
   }
 }

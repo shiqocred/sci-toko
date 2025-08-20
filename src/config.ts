@@ -23,3 +23,6 @@ export const biteshipUrl = process.env.BITESHIP_URL!;
 export const checkoutUrl = process.env.CHECKOUT_XENDIT_URL!;
 
 export const biteshipAPI = process.env.NEXT_PUBLIC_API_BITESHIP!;
+
+export const successXendit = `${baseUrl}/account/orders?tab=processed`;
+export const failureXendit = `${baseUrl}/account/orders?tab=failed`;

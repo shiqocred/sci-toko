@@ -195,7 +195,11 @@ export const OrderList = ({
                 <Button variant="sciOutline">Review</Button>
               )}
               {(state === "shipping" || state === "completed") && (
-                <Button variant={"sciOutline"}>Track Order</Button>
+                <Button variant={"sciOutline"}>
+                  <Link href={`/account/orders/${order.id}/track`}>
+                    Track Order
+                  </Link>
+                </Button>
               )}
               {state !== "unpaid" && state !== "failed" && (
                 <Button

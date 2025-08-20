@@ -48,6 +48,7 @@ export async function PUT(req: NextRequest) {
 
     return successRes(null, "Cart successfully updated");
   } catch (error) {
+    if (isResponse(error)) return error;
     console.log("ERROR_UPDATE_CART", error);
     return errorRes("Internal Error", 500);
   }

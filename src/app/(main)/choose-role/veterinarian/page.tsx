@@ -4,9 +4,9 @@ import { Metadata } from "next";
 import { auth } from "@/lib/auth";
 import { redirect } from "next/navigation";
 
-export const metadata: Metadata = { title: "Veterinarian form" };
+export const metadata: Metadata = { title: "Vet Clinic form" };
 
-const VeterinarianFormPage = async () => {
+const PetClinicFormPage = async () => {
   const isAuth = await auth();
   if (!isAuth) redirect("/sign-in");
   if (isAuth && !isAuth.user.emailVerified) redirect("/verification-email");
@@ -18,4 +18,4 @@ const VeterinarianFormPage = async () => {
   );
 };
 
-export default VeterinarianFormPage;
+export default PetClinicFormPage;

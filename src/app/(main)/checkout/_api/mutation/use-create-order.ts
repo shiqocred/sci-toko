@@ -10,8 +10,8 @@ export const useCreateOrder = () => {
   const router = useRouter();
   const queryClient = useQueryClient();
   const mutation = useMutate<Body>({
-    endpoint: "/checkout",
-    method: "put",
+    endpoint: "/orders",
+    method: "post",
     onSuccess: async ({ data }) => {
       await invalidateQuery(queryClient, [["carts"], ["checkout"], ["ongkir"]]);
       setTimeout(() => router.push(data.data.payment_url), 100);

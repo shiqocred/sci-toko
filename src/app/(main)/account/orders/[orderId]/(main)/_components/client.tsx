@@ -7,8 +7,16 @@ import Image from "next/image";
 import { format } from "date-fns";
 import { id } from "date-fns/locale";
 
-import { HistoryStatus, ProductOutput, useGetOrder } from "../_api";
-import { cn, formatRupiah, sizesImage } from "@/lib/utils";
+import {
+  AddressProps,
+  HistoriesExistProps,
+  HistoryStatus,
+  PaymentProps,
+  ProductOutput,
+  ShippingProps,
+  useGetOrder,
+} from "../_api";
+import { formatRupiah, sizesImage } from "@/lib/utils";
 
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -100,17 +108,7 @@ const HistoryStatusIcon = ({ status }: { status: HistoryStatus }) => {
 };
 
 /** Delivery address card */
-const DeliveryAddress = ({
-  name,
-  phone,
-  addressNote,
-  address,
-}: {
-  name?: string;
-  phone?: string;
-  addressNote?: string;
-  address?: string;
-}) => (
+const DeliveryAddress = ({ address }: { address?: AddressProps }) => (
   <div className="flex flex-col border rounded-md border-gray-300 overflow-hidden">
     <div className="p-3 w-full bg-green-50 flex items-center gap-2">
       <MapPinned className="size-4" />
@@ -118,12 +116,12 @@ const DeliveryAddress = ({
     </div>
     <div className="p-3 border-t border-gray-300 flex flex-col gap-3">
       <div className="w-full flex gap-2 font-medium">
-        <p>{name}</p>
+        <p>{address?.name}</p>
         <p>|</p>
-        <p>{phone}</p>
+        <p>{address?.phone}</p>
       </div>
       <p className="text-gray-600">
-        {addressNote}, {address}
+        {address?.note}, {address?.address}
       </p>
     </div>
   </div>
@@ -131,13 +129,13 @@ const DeliveryAddress = ({
 
 /** Shipping information card */
 const ShippingInfo = ({
-  courierName,
-  waybillId,
+  orderId,
+  shipping,
   history,
 }: {
-  courierName?: string;
-  waybillId?: string | null;
-  history?: any;
+  orderId: string;
+  shipping?: ShippingProps;
+  history?: HistoriesExistProps | null;
 }) => (
   <div className="flex flex-col border rounded-md border-gray-300 overflow-hidden">
     <div className="p-3 w-full bg-green-50 flex items-center justify-between gap-3">
@@ -146,9 +144,9 @@ const ShippingInfo = ({
         <h3 className="font-semibold">Shipping Information</h3>
       </div>
       <div className="flex items-center gap-2">
-        <p>{courierName}</p>
+        <p>{shipping?.courier_name}</p>
         <p>|</p>
-        <p>{waybillId ?? "-"}</p>
+        <p>{shipping?.waybill_id ?? "-"}</p>
       </div>
     </div>
     <div className="p-3 border-y border-gray-300 flex flex-col gap-3">
@@ -179,28 +177,20 @@ const ShippingInfo = ({
       )}
     </div>
     <div className="px-3 py-2 min-h-10 flex items-center justify-between gap-3 text-xs">
-      {courierName && (
+      {shipping?.courier_name && (
         <p>
           Estimated delivery {/* Simplify the date display */}
-          {history?.shipping_duration === "DAY"
-            ? format(new Date(history?.shipping_fastest ?? Date.now()), "PP", {
-                locale: id,
-              })
-            : format(
-                new Date(history?.shipping_longest ?? Date.now()),
-                "HH:mm",
-                { locale: id }
-              )}
+          {shipping.duration}
         </p>
       )}
-      {history && (
+      {history?.id && (
         <Button
           size="sm"
           variant="link"
           asChild
           className="ml-auto h-7 text-xs"
         >
-          <Link href={`/account/orders/${history.orderId}/track`}>
+          <Link href={`/account/orders/${orderId}/track`}>
             Track <ArrowRight />
           </Link>
         </Button>
@@ -264,37 +254,27 @@ const ProductItem = ({ product }: { product: ProductOutput }) => (
 );
 
 /** Price summary card */
-const PriceSummary = ({
-  productPrice,
-  shippingPrice,
-  totalPrice,
-  paymentMethod,
-}: {
-  productPrice?: string;
-  shippingPrice?: string;
-  totalPrice?: string;
-  paymentMethod?: string;
-}) => (
+const PriceSummary = ({ payment }: { payment?: PaymentProps }) => (
   <div className="flex flex-col border rounded-md">
     <div className="flex flex-col gap-2 p-3">
       <div className="flex items-center justify-between">
         <p>Subtotal</p>
-        <p>{formatRupiah(productPrice ?? 0)}</p>
+        <p>{formatRupiah(payment?.subtotal ?? 0)}</p>
       </div>
       <div className="flex items-center justify-between">
         <p>Shipping Cost</p>
-        <p>{formatRupiah(shippingPrice ?? 0)}</p>
+        <p>{formatRupiah(payment?.shipping_cost ?? 0)}</p>
       </div>
     </div>
     <Separator />
     <div className="flex items-center p-3 justify-between font-semibold">
       <p>Total Price</p>
-      <p>{formatRupiah(totalPrice ?? 0)}</p>
+      <p>{formatRupiah(payment?.total ?? 0)}</p>
     </div>
     <Separator />
     <div className="flex items-center p-3 justify-between">
       <p>Payment Method</p>
-      <p>{paymentMethod ?? "-"}</p>
+      <p>{payment?.method ?? "-"}</p>
     </div>
   </div>
 );
@@ -306,7 +286,6 @@ const Client = () => {
   const { data, isPending } = useGetOrder({ orderId: orderId as string });
 
   const orderData = data?.data;
-  const history = useMemo(() => orderData?.history, [orderData]);
   const productsList = useMemo(() => orderData?.products, [orderData]);
 
   return (
@@ -328,17 +307,12 @@ const Client = () => {
       ) : (
         <div className="flex flex-col gap-4">
           <section className="flex flex-col gap-4 w-full text-sm">
-            <DeliveryAddress
-              name={orderData?.shipping_name}
-              phone={orderData?.shipping_phone}
-              addressNote={orderData?.shipping_address_note}
-              address={orderData?.shipping_address}
-            />
+            <DeliveryAddress address={orderData?.address} />
 
             <ShippingInfo
-              courierName={orderData?.shipping_courier_name}
-              waybillId={orderData?.shipping_waybill_id}
-              history={history}
+              orderId={orderId as string}
+              shipping={orderData?.shipping}
+              history={orderData?.history}
             />
           </section>
 
@@ -349,12 +323,7 @@ const Client = () => {
             ))}
           </section>
 
-          <PriceSummary
-            productPrice={orderData?.product_price}
-            shippingPrice={orderData?.shipping_price}
-            totalPrice={orderData?.total_price}
-            paymentMethod={orderData?.payment_formatted}
-          />
+          <PriceSummary payment={orderData?.payment} />
         </div>
       )}
     </div>

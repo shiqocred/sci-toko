@@ -7,9 +7,9 @@ export const apiResetUpgradeRole = async (userId: string) => {
   const userDetailExist = await db.query.userRoleDetails.findFirst({
     columns: {
       role: true,
-      fileKta: true,
-      fileKtp: true,
-      storefront: true,
+      veterinarianIdFile: true,
+      personalIdFile: true,
+      storefrontFile: true,
     },
     where: (u, { eq }) => eq(u.userId, userId),
   });
@@ -20,19 +20,23 @@ export const apiResetUpgradeRole = async (userId: string) => {
     .update(userRoleDetails)
     .set({
       updatedAt: sql`NOW()`,
-      fileKta: null,
-      fileKtp: null,
+      veterinarianIdFile: null,
+      personalIdFile: null,
       message: null,
-      name: null,
+      fullName: null,
       newRole: userDetailExist.role,
-      nik: null,
-      noKta: null,
+      personalIdType: null,
+      personalId: null,
+      veterinarianId: null,
       status: null,
-      storefront: null,
+      storefrontFile: null,
     })
     .where(eq(userRoleDetails.userId, userId));
 
-  if (userDetailExist.fileKta) await deleteR2(userDetailExist.fileKta);
-  if (userDetailExist.fileKtp) await deleteR2(userDetailExist.fileKtp);
-  if (userDetailExist.storefront) await deleteR2(userDetailExist.storefront);
+  if (userDetailExist.veterinarianIdFile)
+    await deleteR2(userDetailExist.veterinarianIdFile);
+  if (userDetailExist.personalIdFile)
+    await deleteR2(userDetailExist.personalIdFile);
+  if (userDetailExist.storefrontFile)
+    await deleteR2(userDetailExist.storefrontFile);
 };

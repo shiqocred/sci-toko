@@ -300,7 +300,7 @@ export const ProductInfo = ({ product }: ProductInfoProps) => {
                   } else if (i === "PETSHOP") {
                     return "Pet Shop";
                   } else if (i === "VETERINARIAN") {
-                    return "Pet Clinic";
+                    return "Vet Clinic";
                   }
                 })
                 .join(" & ")}`}

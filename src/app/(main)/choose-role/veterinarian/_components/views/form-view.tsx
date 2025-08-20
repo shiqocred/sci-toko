@@ -9,18 +9,16 @@ import React, { ChangeEvent, FormEvent } from "react";
 import { cn } from "@/lib/utils";
 
 type InputState = {
-  ktp: File | null;
-  kta: File | null;
-  nik: string;
-  no_kta: string;
+  personal_id: string;
+  veterinarian_id: string;
   full_name: string;
+  personal_id_file: File | null;
+  veterinarian_id_file: File | null;
 };
 
 type ErrorsState = {
-  ktp: string;
-  kta: string;
-  nik: string;
-  no_kta: string;
+  personal_id: string;
+  veterinarian_id: string;
   full_name: string;
 };
 
@@ -53,26 +51,22 @@ export const FormView = ({
       className="max-w-md w-full p-5 bg-white rounded-2xl flex flex-col gap-4"
     >
       <div className="flex flex-col gap-1 text-center">
-        <h1 className="text-3xl font-bold">Upgrade to Veterinarian</h1>
+        <h1 className="text-3xl font-bold">Upgrade to Vet Clinic</h1>
         <p className="text-[#707070] text-sm">
-          Upgrade to Veterinarian to access exclusive promos. Make sure your
+          Upgrade to Vet Clinic to access exclusive promos. Make sure your
           personal information is correct.
         </p>
       </div>
 
-      {/* KTP Upload */}
       <div className="w-full flex flex-col gap-1.5">
         <Label className="required">KTP File</Label>
         <FileUpload
           multiple={false}
           onChange={(file) =>
-            setInput((prev) => ({ ...prev, ktp: file as File }))
+            setInput((prev) => ({ ...prev, personal_id_file: file as File }))
           }
           isIdentityCard
         />
-        {errors.ktp && (
-          <p className="text-red-500 text-sm mt-1">{errors.ktp}</p>
-        )}
       </div>
 
       {/* KTA Upload */}
@@ -81,13 +75,13 @@ export const FormView = ({
         <FileUpload
           multiple={false}
           onChange={(file) =>
-            setInput((prev) => ({ ...prev, kta: file as File }))
+            setInput((prev) => ({
+              ...prev,
+              veterinarian_id_file: file as File,
+            }))
           }
           isIdentityCard
         />
-        {errors.kta && (
-          <p className="text-red-500 text-sm mt-1">{errors.kta}</p>
-        )}
       </div>
 
       {/* Full Name */}
@@ -121,13 +115,13 @@ export const FormView = ({
           type="number"
           placeholder="Type your NIK Number"
           onChange={handleChange}
-          value={input.nik}
-          className={inputClass(!!errors.nik)}
+          value={input.personal_id}
+          className={inputClass(!!errors.personal_id)}
           disabled={isUpgrading}
           required
         />
-        {errors.nik && (
-          <p className="text-red-500 text-sm mt-1">{errors.nik}</p>
+        {errors.personal_id && (
+          <p className="text-red-500 text-sm mt-1">{errors.personal_id}</p>
         )}
       </div>
 
@@ -142,13 +136,13 @@ export const FormView = ({
           type="number"
           placeholder="Type your KTA Number"
           onChange={handleChange}
-          value={input.no_kta}
-          className={inputClass(!!errors.no_kta)}
+          value={input.veterinarian_id}
+          className={inputClass(!!errors.veterinarian_id)}
           disabled={isUpgrading}
           required
         />
-        {errors.no_kta && (
-          <p className="text-red-500 text-sm mt-1">{errors.no_kta}</p>
+        {errors.veterinarian_id && (
+          <p className="text-red-500 text-sm mt-1">{errors.veterinarian_id}</p>
         )}
       </div>
 
@@ -157,12 +151,11 @@ export const FormView = ({
         variant="destructive"
         className="border-gray-500 rounded-full w-full flex-auto"
         disabled={
-          input.nik.length > 16 ||
-          input.nik.length < 16 ||
-          !input.ktp ||
-          !input.kta ||
+          !input.personal_id ||
+          !input.personal_id_file ||
+          !input.veterinarian_id ||
           !input.full_name ||
-          !input.no_kta ||
+          !input.veterinarian_id_file ||
           isUpgrading
         }
       >

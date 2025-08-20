@@ -20,20 +20,20 @@ import { RejectedView } from "./views/rejected-view";
 import { Loader2 } from "lucide-react";
 
 const generalValue = {
-  nik: "",
-  no_kta: "",
+  personal_id: "",
+  veterinarian_id: "",
   full_name: "",
 };
 
 const initialValue = {
-  ktp: null as File | null,
-  kta: null as File | null,
+  personal_id_file: null as File | null,
+  veterinarian_id_file: null as File | null,
   ...generalValue,
 };
 
 const initialErrors = {
-  ktp: "",
-  kta: "",
+  personal_id_file: "",
+  veterinarian_id_file: "",
   ...generalValue,
 };
 
@@ -61,14 +61,14 @@ const Client = () => {
   const handleSubmit = (e: FormEvent) => {
     e.preventDefault();
     const body = new FormData();
-    body.append("nik", input.nik);
-    body.append("no_kta", input.no_kta);
+    body.append("personal_id", input.personal_id);
+    body.append("veterinarian_id", input.veterinarian_id);
     body.append("full_name", input.full_name);
-    if (input.ktp) {
-      body.append("ktp", input.ktp);
+    if (input.personal_id_file) {
+      body.append("personal_id_file", input.personal_id_file);
     }
-    if (input.kta) {
-      body.append("kta", input.kta);
+    if (input.veterinarian_id_file) {
+      body.append("veterinarian_id_file", input.veterinarian_id_file);
     }
 
     upgrade(

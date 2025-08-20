@@ -92,7 +92,11 @@ const Client = () => {
 
   useEffect(() => {
     if (data) {
-      setPage(data.data.pagination.page);
+      if (page > data.data.pagination.totalPages) {
+        setPage(1);
+      } else {
+        setPage(data.data.pagination.page);
+      }
     }
   }, [data]);
 
@@ -320,7 +324,7 @@ const Client = () => {
             </div>
           )}
           {paginate && paginate.total > 0 && (
-            <div className="w-full flex justify-center bg-white shadow rounded-lg py-3 mt-auto">
+            <div className="w-fit p-3 flex justify-center bg-white shadow rounded-lg mx-auto">
               <div className="flex items-center *:hover:bg-green-200 *:hover:text-black *:size-8 gap-1">
                 {/* First */}
                 {paginate.totalPages > 3 && (

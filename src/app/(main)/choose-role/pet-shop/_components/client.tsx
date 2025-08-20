@@ -16,19 +16,20 @@ import { RejectedView } from "./views/rejected-view";
 import { Loader2 } from "lucide-react";
 
 const generalValue = {
-  nik: "",
+  personal_id_type: "NIK" as "NIK" | "NIB" | "NPWP",
+  personal_id: "",
   full_name: "",
 };
 
 const initialValue = {
-  ktp: null as File | null,
-  storefront: null as File | null,
+  personal_id_file: null as File | null,
+  storefront_file: null as File | null,
   ...generalValue,
 };
 
 const initialErrors = {
-  ktp: "",
-  storefront: "",
+  personal_id_file: "",
+  storefront_file: "",
   ...generalValue,
 };
 
@@ -55,13 +56,14 @@ const Client = () => {
   const handleSubmit = (e: FormEvent) => {
     e.preventDefault();
     const body = new FormData();
-    body.append("nik", input.nik);
+    body.append("personal_id", input.personal_id);
     body.append("full_name", input.full_name);
-    if (input.ktp) {
-      body.append("ktp", input.ktp);
+    body.append("personal_id_type", input.personal_id_type);
+    if (input.personal_id_file) {
+      body.append("personal_id_file", input.personal_id_file);
     }
-    if (input.storefront) {
-      body.append("storefront", input.storefront);
+    if (input.storefront_file) {
+      body.append("storefront_file", input.storefront_file);
     }
 
     upgrade(

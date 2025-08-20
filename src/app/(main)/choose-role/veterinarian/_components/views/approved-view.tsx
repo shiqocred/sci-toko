@@ -5,22 +5,14 @@ import { sizesImage } from "@/lib/utils";
 import { CheckCircle } from "lucide-react";
 import Image from "next/image";
 import React, { MouseEvent } from "react";
+import { StatusUpgradeProps } from "../../_api";
 
 export const ApprovedView = ({
   handleActivate,
   data,
 }: {
   handleActivate: (e: MouseEvent) => Promise<void>;
-  data: {
-    fileKtp: string | null;
-    fileKta: string | null;
-    message: string | null;
-    name: string | null;
-    role: "BASIC" | "PETSHOP" | "VETERINARIAN" | "ADMIN";
-    status: "PENDING" | "APPROVED" | "REJECTED" | null;
-    nik: string | null;
-    noKta: string | null;
-  };
+  data: StatusUpgradeProps;
 }) => {
   return (
     <div className="max-w-md w-full p-5 bg-white rounded-2xl flex flex-col gap-4 text-center">
@@ -30,9 +22,9 @@ export const ApprovedView = ({
       </h1>
       <div className="flex flex-col gap-4">
         {[
-          { label: "Full Name", value: data.name ?? "" },
-          { label: "NIK", value: data.nik ?? "" },
-          { label: "KTA Number", value: data.noKta ?? "" },
+          { label: "Full Name", value: data.fullName ?? "" },
+          { label: "NIK", value: data.personalId ?? "" },
+          { label: "KTA Number", value: data.veterinarianId ?? "" },
         ].map((item) => (
           <div key={item.label} className="flex flex-col gap-1.5 w-full">
             <Label>{item.label}</Label>
@@ -47,7 +39,7 @@ export const ApprovedView = ({
           <Label>KTP</Label>
           <div className="w-full aspect-[107/67] border border-gray-400 rounded-md overflow-hidden relative">
             <Image
-              src={data.fileKtp ?? ""}
+              src={data.personalIdFile ?? ""}
               alt="Foto KTP"
               fill
               sizes={sizesImage}
@@ -59,7 +51,7 @@ export const ApprovedView = ({
           <Label>KTA</Label>
           <div className="w-full aspect-[107/67] border border-gray-400 rounded-md overflow-hidden relative">
             <Image
-              src={data.fileKta ?? ""}
+              src={data.veterinarianIdFile ?? ""}
               alt="Foto Storefront"
               fill
               sizes={sizesImage}

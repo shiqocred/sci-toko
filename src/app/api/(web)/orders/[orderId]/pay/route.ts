@@ -1,6 +1,6 @@
-import { checkoutUrl } from "@/config";
+import { repaymentOrder } from "@/lib/api";
 import { auth, errorRes, successRes } from "@/lib/auth";
-import { db } from "@/lib/db";
+import { isResponse } from "@/lib/utils";
 import { NextRequest } from "next/server";
 
 export async function POST(
@@ -9,21 +9,15 @@ export async function POST(
 ) {
   try {
     const session = await auth();
-    if (!session) return errorRes("Unauthorized", 401);
+    if (!session || !session.user?.id) throw errorRes("Unauthorized", 401);
 
-    const { orderId } = await params;
+    const userId = session.user.id;
 
-    const invoice = await db.query.invoices.findFirst({
-      columns: { paymentId: true },
-      where: (i, { eq }) => eq(i.orderId, orderId),
-    });
-
-    const response = {
-      url: `${checkoutUrl}/${invoice?.paymentId}`,
-    };
+    const response = await repaymentOrder(params, userId);
 
     return successRes(response, "Retrieve re-payment url");
   } catch (error) {
+    if (isResponse(error)) return error;
     console.error("ERROR_REPAYMENT", error);
     return errorRes("Internal Server Error", 500);
   }

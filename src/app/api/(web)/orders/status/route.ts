@@ -67,9 +67,22 @@ const sanitizeStatus = async (
 
 export async function POST(req: NextRequest) {
   try {
-    const body: OrderStatusEvent = await req.json();
+    let body: OrderStatusEvent | null = null;
 
-    if (body.event !== "order.status") return errorRes("Event not match");
+    // aman ambil body JSON, tapi jika kosong atau invalid tetap lanjut
+    try {
+      body = await req.json();
+    } catch {
+      // kosong atau invalid, abaikan, tetap lanjut
+      body = null;
+    }
+
+    // jika body kosong, langsung return OK supaya webhook install sukses
+    if (!body)
+      return new Response(JSON.stringify({ ok: true }), { status: 200 });
+
+    if (body.event !== "order.status")
+      return new Response(JSON.stringify({ ok: true }), { status: 200 });
 
     const shippingExist = await db.query.shippings.findFirst({
       columns: { id: true, trackingId: true, orderId: true },
@@ -79,15 +92,19 @@ export async function POST(req: NextRequest) {
           eq(s.waybillId, body.courier_waybill_id)
         ),
     });
-    if (!shippingExist) return errorRes("No waybill or tracking id found");
 
+    if (!shippingExist)
+      return new Response(JSON.stringify({ ok: true }), { status: 200 });
+
+    // ambil history tracking
     const { ok: historiesOk, response: historiesRes } = await getTracking(
       shippingExist.trackingId as string
     );
 
     if (!historiesOk)
-      return errorRes(`Failed to get histories, ${historiesRes.error}`, 400);
+      return new Response(JSON.stringify({ ok: true }), { status: 200 });
 
+    // ... lanjutkan insert/update seperti biasa
     const historiesFormatted: Histories[] = historiesRes.history;
 
     const historiesExist = await db.query.shippingHistories.findMany({
@@ -101,7 +118,6 @@ export async function POST(req: NextRequest) {
       )
     );
 
-    // 3️⃣ Filter hanya data yang belum ada
     const filteredNew = historiesFormatted.filter(
       (h) =>
         !existingSet.has(
@@ -132,15 +148,11 @@ export async function POST(req: NextRequest) {
       }
       await tx
         .update(shippings)
-        .set({
-          status: body.status.toUpperCase(),
-        })
+        .set({ status: body.status.toUpperCase() })
         .where(eq(shippings.id, shippingExist.id));
       await tx
         .update(orders)
-        .set({
-          status: await sanitizeStatus(body.status),
-        })
+        .set({ status: await sanitizeStatus(body.status) })
         .where(eq(orders.id, shippingExist.orderId));
     });
 

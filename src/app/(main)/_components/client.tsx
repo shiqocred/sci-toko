@@ -20,10 +20,10 @@ const Client = () => {
 
   return (
     <div className="bg-sky-50  pb-16">
-      <HeroSection />
+      <HeroSection data={dataHome?.banners ?? []} />
       <AnimalsSection />
       <TrendingSection data={dataHome?.products ?? []} />
-      <PromoSection />
+      <PromoSection data={dataHome?.promos ?? []} />
       <ByCategorySection data={dataHome?.categories ?? []} />
       <BySupplierSection data={dataHome?.suppliers ?? []} />
     </div>

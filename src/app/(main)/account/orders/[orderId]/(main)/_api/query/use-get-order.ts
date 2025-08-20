@@ -32,7 +32,7 @@ export type HistoryStatus =
   | "DELIVERED"
   | "PENDING";
 
-type HistoriesExist = {
+export type HistoriesExistProps = {
   id: string;
   updatedAt: Date | null;
   status: HistoryStatus;
@@ -41,43 +41,36 @@ type HistoriesExist = {
   serviceType: string | null;
 };
 
+export type PaymentProps = {
+  subtotal: string;
+  shipping_cost: string;
+  total: string;
+  status: "CANCELLED" | "PENDING" | "EXPIRED" | "PAID" | null;
+  timestamp: Date | null;
+  method: string | null;
+};
+export type AddressProps = {
+  name: string | null;
+  phone: string | null;
+  address: string | null;
+  note: string | null;
+};
+export type ShippingProps = {
+  waybill_id: string | null;
+  courier_name: string | null;
+  duration: string;
+  status: string | null;
+};
+
 type Response = {
   data: {
     id: string;
-    product_price: string;
-    total_price: string;
     status: string;
-    userId: string;
-    name: string;
-    email: string;
-    image: string | null;
-    toal_orders: string;
-    invoice_status: string;
-    paymentChannel: string | null;
-    paymentMethod: string | null;
-    amount: string;
-    expiredAt: string | null;
-    cancelledAt: string | null;
-    paidAt: string | null;
-    shipping_name: string;
-    shipping_phone: string;
-    shipping_address: string;
-    shipping_address_note: string;
-    shipping_latitude: string;
-    shipping_longitude: string;
-    shipping_id: string | null;
-    shipping_waybill_id: string | null;
-    shipping_courier_name: string;
-    shipping_courierCompany: string;
-    shipping_courierType: string;
-    shipping_price: string;
-    shipping_duration: string;
-    shipping_fastest: string;
-    shipping_longest: string;
-    shipping_status: string;
-    payment_formatted: string;
+    payment: PaymentProps;
+    address: AddressProps;
+    shipping: ShippingProps;
     products: ProductOutput[];
-    history: HistoriesExist | null;
+    history: HistoriesExistProps | null;
   };
 };
 

@@ -117,7 +117,7 @@ export const apiRegister = async (req: Request) => {
   const otp = generateOtp();
   const expires = add(new Date(), { minutes: 15 });
 
-  Promise.all([
+  await Promise.all([
     db.insert(userRoleDetails).values({
       userId: user.id,
       role: "BASIC",

@@ -3,6 +3,7 @@ import { cn, sizesImage } from "@/lib/utils";
 import Image from "next/image";
 import Link from "next/link";
 import React from "react";
+import { SupplierCategoryPromoProps } from "../../_api";
 
 interface CategoryCardProps {
   id: string;
@@ -11,64 +12,42 @@ interface CategoryCardProps {
   image: string;
 }
 
-// const data = [
-//   {
-//     label: "Farm Products",
-//     className: "[--color:#DEF7D6]",
-//     urlImage: "/assets/images/category-1.png",
-//     href: "#",
-//   },
-//   {
-//     label: "Feed Additive",
-//     className: "[--color:#D8D6F7]",
-//     urlImage: "/assets/images/category-2.png",
-//     href: "#",
-//   },
-//   {
-//     label: "Companion Animal",
-//     className: "[--color:#F7D6F4]",
-//     urlImage: "/assets/images/category-3.png",
-//     href: "#",
-//   },
-// ];
-
-export const ByCategorySection = ({ data }: { data: any[] }) => {
+export const ByCategorySection = ({
+  data,
+}: {
+  data: SupplierCategoryPromoProps[];
+}) => {
   return (
     <div className="[--max-width:1240px] w-full max-w-[var(--max-width)] mx-auto px-4 lg:px-8 flex flex-col gap-8 py-6">
       <Heading label="Shop By Category" isExpand={"#"} />
       <div className="grid grid-cols-3 gap-6 w-full">
         {data.map((item) => (
-          <CategoryCard key={item.id} {...item} />
+          <CategoryCard key={item.slug} {...item} />
         ))}
       </div>
     </div>
   );
 };
 
-const CategoryCard = ({ id, name, className, image }: CategoryCardProps) => {
+const CategoryCard = ({ name, slug, image }: SupplierCategoryPromoProps) => {
   return (
     <Link
-      href={`/products?categories=${id}`}
-      className="w-full relative bg-white grid grid-cols-2 rounded-2xl overflow-hidden"
+      href={`/products?categories=${slug}`}
+      className="w-full relative bg-white grid grid-cols-2 rounded-lg overflow-hidden"
     >
       <div className="w-full aspect-square p-4">
-        <div className="size-full relative">
+        <div className="size-full relative rounded-md overflow-hidden">
           <Image
             alt={name}
             src={image ?? "/assets/images/logo-sci.png"}
             fill
-            className="object-contain"
+            className="object-cover"
             sizes={sizesImage}
           />
         </div>
       </div>
-      <div
-        className={cn(
-          "w-full font-black items-center flex p-4 bg-[var(--color)]",
-          className
-        )}
-      >
-        <p className="w-full text-2xl">{name}</p>
+      <div className="w-full font-black items-center flex p-4 bg-[var(--color)]">
+        <p className="w-full text-2xl line-clamp-3">{name}</p>
       </div>
     </Link>
   );

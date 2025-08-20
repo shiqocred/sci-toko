@@ -55,7 +55,7 @@ const Client = () => {
               >
                 <Link href={"/choose-role/veterinarian"}>
                   <StethoscopeIcon />
-                  Veterinarian
+                  Vet Clinic
                 </Link>
               </Button>
             </div>

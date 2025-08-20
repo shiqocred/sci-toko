@@ -24,10 +24,11 @@ export const apiGetStatusRole = async (req: NextRequest, userId: string) => {
         status: true,
         role: true,
         message: true,
-        fileKtp: true,
-        name: true,
-        nik: true,
-        storefront: true,
+        fullName: true,
+        personalIdType: true,
+        personalId: true,
+        personalIdFile: true,
+        storefrontFile: true,
       },
       where: (u, { eq, and }) =>
         and(eq(u.userId, userId), eq(u.newRole, "PETSHOP")),
@@ -36,22 +37,25 @@ export const apiGetStatusRole = async (req: NextRequest, userId: string) => {
     if (!userExist)
       return successRes(
         {
-          status: null,
+          personalIdFile: null,
+          storefrontFile: null,
           role: user.role,
+          status: null,
           message: null,
-          fileKtp: null,
-          storefront: null,
-          name: null,
-          nik: null,
+          personalIdType: null,
+          personalId: null,
+          fullName: null,
         },
         "Application status"
       );
 
     const response = {
       ...userExist,
-      fileKtp: userExist.fileKtp ? `${r2Public}/${userExist.fileKtp}` : null,
-      storefront: userExist.storefront
-        ? `${r2Public}/${userExist.storefront}`
+      personalIdFile: userExist.personalIdFile
+        ? `${r2Public}/${userExist.personalIdFile}`
+        : null,
+      storefrontFile: userExist.storefrontFile
+        ? `${r2Public}/${userExist.storefrontFile}`
         : null,
     };
 
@@ -63,11 +67,11 @@ export const apiGetStatusRole = async (req: NextRequest, userId: string) => {
       status: true,
       role: true,
       message: true,
-      fileKtp: true,
-      fileKta: true,
-      name: true,
-      nik: true,
-      noKta: true,
+      fullName: true,
+      personalId: true,
+      personalIdFile: true,
+      veterinarianId: true,
+      veterinarianIdFile: true,
     },
     where: (u, { eq, and }) =>
       and(eq(u.userId, userId), eq(u.newRole, "VETERINARIAN")),
@@ -76,22 +80,26 @@ export const apiGetStatusRole = async (req: NextRequest, userId: string) => {
   if (!userExist)
     return successRes(
       {
-        status: null,
         role: user.role,
+        personalId: null,
+        personalIdFile: null,
+        veterinarianId: null,
+        veterinarianIdFile: null,
+        fullName: null,
         message: null,
-        fileKtp: null,
-        fileKta: null,
-        name: null,
-        nik: null,
-        noKta: null,
+        status: null,
       },
       "Application status"
     );
 
   const response = {
     ...userExist,
-    fileKtp: userExist.fileKtp ? `${r2Public}/${userExist.fileKtp}` : null,
-    fileKta: userExist.fileKta ? `${r2Public}/${userExist.fileKta}` : null,
+    personalIdFile: userExist.personalIdFile
+      ? `${r2Public}/${userExist.personalIdFile}`
+      : null,
+    veterinarianIdFile: userExist.veterinarianIdFile
+      ? `${r2Public}/${userExist.veterinarianIdFile}`
+      : null,
   };
 
   return successRes(response, "Application status");

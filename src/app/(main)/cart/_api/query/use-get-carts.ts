@@ -3,7 +3,6 @@ import { useApiQuery } from "@/lib/query/use-query";
 type Response = {
   data: {
     products: {
-      id: string;
       name: string | null;
       slug: string | null;
       image: string | null;

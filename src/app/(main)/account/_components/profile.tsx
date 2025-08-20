@@ -60,7 +60,7 @@ export const Profile = ({
           >
             <Link href={"/choose-role/veterinarian"}>
               <Stethoscope />
-              <p>Veterinarian</p>
+              <p>Vet Clinic</p>
             </Link>
           </Badge>
         )}
@@ -71,14 +71,14 @@ export const Profile = ({
           >
             <Link href={"/choose-role/pet-shop"}>
               <Store />
-              <p>Petshop</p>
+              <p>Pet Shop</p>
             </Link>
           </Badge>
         )}
         {user?.role === "BASIC" && (
           <Badge className="bg-green-50 hover:bg-green-50 border-green-600 text-green-600 rounded-full">
             <User2 />
-            <p>Basic</p>
+            <p>Pet Owner</p>
           </Badge>
         )}
         {user?.role === "ADMIN" && (

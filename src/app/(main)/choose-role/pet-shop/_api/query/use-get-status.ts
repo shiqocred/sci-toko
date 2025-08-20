@@ -1,15 +1,18 @@
 import { useApiQuery } from "@/lib/query/use-query";
 
+export type StatusUpgradeProps = {
+  role: "BASIC" | "PETSHOP" | "VETERINARIAN" | "ADMIN";
+  status: "PENDING" | "REJECTED" | "APPROVED" | null;
+  message: string | null;
+  personalIdType: "NIK" | "NIB" | "NPWP" | null;
+  personalIdFile: string | null;
+  storefrontFile: string | null;
+  personalId: string | null;
+  fullName: string | null;
+};
+
 type Response = {
-  data: {
-    status: "PENDING" | "APPROVED" | "REJECTED" | null;
-    name: string | null;
-    role: "BASIC" | "PETSHOP" | "VETERINARIAN" | "ADMIN";
-    message: string | null;
-    fileKtp: string | null;
-    storefront: string | null;
-    nik: string | null;
-  };
+  data: StatusUpgradeProps;
 };
 
 export const useGetStatusRolePetshop = () => {

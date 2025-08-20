@@ -7,14 +7,14 @@ import { NextRequest } from "next/server";
 import { z } from "zod/v4";
 
 const upgradeRoleVeterinarian = z.object({
-  nik: z.string().min(16, "Invalid NIK number"),
-  no_kta: z.string().min(1, "KTA number is required"),
+  personal_id: z.string().min(1, "Invalid Personal Id number"),
+  veterinarian_id: z.string().min(1, "KTA number is required"),
   full_name: z.string().min(1, "full name is required"),
 });
 
 /**
  *
- * @FormData full_name, nik, ktp, no_kta, kta
+ * @FormData full_name, personal_id, personal_id_file, veterinarian_id, veterinarian_id_file
  */
 export const apiUpgradeToVeterinarian = async (
   req: NextRequest,
@@ -24,8 +24,8 @@ export const apiUpgradeToVeterinarian = async (
 
   const body = {
     full_name: formData.get("full_name") as string,
-    nik: formData.get("nik") as string,
-    no_kta: formData.get("no_kta") as string,
+    personal_id: formData.get("personal_id") as string,
+    veterinarian_id: formData.get("veterinarian_id") as string,
   };
 
   const result = upgradeRoleVeterinarian.safeParse(body);
@@ -37,34 +37,42 @@ export const apiUpgradeToVeterinarian = async (
     throw errorRes("Validation failed", 422, errors);
   }
 
-  const { nik, no_kta, full_name } = result.data;
-  const ktp = formData.get("ktp") as File;
-  const kta = formData.get("kta") as File;
+  const { personal_id, veterinarian_id, full_name } = result.data;
+
+  const personalIdFileReq = formData.get("personal_id_file") as File;
+  const veterinarianIdFileReq = formData.get("veterinarian_id_file") as File;
   const baseKey = `images/roles/veterinarian/${userId}`;
 
   // Upload KTP
-  const webpBufferKtp = await convertToWebP(ktp);
-  const keyKtp = `${baseKey}/ktp-${Date.now()}.webp`;
-  const r2UpKtp = await uploadToR2({ buffer: webpBufferKtp, key: keyKtp });
-  if (!r2UpKtp) throw errorRes("Upload Failed", 422, r2UpKtp);
+  const webpBufferPersonal = await convertToWebP(personalIdFileReq);
+  const personalIdFile = `${baseKey}/ktp-${Date.now()}.webp`;
+  const r2UpPersonal = await uploadToR2({
+    buffer: webpBufferPersonal,
+    key: personalIdFile,
+  });
+  if (!r2UpPersonal) throw errorRes("Upload Failed", 422, r2UpPersonal);
 
   // Upload KTA
-  const webpBufferKta = await convertToWebP(kta);
-  const keyKta = `${baseKey}/kta-${Date.now()}.webp`;
-  const r2UpKta = await uploadToR2({ buffer: webpBufferKta, key: keyKta });
-  if (!r2UpKta) throw errorRes("Upload Failed", 422, r2UpKta);
+  const webpBufferVeterinarian = await convertToWebP(veterinarianIdFileReq);
+  const veterinarianIdFile = `${baseKey}/kta-${Date.now()}.webp`;
+  const r2UpVeterinarian = await uploadToR2({
+    buffer: webpBufferVeterinarian,
+    key: veterinarianIdFile,
+  });
+  if (!r2UpVeterinarian) throw errorRes("Upload Failed", 422, r2UpVeterinarian);
 
   const [role] = await db
     .update(userRoleDetails)
     .set({
       userId,
-      name: full_name,
-      nik,
-      noKta: no_kta,
+      fullName: full_name,
+      personalIdType: "NIK",
+      personalId: personal_id,
+      veterinarianId: veterinarian_id,
       newRole: "VETERINARIAN",
       status: "PENDING",
-      fileKtp: keyKtp,
-      fileKta: keyKta,
+      personalIdFile,
+      veterinarianIdFile,
       updatedAt: sql`NOW()`,
     })
     .where(eq(userRoleDetails.userId, userId))

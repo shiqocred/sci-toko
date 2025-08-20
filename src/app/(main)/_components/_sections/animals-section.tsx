@@ -22,14 +22,14 @@ export const AnimalsSection = () => {
           classImage={"left-6 h-[90%] aspect-[854/1171]"}
           urlImage={"/assets/images/dog.png"}
           classBox="justify-end bg-[#B7E8FA]"
-          href={`#`}
+          href={`/products?pets=dogs-12345`}
         />
         <AnimalCard
           label={"Cats"}
           classImage={"right-6 h-[85%] aspect-[1454/1188]"}
           urlImage={"/assets/images/cat.png"}
           classBox="bg-[#FFEF9E]"
-          href={`#`}
+          href={`/products?pets=pets-67890`}
         />
       </div>
     </div>

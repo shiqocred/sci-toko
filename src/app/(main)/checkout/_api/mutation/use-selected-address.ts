@@ -7,7 +7,7 @@ type Body = { addressId: string };
 export const useSelectedAddress = () => {
   const queryClient = useQueryClient();
   const mutation = useMutate<Body>({
-    endpoint: "/checkout/couriers",
+    endpoint: "/checkout",
     method: "put",
     onSuccess: async ({ data }) => {
       toast.success(data.message);

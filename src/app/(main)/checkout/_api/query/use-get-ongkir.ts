@@ -2,7 +2,7 @@ import { useApiQuery } from "@/lib/query/use-query";
 
 type Ongkir = {
   id: string;
-  name: "EXPRESS" | "REGULAR" | "ECONOMY";
+  name: "REGULAR" | "ECONOMY" | "EXPRESS";
   company: string;
   price: string;
   duration: string;

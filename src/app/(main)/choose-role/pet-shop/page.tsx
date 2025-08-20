@@ -4,7 +4,7 @@ import { Metadata } from "next";
 import { auth } from "@/lib/auth";
 import { redirect } from "next/navigation";
 
-export const metadata: Metadata = { title: "Pet shop form" };
+export const metadata: Metadata = { title: "Pet Shop form" };
 
 const PetShopFormPage = async () => {
   const isAuth = await auth();

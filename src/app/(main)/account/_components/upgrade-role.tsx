@@ -53,7 +53,7 @@ export const UpgradeRole = ({
               >
                 <Link href={"/choose-role/pet-shop"}>
                   <Store />
-                  Petshop
+                  Pet Shop
                   <ChevronRight />
                 </Link>
               </Button>
@@ -72,7 +72,7 @@ export const UpgradeRole = ({
               >
                 <Link href={"/choose-role/veterinarian"}>
                   <Stethoscope />
-                  Veterinarian
+                  Vet Clinic
                   <ChevronRight />
                 </Link>
               </Button>

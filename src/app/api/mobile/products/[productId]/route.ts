@@ -1,7 +1,6 @@
 import { jwtSecret } from "@/config";
 import { productDetail } from "@/lib/api";
 import { errorRes, successRes } from "@/lib/auth";
-import { db } from "@/lib/db";
 import { isResponse } from "@/lib/utils";
 import { verify } from "jsonwebtoken";
 import { NextRequest } from "next/server";

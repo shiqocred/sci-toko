@@ -4,7 +4,7 @@ import { Metadata } from "next";
 import { auth } from "@/lib/auth";
 import { redirect } from "next/navigation";
 
-export const metadata: Metadata = { title: "Choose role" };
+export const metadata: Metadata = { title: "Upgrade role" };
 
 const ChooseRolePage = async () => {
   const isAuth = await auth();

@@ -7,20 +7,22 @@ import { NextRequest } from "next/server";
 import { z } from "zod/v4";
 
 const upgradeRolePetshop = z.object({
-  nik: z.string().min(16, "Invalid NIK number"),
+  personal_id: z.string().min(1, "Invalid personal id number"),
   full_name: z.string().min(1, "full name is required"),
+  personal_id_type: z.enum(["NIK", "NIB", "NPWP"]),
 });
 
 /**
  *
- * @FormData full_name, nik, ktp, storefront
+ * @FormData full_name, personal_id_type, personal_id, personal_id_file, storefront_file
  */
 export const apiUpgradeToPetShop = async (req: NextRequest, userId: string) => {
   const formData = await req.formData();
 
   const body = {
     full_name: formData.get("full_name") as string,
-    nik: formData.get("nik") as string,
+    personal_id: formData.get("personal_id") as string,
+    personal_id_type: formData.get("personal_id_type") as string,
   };
 
   const result = upgradeRolePetshop.safeParse(body);
@@ -32,23 +34,26 @@ export const apiUpgradeToPetShop = async (req: NextRequest, userId: string) => {
     throw errorRes("Validation failed", 400, errors);
   }
 
-  const { nik, full_name } = result.data;
-  const ktp = formData.get("ktp") as File;
-  const storefront = formData.get("storefront") as File;
+  const { personal_id, personal_id_type, full_name } = result.data;
+  const personalIdFileReq = formData.get("personal_id_file") as File;
+  const storefrontFileReq = formData.get("storefront_file") as File;
   const baseKey = `images/roles/petshop/${userId}`;
 
   // Upload KTP
-  const webpBufferKTP = await convertToWebP(ktp);
-  const keyKTP = `${baseKey}/ktp-${Date.now()}.webp`;
-  const r2UpKTP = await uploadToR2({ buffer: webpBufferKTP, key: keyKTP });
-  if (!r2UpKTP) throw errorRes("Upload Failed", 400, r2UpKTP);
+  const webpBufferpersonalId = await convertToWebP(personalIdFileReq);
+  const personalIdFile = `${baseKey}/personal-id-${Date.now()}.webp`;
+  const r2UppersonalId = await uploadToR2({
+    buffer: webpBufferpersonalId,
+    key: personalIdFile,
+  });
+  if (!r2UppersonalId) throw errorRes("Upload Failed", 400, r2UppersonalId);
 
   // Upload Storefront
-  const webpBufferStorefront = await convertToWebP(storefront);
-  const keyStorefront = `${baseKey}/storefront-${Date.now()}.webp`;
+  const webpBufferStorefront = await convertToWebP(storefrontFileReq);
+  const storefrontFile = `${baseKey}/storefront-${Date.now()}.webp`;
   const r2UpStorefront = await uploadToR2({
     buffer: webpBufferStorefront,
-    key: keyStorefront,
+    key: storefrontFile,
   });
   if (!r2UpStorefront) throw errorRes("Upload Failed", 400, r2UpStorefront);
 
@@ -56,12 +61,13 @@ export const apiUpgradeToPetShop = async (req: NextRequest, userId: string) => {
     .update(userRoleDetails)
     .set({
       userId,
-      name: full_name,
-      nik,
+      fullName: full_name,
+      personalIdType: personal_id_type,
+      personalId: personal_id,
       newRole: "PETSHOP",
       status: "PENDING",
-      fileKtp: keyKTP,
-      storefront: keyStorefront,
+      personalIdFile,
+      storefrontFile,
       updatedAt: sql`NOW()`,
     })
     .where(eq(userRoleDetails.userId, userId))

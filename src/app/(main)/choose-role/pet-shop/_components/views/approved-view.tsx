@@ -5,21 +5,14 @@ import { sizesImage } from "@/lib/utils";
 import { CheckCircle } from "lucide-react";
 import Image from "next/image";
 import React, { MouseEvent } from "react";
+import { StatusUpgradeProps } from "../../_api";
 
 export const ApprovedView = ({
   handleActivate,
   data,
 }: {
   handleActivate: (e: MouseEvent) => Promise<void>;
-  data: {
-    status: "PENDING" | "APPROVED" | "REJECTED" | null;
-    name: string | null;
-    role: "BASIC" | "PETSHOP" | "VETERINARIAN" | "ADMIN";
-    message: string | null;
-    fileKtp: string | null;
-    storefront: string | null;
-    nik: string | null;
-  };
+  data: StatusUpgradeProps;
 }) => {
   return (
     <div className="max-w-md w-full p-5 bg-white rounded-2xl flex flex-col gap-4 text-center">
@@ -29,8 +22,8 @@ export const ApprovedView = ({
       </h1>
       <div className="flex flex-col gap-4">
         {[
-          { label: "Full Name", value: data.name ?? "" },
-          { label: "NIK", value: data.nik ?? "" },
+          { label: "Full Name", value: data.fullName ?? "" },
+          { label: "NIK", value: data.personalId ?? "" },
         ].map((item) => (
           <div key={item.label} className="flex flex-col gap-1.5 w-full">
             <Label>{item.label}</Label>
@@ -45,7 +38,7 @@ export const ApprovedView = ({
           <Label>KTP</Label>
           <div className="w-full aspect-[107/67] border border-gray-400 rounded-md overflow-hidden relative">
             <Image
-              src={data.fileKtp ?? ""}
+              src={data.personalIdFile ?? ""}
               alt="Foto KTP"
               fill
               sizes={sizesImage}
@@ -57,7 +50,7 @@ export const ApprovedView = ({
           <Label>Photo of Your Pet Shop Building</Label>
           <div className="w-full aspect-[107/67] border border-gray-400 rounded-md overflow-hidden relative">
             <Image
-              src={data.storefront ?? ""}
+              src={data.storefrontFile ?? ""}
               alt="Foto Storefront"
               fill
               sizes={sizesImage}

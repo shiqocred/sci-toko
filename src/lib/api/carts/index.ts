@@ -54,7 +54,9 @@ export const cartsList = async (userId: string) => {
   const imageSubquery = db
     .select({
       productId: productImages.productId,
-      minId: sql<number>`MIN(${productImages.id})`.as("minId"),
+      firstCreatedAt: sql<Date>`MIN(${productImages.createdAt})`.as(
+        "firstCreatedAt"
+      ),
     })
     .from(productImages)
     .where(inArray(productImages.productId, productIds))
@@ -67,7 +69,13 @@ export const cartsList = async (userId: string) => {
       url: productImages.url,
     })
     .from(productImages)
-    .innerJoin(imageSubquery, eq(productImages.id, imageSubquery.minId));
+    .innerJoin(
+      imageSubquery,
+      and(
+        eq(productImages.productId, imageSubquery.productId),
+        eq(productImages.createdAt, imageSubquery.firstCreatedAt)
+      )
+    );
 
   const imageMap = new Map(
     firstImagesResult.map((img) => [img.productId, img.url])
@@ -87,14 +95,23 @@ export const cartsList = async (userId: string) => {
   const getPrice = (variantId: string): number => {
     const prices = pricingMap.get(variantId);
     if (!prices) return 0;
-    return Number(
-      prices[user.role] ??
-        prices["BASIC"] ?? // fallback
-        0
-    );
+    return Number(prices[user.role] ?? prices["BASIC"] ?? 0);
   };
 
-  // 5. Loop cartItems → bagi in-stock & out-of-stock
+  // 5. Ambil available roles per product
+  const availableRolesRes = await db.query.productAvailableRoles.findMany({
+    where: (pr, { inArray }) => inArray(pr.productId, productIds),
+  });
+
+  const availableRolesMap = new Map<string, Set<string>>();
+  for (const row of availableRolesRes) {
+    if (!availableRolesMap.has(row.productId)) {
+      availableRolesMap.set(row.productId, new Set());
+    }
+    availableRolesMap.get(row.productId)!.add(row.role);
+  }
+
+  // 6. Loop cartItems → bagi in-stock & out-of-stock
   const inStockMap = new Map<string, any>();
   const outOfStockMap = new Map<string, any>();
   let subtotal = 0;
@@ -103,7 +120,12 @@ export const cartsList = async (userId: string) => {
     const stock = Number(item.stock ?? 0);
     let quantity = Number(item.quantity ?? 0);
 
-    if (stock <= 0) {
+    const roleAllowed = (
+      availableRolesMap.get(item.productId) ?? new Set()
+    ).has(user.role);
+
+    // Out of stock jika stock habis atau role tidak diperbolehkan
+    if (stock <= 0 || !roleAllowed) {
       addToMap(outOfStockMap, item, 0);
       continue;
     }
@@ -148,7 +170,6 @@ export const cartsList = async (userId: string) => {
 
     if (!map.has(item.productId)) {
       map.set(item.productId, {
-        id: item.productId,
         name: item.productName,
         slug: item.productSlug,
         image: imageMap.get(item.productId)
@@ -164,7 +185,7 @@ export const cartsList = async (userId: string) => {
     else product.variants.push(variant);
   }
 
-  // 6. Format final product
+  // 7. Format final product
   const formatProducts = (map: Map<string, any>) =>
     Array.from(map.values()).map((product) => {
       if (product.default_variant) product.variants = null;
