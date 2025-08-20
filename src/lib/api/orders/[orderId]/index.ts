@@ -221,6 +221,7 @@ export const detailOrder = async (
       total: orderRes.total_price,
       status: orderRes.invoice_status,
       timestamp: getPaymentTimestamp(orderRes),
+      method: formatPayment(orderRes.paymentMethod, orderRes.paymentChannel),
     },
     address: {
       name: orderRes.shipping_name,
@@ -237,7 +238,6 @@ export const detailOrder = async (
         orderRes.shipping_duration
       ),
       status: orderRes.shipping_status,
-      method: formatPayment(orderRes.paymentMethod, orderRes.paymentChannel),
     },
     products: productsList,
     history: history ?? null,

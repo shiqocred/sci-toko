@@ -299,7 +299,17 @@ const Client = () => {
           </Button>
           <h4 className="font-bold text-base">Detail Order</h4>
         </div>
-        {!isPending && <OrderStatusBadge status={orderData?.status} />}
+        <div className="flex items-center gap-3">
+          {!isPending && (
+            <Badge
+              variant={"outline"}
+              className="capitalize px-3 py-1 border-gray-300 font-normal"
+            >
+              Order no: <span className="font-semibold">{orderData?.id}</span>
+            </Badge>
+          )}
+          {!isPending && <OrderStatusBadge status={orderData?.status} />}
+        </div>
       </header>
 
       {isPending ? (
