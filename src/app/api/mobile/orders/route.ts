@@ -22,7 +22,7 @@ export async function GET(req: NextRequest) {
   }
 }
 
-export async function PUT(req: NextRequest) {
+export async function POST(req: NextRequest) {
   try {
     const auth = await isAuth(req);
     if (!auth || auth.email || auth.password || !auth.sub)

@@ -21,7 +21,7 @@ export async function GET() {
   }
 }
 
-export async function PUT(req: NextRequest) {
+export async function POST(req: NextRequest) {
   try {
     const isAuth = await auth();
     if (!isAuth) return errorRes("Unauthorized", 401);
