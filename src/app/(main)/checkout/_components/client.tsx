@@ -3,19 +3,28 @@
 
 import { useEffect, useMemo, useState } from "react";
 import {
+  useAddVoucher,
   useCreateOrder,
   useGetAddresses,
   useGetCheckout,
   useGetOngkir,
+  useRemoveVoucher,
 } from "../_api";
-import { Address, CheckoutData } from "./types";
+import { Address } from "./types";
 import { AddressSection } from "./_sections/address-section";
 import { OrderListSection } from "./_sections/order-list-section";
 import { ShippingMethodSection } from "./_sections/shipping-method-section";
 import { OrderSummarySection } from "./_sections/order-summary-section";
 import { CheckoutButton } from "./_sections/checkout-button";
 import { Button } from "@/components/ui/button";
-import { ArrowLeft, BadgePercent, NotebookPen } from "lucide-react";
+import {
+  ArrowLeft,
+  BadgePercent,
+  Loader,
+  Loader2,
+  NotebookPen,
+  X,
+} from "lucide-react";
 import Link from "next/link";
 import { useConfirm } from "@/hooks/use-confirm";
 import { useRouter } from "next/navigation";
@@ -23,11 +32,14 @@ import { toast } from "sonner";
 import { parseAsString, useQueryState } from "nuqs";
 import { Textarea } from "@/components/ui/textarea";
 import { Input } from "@/components/ui/input";
+import { TooltipText } from "@/providers/tooltip-provider";
 
 export default function Client() {
   const [shipping, setShipping] = useState("");
+  const [available, setAvailable] = useState(false);
   const [open, setOpen] = useState(false);
   const [input, setInput] = useState("");
+  const [voucher, setVoucher] = useState("");
   const router = useRouter();
   const [checkouted, setCheckouted] = useQueryState(
     "checkout",
@@ -41,6 +53,8 @@ export default function Client() {
   );
 
   const { mutate: createOrder, isPending: isCreating } = useCreateOrder();
+  const { mutate: addVoucher, isPending: isAdding } = useAddVoucher();
+  const { mutate: removeVoucher, isPending: isRemoving } = useRemoveVoucher();
 
   const { data: addressesRes, isPending: isPendingAddresses } =
     useGetAddresses();
@@ -61,32 +75,43 @@ export default function Client() {
     () => addressesRes?.data as Address[],
     [addressesRes]
   );
-  const checkout = useMemo(
-    () => checkoutRes?.data as CheckoutData,
-    [checkoutRes]
-  );
+  const checkout = useMemo(() => checkoutRes?.data, [checkoutRes]);
 
   // Hitung total harga
   const shippingPrice = useMemo(() => {
     if (!ongkir?.data || !shipping) return "0";
-    return (
-      ongkir.data[shipping as "express" | "regular" | "economy"]?.price || "0"
-    );
+    const dataOngkir = ongkir.data;
+    if (dataOngkir.economy?.id === shipping) return dataOngkir.economy.price;
+    if (dataOngkir.regular?.id === shipping) return dataOngkir.regular.price;
+    if (dataOngkir.express?.id === shipping) return dataOngkir.express.price;
+    return "0";
   }, [ongkir, shipping]);
 
   const totalPrice = useMemo(() => {
-    return parseFloat(shippingPrice) + (checkout?.price ?? 0);
-  }, [shippingPrice, checkout?.price]);
+    return (
+      parseFloat(shippingPrice) +
+      (checkout?.price ?? 0) -
+      (checkout?.total_discount || 0)
+    );
+  }, [shippingPrice, checkout]);
 
   const isLoading = isPendingAddresses || isPendingCheckout || isPendingOngkir;
 
   const handleOrder = async () => {
     const ok = await confirmOrder();
     if (!ok) return;
+    setCheckouted("proceed");
     createOrder(
-      { body: { note: input } },
+      { body: { note: input, courierId: shipping } },
       { onSuccess: () => setCheckouted("order") }
     );
+  };
+
+  const handleAddVoucher = () => {
+    addVoucher({ body: { voucher } }, { onSuccess: () => setVoucher("") });
+  };
+  const handleRemoveVoucher = () => {
+    removeVoucher({});
   };
 
   useEffect(() => {
@@ -100,6 +125,15 @@ export default function Client() {
       router.push("/cart");
     }
   }, [isError, isCreating, isPendingCheckout, checkouted]);
+
+  useEffect(() => {
+    if (checkouted === "order") {
+      setAvailable(true);
+      setTimeout(() => {
+        setAvailable(false);
+      }, 5000);
+    }
+  }, [checkouted]);
 
   return (
     <div className="bg-sky-50 h-full">
@@ -118,68 +152,123 @@ export default function Client() {
           <h1 className="text-3xl font-bold">Checkout</h1>
         </div>
 
-        <div className="grid grid-cols-5 gap-6">
-          <div className="col-span-3 flex flex-col gap-4">
-            <AddressSection
-              addressId={checkout?.addressId}
-              addresses={addresses}
-              open={open}
-              setOpen={setOpen}
-              isLoading={isPendingAddresses}
-            />
-            <ShippingMethodSection
-              ongkir={ongkir}
-              shipping={shipping}
-              setShipping={setShipping}
-              isLoading={isPendingOngkir || isRefetchingOngkir}
-            />
-            <OrderListSection
-              products={checkout?.products || []}
-              totalItems={checkout?.total_item || 0}
-              isLoading={isPendingCheckout}
-            />
+        {checkouted === "order" || checkouted === "proceed" ? (
+          <div className="w-full h-[300px] flex items-center justify-center flex-col gap-2">
+            <Loader className="size-6 animate-spin" />
+            <p className="ml-2 animate-pulse">
+              {checkouted === "order" ? "Redirect" : "Process"}ing...
+            </p>
+            {checkouted === "order" && (
+              <Button
+                className="mt-5"
+                onClick={() => setCheckouted("")}
+                disabled={available}
+              >
+                Back to checkout
+              </Button>
+            )}
           </div>
-
-          <div className="col-span-2 flex flex-col gap-4">
-            <div className="w-full rounded-lg shadow p-5 bg-white border flex flex-col gap-4">
-              <h3 className="font-semibold text-lg flex items-center gap-2">
-                <NotebookPen className="size-5" />
-                Note for seller
-              </h3>
-              <Textarea
-                className="border-gray-300 focus-visible:ring-0 focus-visible:border-gray-400 row-span-6 min-h-20 resize-none"
-                placeholder="Please leave a note..."
-                value={input}
-                onChange={(e) => setInput(e.target.value)}
+        ) : (
+          <div className="grid grid-cols-5 gap-6">
+            <div className="col-span-3 flex flex-col gap-4">
+              <AddressSection
+                addressId={checkout?.addressId}
+                addresses={addresses}
+                open={open}
+                setOpen={setOpen}
+                isLoading={isPendingAddresses}
+              />
+              <ShippingMethodSection
+                ongkir={ongkir}
+                shipping={shipping}
+                setShipping={setShipping}
+                isLoading={isPendingOngkir || isRefetchingOngkir}
+              />
+              <OrderListSection
+                products={checkout?.products || []}
+                totalItems={checkout?.total_item || 0}
+                isLoading={isPendingCheckout}
               />
             </div>
-            <div className="w-full rounded-lg shadow p-5 bg-white border flex flex-col gap-2">
-              <h3 className="font-semibold text-lg flex items-center gap-2">
-                <BadgePercent className="size-5" />
-                Voucher
-              </h3>
-              <div className="flex items-center">
-                <Input
-                  className="border-gray-300 focus-visible:ring-0 focus-visible:border-gray-400 shadow-none rounded-r-none border-r-0"
-                  placeholder="Type voucher..."
-                />
-                <Button className="rounded-l-none" variant={"sci"}>
-                  Apply
-                </Button>
-              </div>
-            </div>
 
-            <OrderSummarySection
-              subtotal={checkout?.price || 0}
-              shippingPrice={shippingPrice}
-              totalPrice={totalPrice}
-            />
-            <CheckoutButton
-              disabled={!shipping || !checkout?.addressId || isLoading}
-              onClick={handleOrder}
-            />
+            <div className="col-span-2 flex flex-col gap-4">
+              <div className="w-full rounded-lg shadow p-5 bg-white border flex flex-col gap-4">
+                <h3 className="font-semibold text-lg flex items-center gap-2">
+                  <NotebookPen className="size-5" />
+                  Note for seller
+                </h3>
+                <Textarea
+                  className="border-gray-300 focus-visible:ring-0 focus-visible:border-gray-400 row-span-6 min-h-20 resize-none"
+                  placeholder="Please leave a note..."
+                  value={input}
+                  onChange={(e) => setInput(e.target.value)}
+                />
+              </div>
+              <div className="w-full rounded-lg shadow p-5 bg-white border flex flex-col gap-2">
+                <h3 className="font-semibold text-lg flex items-center gap-2">
+                  <BadgePercent className="size-5" />
+                  Voucher
+                </h3>
+                {checkout?.discount ? (
+                  <div className="flex border rounded-md border-gray-300 items-center">
+                    <div className="flex w-full flex-col gap-1 ml-5 border-l p-3 border-gray-300 border-dashed text-sm">
+                      <p className="font-medium">
+                        Applied{" "}
+                        <span className="font-semibold">
+                          {checkout.discount.code}
+                        </span>
+                      </p>
+                      <p className="text-xs">{checkout.discount.value}</p>
+                    </div>
+                    <TooltipText value="Remove Voucher">
+                      <Button
+                        size={"icon"}
+                        variant={"ghost"}
+                        className="mr-3"
+                        onClick={handleRemoveVoucher}
+                        disabled={isRemoving}
+                      >
+                        {isRemoving ? (
+                          <Loader2 className="animate-spin" />
+                        ) : (
+                          <X />
+                        )}
+                      </Button>
+                    </TooltipText>
+                  </div>
+                ) : (
+                  <div className="flex items-center">
+                    <Input
+                      className="border-gray-300 focus-visible:ring-0 focus-visible:border-gray-400 shadow-none rounded-r-none border-r-0"
+                      placeholder="Type voucher..."
+                      value={voucher}
+                      onChange={(e) => setVoucher(e.target.value)}
+                    />
+                    <Button
+                      className="rounded-l-none"
+                      variant={"sci"}
+                      onClick={handleAddVoucher}
+                      disabled={isAdding}
+                    >
+                      Apply{isAdding && "ing..."}
+                    </Button>
+                  </div>
+                )}
+              </div>
+
+              <OrderSummarySection
+                subtotal={checkout?.price || 0}
+                discount={checkout?.total_discount || 0}
+                shippingPrice={shippingPrice}
+                totalPrice={totalPrice}
+              />
+              <CheckoutButton
+                disabled={!shipping || !checkout?.addressId || isLoading}
+                onClick={handleOrder}
+              />
+            </div>
           </div>
-        </div>
+        )}
       </div>
     </div>
   );

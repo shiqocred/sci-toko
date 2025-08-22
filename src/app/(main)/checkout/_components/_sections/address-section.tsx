@@ -5,7 +5,7 @@ import { Address } from "../types";
 import { DialogSelectAddress } from "../_dialogs";
 
 interface Props {
-  addressId: string | null;
+  addressId?: string | null;
   addresses: Address[] | undefined;
   open: boolean;
   setOpen: (open: boolean) => void;

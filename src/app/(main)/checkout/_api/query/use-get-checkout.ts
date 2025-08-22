@@ -1,31 +1,37 @@
 import { useApiQuery } from "@/lib/query/use-query";
 
-type Response = {
-  data: {
-    total_item: number;
-    price: number;
-    products: {
+export type CheckoutProps = {
+  total_item: number;
+  price: number;
+  products: {
+    id: string;
+    title: string;
+    image: string | null;
+    default_variant:
+      | {
+          id: string;
+          name: string;
+          price: string;
+          qty: string;
+        }
+      | undefined;
+    variants: {
       id: string;
-      title: string;
-      image: string | null;
-      default_variant:
-        | {
-            id: string;
-            name: string;
-            price: string;
-            qty: string;
-          }
-        | undefined;
-      variants: {
-        id: string;
-        name: string;
-        price: string;
-        qty: string;
-      }[];
+      name: string;
+      price: string;
+      qty: string;
     }[];
-    total_weight: number;
-    addressId: string | null;
-  };
+  }[];
+  discount: {
+    code: string;
+    value: string;
+  } | null;
+  total_discount: number;
+  addressId: string | null;
+};
+
+type Response = {
+  data: CheckoutProps;
 };
 
 export const useGetCheckout = () => {

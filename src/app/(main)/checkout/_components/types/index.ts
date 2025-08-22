@@ -1,3 +1,5 @@
+import { Ongkir } from "../../_api";
+
 // types/checkout.ts
 export type Address = {
   id: string;
@@ -25,42 +27,8 @@ export type Product = {
   variants: ProductVariant[];
 };
 
-export type CheckoutData = {
-  total_item: number;
-  price: number;
-  products: {
-    id: string;
-    title: string;
-    image: string | null;
-    default_variant:
-      | {
-          id: string;
-          name: string;
-          price: string;
-          qty: string;
-        }
-      | undefined;
-    variants: {
-      id: string;
-      name: string;
-      price: string;
-      qty: string;
-    }[];
-  }[];
-  total_weight: number;
-  addressId: string | null;
-};
-
-export type Courier = {
-  name: string;
-  company: string;
-  duration: string;
-  price: number;
-  type: string;
-};
-
 export type OngkirData = {
-  express?: Courier;
-  regular?: Courier;
-  economy?: Courier;
+  express?: Ongkir;
+  regular?: Ongkir;
+  economy?: Ongkir;
 };

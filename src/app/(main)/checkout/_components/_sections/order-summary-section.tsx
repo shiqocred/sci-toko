@@ -5,12 +5,14 @@ import { formatRupiah } from "@/lib/utils";
 
 interface Props {
   subtotal: number;
+  discount: number;
   shippingPrice: string;
   totalPrice: number;
 }
 
 export function OrderSummarySection({
   subtotal,
+  discount,
   shippingPrice,
   totalPrice,
 }: Props) {
@@ -21,10 +23,17 @@ export function OrderSummarySection({
         Order Summary
       </h3>
       <div className="flex flex-col gap-3 text-sm">
-        <div className="flex items-center justify-between">
-          <p>Subtotal:</p>
-          <p className="font-semibold">{formatRupiah(subtotal)}</p>
+        <div className="flex flex-col gap-2">
+          <div className="flex items-center justify-between">
+            <p>Subtotal:</p>
+            <p className="font-semibold">{formatRupiah(subtotal)}</p>
+          </div>
+          <div className="flex items-center justify-between ml-2">
+            <p>- Discount:</p>
+            <p className="font-semibold">- {formatRupiah(discount)}</p>
+          </div>
         </div>
+        <Separator />
         <div className="flex items-center justify-between">
           <p>Shipping Fee:</p>
           <p className="font-semibold">{formatRupiah(shippingPrice)}</p>

@@ -320,8 +320,7 @@ async function insertShippingChoice({
 export const courier = async (userId: string) => {
   const draftOrderExist = await db.query.orderDraft.findFirst({
     columns: { id: true, addressId: true, totalWeight: true },
-    where: (od, { eq, and }) =>
-      and(eq(od.userId, userId), eq(od.status, "ACTIVE")),
+    where: (od, { eq }) => eq(od.userId, userId),
   });
 
   if (!draftOrderExist) throw errorRes("No current order");
@@ -469,8 +468,7 @@ export const updateAddressCourier = async (
     columns: {
       id: true,
     },
-    where: (od, { and, eq }) =>
-      and(eq(od.userId, userId), eq(od.status, "ACTIVE")),
+    where: (od, { eq }) => eq(od.userId, userId),
   });
 
   if (!orderExist) throw errorRes("Checkout detail not found", 404);

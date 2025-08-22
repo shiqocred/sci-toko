@@ -37,6 +37,7 @@ export const cartsList = async (userId: string) => {
       isDefault: productVariants.isDefault,
       productName: products.name,
       productSlug: products.slug,
+      createdAt: carts.createdAt,
     })
     .from(carts)
     .innerJoin(productVariants, eq(carts.variantId, productVariants.id))
@@ -166,6 +167,7 @@ export const cartsList = async (userId: string) => {
       stock: stock ?? Number(item.stock ?? 0),
       price,
       total,
+      createdAt: item.createdAt, // 🔹 simpan sementara
     };
 
     if (!map.has(item.productId)) {
@@ -187,12 +189,28 @@ export const cartsList = async (userId: string) => {
 
   // 7. Format final product
   const formatProducts = (map: Map<string, any>) =>
-    Array.from(map.values()).map((product) => {
-      if (product.default_variant) product.variants = null;
-      else if (!product.variants.length) product.variants = null;
-      else product.default_variant = null;
-      return product;
-    });
+    Array.from(map.values())
+      // 🔹 sort berdasarkan createdAt desc
+      .sort((a, b) => {
+        const ca =
+          a.default_variant?.createdAt || a.variants?.[0]?.createdAt || 0;
+        const cb =
+          b.default_variant?.createdAt || b.variants?.[0]?.createdAt || 0;
+        return cb - ca; // desc
+      })
+      .map((product) => {
+        // 🔹 hapus createdAt dari variant biar tidak tampil di response
+        if (product.default_variant) {
+          delete product.default_variant.createdAt;
+          product.variants = null;
+        } else if (!product.variants.length) {
+          product.variants = null;
+        } else {
+          product.variants.forEach((v: any) => delete v.createdAt);
+          product.default_variant = null;
+        }
+        return product;
+      });
 
   return {
     products: formatProducts(inStockMap),

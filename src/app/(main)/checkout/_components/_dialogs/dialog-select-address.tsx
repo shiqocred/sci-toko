@@ -56,7 +56,7 @@ export const DialogSelectAddress = ({
         address: string;
       }[]
     | undefined;
-  addressId: string | null;
+  addressId?: string | null;
 }) => {
   const [address, setAddress] = useState("");
   const [state, setState] = useState("");

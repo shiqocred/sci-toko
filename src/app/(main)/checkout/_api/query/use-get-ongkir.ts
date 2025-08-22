@@ -1,6 +1,6 @@
 import { useApiQuery } from "@/lib/query/use-query";
 
-type Ongkir = {
+export type Ongkir = {
   id: string;
   name: "REGULAR" | "ECONOMY" | "EXPRESS";
   company: string;

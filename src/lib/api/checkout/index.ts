@@ -3,22 +3,30 @@ import { errorRes } from "@/lib/auth";
 import {
   carts,
   db,
+  discounts,
   orderDraft,
   orderDraftItems,
   orderDraftShippings,
-  productImages,
   products,
   productVariants,
 } from "@/lib/db";
+import { formatRupiah } from "@/lib/utils";
 import { createId } from "@paralleldrive/cuid2";
-import { and, eq, inArray } from "drizzle-orm";
+import { and, eq, inArray, InferSelectModel } from "drizzle-orm";
+
+type DiscountType = InferSelectModel<typeof discounts>;
 
 export const drafOrder = async (userId: string) => {
   const [draftOrder, storeAddress] = await Promise.all([
     db.query.orderDraft.findFirst({
-      columns: { id: true, totalPrice: true, addressId: true },
-      where: (o, { eq, and }) =>
-        and(eq(o.userId, userId), eq(o.status, "ACTIVE")),
+      columns: {
+        id: true,
+        totalPrice: true,
+        addressId: true,
+        discountId: true,
+        totalDiscount: true,
+      },
+      where: (o, { eq }) => eq(o.userId, userId),
     }),
     db.query.storeDetail.findFirst(),
   ]);
@@ -48,18 +56,26 @@ export const drafOrder = async (userId: string) => {
   const productIds = [...new Set(variants.map((v) => v.productId))];
 
   const [productList, images] = await Promise.all([
-    db
-      .select({ id: products.id, title: products.name })
-      .from(products)
-      .where(inArray(products.id, productIds)),
-    db
-      .select({
-        url: productImages.url,
-        productId: productImages.productId,
-      })
-      .from(productImages)
-      .where(inArray(productImages.productId, productIds)),
+    db.query.products.findMany({
+      columns: { id: true, name: true },
+      where: (p, { inArray }) => inArray(p.id, productIds),
+    }),
+    db.query.productImages.findMany({
+      columns: { url: true, productId: true },
+      where: (pi, { inArray }) => inArray(pi.productId, productIds),
+    }),
   ]);
+
+  let discount: DiscountType | null = null;
+  const discountId = draftOrder.discountId;
+
+  if (discountId) {
+    const discountExist = await db.query.discounts.findFirst({
+      where: (d, { eq }) => eq(d.id, discountId),
+    });
+    if (!discountExist) return errorRes("Discount not available");
+    discount = discountExist;
+  }
 
   // ✅ buat map biar lookup O(1)
   const imageMap = new Map(images.map((img) => [img.productId, img.url]));
@@ -75,7 +91,7 @@ export const drafOrder = async (userId: string) => {
 
     return {
       id: p.id,
-      title: p.title,
+      title: p.name,
       image: imageMap.has(p.id) ? `${r2Public}/${imageMap.get(p.id)}` : null,
       default_variant: defaultVariant && {
         id: defaultVariant.id,
@@ -92,17 +108,20 @@ export const drafOrder = async (userId: string) => {
     };
   });
 
-  // ✅ hitung total weight
-  const totalWeight = items.reduce(
-    (acc, item) => acc + Number(item.quantity || 0) * Number(item.weight || 0),
-    0
-  );
-
   return {
     total_item: items.length,
     price: Number(draftOrder.totalPrice),
     products: productsFormatted,
-    total_weight: totalWeight,
+    total_discount: Number(draftOrder.totalDiscount),
+    discount: discount
+      ? {
+          code: discount.code,
+          value:
+            discount.valueType === "percentage"
+              ? `${discount.value}%`
+              : formatRupiah(discount.value ?? "0"),
+        }
+      : null,
     addressId: draftOrder.addressId,
   };
 };
@@ -115,18 +134,20 @@ export const createDraftOrder = async (userId: string) => {
 
   if (!user) throw errorRes("Unauthorized", 401);
 
+  const orderDraftExist = await db.query.orderDraft.findMany({
+    columns: { id: true },
+    where: (od, { eq }) => eq(od.userId, userId),
+  });
+
+  const orderDraftIds = orderDraftExist.map((i) => i.id);
+
   await db.transaction(async (tx) => {
-    await Promise.all([
-      tx
-        .update(orderDraft)
-        .set({ status: "ABANDONED" })
-        .where(
-          and(eq(orderDraft.userId, userId), eq(orderDraft.status, "ACTIVE"))
-        ),
-      tx
+    if (orderDraftIds.length > 0) {
+      await tx
         .delete(orderDraftShippings)
-        .where(eq(orderDraftShippings.userId, userId)),
-    ]);
+        .where(inArray(orderDraftShippings.orderDraftId, orderDraftIds));
+      await tx.delete(orderDraft).where(inArray(orderDraft.id, orderDraftIds));
+    }
 
     const [addressDefault, variantSelected] = await Promise.all([
       tx.query.addresses.findFirst({
@@ -221,7 +242,6 @@ export const createDraftOrder = async (userId: string) => {
       totalPrice: totalPrice.toString(),
       addressId: addressDefault?.id,
       totalWeight: totalWeight.toString(),
-      status: "ACTIVE",
     });
 
     // Insert orderDraftItems

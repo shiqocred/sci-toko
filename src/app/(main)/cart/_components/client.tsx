@@ -5,6 +5,7 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { cn, formatRupiah, numericString, sizesImage } from "@/lib/utils";
 import {
   Loader,
+  Loader2,
   Minus,
   Plus,
   ShoppingBag,
@@ -32,6 +33,7 @@ const Client = () => {
   const [dialog, setDialog] = useState("");
   const [isTyping, setIsTyping] = useState(false);
   const [localQty, setLocalQty] = useState<Record<string, number>>({});
+  const [available, setAvailable] = useState(false);
   const [carted, setCarted] = useQueryState(
     "carted",
     parseAsString.withDefault("")
@@ -42,11 +44,14 @@ const Client = () => {
     "destructive"
   );
 
-  const { mutate: updateQty } = useUpdateQuantity();
-  const { mutate: deleteCart } = useDeleteCart();
-  const { mutate: checkCart } = useUpdateCheck();
-  const { mutate: checkout } = useCreateCheckout();
+  const { mutate: updateQty, isPending: isUpdatingQty } = useUpdateQuantity();
+  const { mutate: deleteCart, isPending: isDeleting } = useDeleteCart();
+  const { mutate: checkCart, isPending: isChecking } = useUpdateCheck();
+  const { mutate: checkout, isPending: isChekouting } = useCreateCheckout();
   const { data, isPending } = useGetCarts();
+
+  const isLoading =
+    isPending || isUpdatingQty || isDeleting || isChecking || isChekouting;
 
   const dataCart = useMemo(() => data?.data, [data]);
   const carts = useMemo(() => data?.data.products, [data]);
@@ -147,6 +152,15 @@ const Client = () => {
     checkout({}, { onSuccess: () => setCarted("checkouted") });
   };
 
+  useEffect(() => {
+    if (carted === "checkouted") {
+      setAvailable(true);
+      setTimeout(() => {
+        setAvailable(false);
+      }, 5000);
+    }
+  }, [carted]);
+
   return (
     <div className="bg-sky-50 h-full">
       <DeleteDialog />
@@ -174,346 +188,280 @@ const Client = () => {
           <h1 className="text-3xl font-bold">Your Cart</h1>
           <p className="text-gray-500">({dataCart?.total_cart ?? 0})</p>
         </div>
-        <div className="w-full grid grid-cols-7 gap-6">
-          {/* CART LIST */}
-          {isPending ? (
-            <div className="col-span-5 bg-white rounded-lg shadow p-5 flex justify-center items-center min-h-[400px] flex-col gap-2">
-              <Loader className="size-6 animate-spin" />
-              <p className="ml-2 animate-pulse">Loading...</p>
-            </div>
-          ) : (
-            <div className="col-span-5">
-              <div className="w-full flex flex-col gap-6">
-                {carts && carts.length > 0 ? (
-                  <div className="flex flex-col gap-4">
-                    {carts.map((cart) => (
-                      <div
-                        key={cart.slug}
-                        className={cn(
-                          "flex px-5 py-3 gap-3 bg-white rounded-lg shadow text-sm",
-                          cart.default_variant ? "items-center" : "flex-col"
-                        )}
-                      >
-                        <div className="flex items-center w-full gap-3">
-                          <div className="flex justify-center flex-none w-6">
-                            <Checkbox
-                              className="data-[state=checked]:bg-red-500 data-[state=checked]:border-red-500"
-                              checked={
-                                cart.default_variant?.checked ??
-                                cart.variants?.every((item) => item.checked)
-                              }
-                              onCheckedChange={(e) => {
-                                if (cart.default_variant) {
-                                  handleChecked([cart.default_variant.id], e);
-                                } else if (cart.variants) {
-                                  handleChecked(
-                                    cart.variants.map((item) => item.id),
-                                    e
-                                  );
-                                }
-                              }}
-                            />
-                          </div>
-                          <div className="flex items-center w-full gap-2">
-                            <div className="relative h-20 aspect-square border rounded-md">
-                              <Image
-                                fill
-                                src={
-                                  cart.image ?? `/assets/images/logo-sci.png`
-                                }
-                                alt="product"
-                                sizes={sizesImage}
-                                className="object-contain"
-                              />
-                            </div>
-                            <div className="flex flex-col">
-                              <Link
-                                href={`/products/${cart.slug}`}
-                                className="line-clamp-1 text-base hover:underline hover:underline-offset-2"
-                              >
-                                {cart.name}
-                              </Link>
-                              {cart.default_variant && (
-                                <p className="font-semibold">
-                                  {formatRupiah(cart.default_variant.price)}
-                                </p>
-                              )}
-                            </div>
-                          </div>
-                        </div>
-
-                        {/* DEFAULT VARIANT */}
-                        {cart.default_variant && (
-                          <div className="flex items-center gap-3">
-                            <div className="flex items-center gap-3 w-44 flex-none">
-                              <div className="flex items-center">
-                                <Button
-                                  variant="outline"
-                                  size="icon"
-                                  className="rounded-r-none"
-                                  onClick={() =>
-                                    handleReduce(
-                                      cart.default_variant?.id ?? "0"
-                                    )
-                                  }
-                                >
-                                  <Minus />
-                                </Button>
-                                <input
-                                  className="h-9 text-center w-14 border-y"
-                                  type="number"
-                                  value={
-                                    localQty[cart.default_variant.id]
-                                      ?.toString()
-                                      .replace(/^0+(?=\d)/, "") ??
-                                    cart.default_variant.quantity
-                                      ?.toString()
-                                      .replace(/^0+(?=\d)/, "")
-                                  }
-                                  onFocus={() => setIsTyping(true)}
-                                  onChange={(e) =>
-                                    handleQtyChange(
-                                      cart.default_variant?.id ?? "0",
-                                      e.target.value
-                                    )
-                                  }
-                                  onBlur={() =>
-                                    handleQtyBlur(
-                                      cart.default_variant?.id ?? "0"
-                                    )
-                                  }
-                                />
-                                <TooltipText
-                                  value={"Maximum available stock"}
-                                  className={cn(
-                                    "hidden",
-                                    (localQty[cart.default_variant.id] ??
-                                      cart.default_variant.quantity) >=
-                                      cart.default_variant.stock && "flex"
-                                  )}
-                                >
-                                  <Button
-                                    variant="outline"
-                                    size="icon"
-                                    className="rounded-l-none disabled:opacity-100 disabled:hover:bg-white disabled:pointer-events-auto disabled:cursor-not-allowed"
-                                    onClick={() =>
-                                      handleIncrease(
-                                        cart.default_variant?.id ?? "0"
-                                      )
-                                    }
-                                    disabled={
-                                      (localQty[cart.default_variant.id] ??
-                                        cart.default_variant.quantity) >=
-                                      cart.default_variant.stock
-                                    }
-                                  >
-                                    <Plus />
-                                  </Button>
-                                </TooltipText>
-                              </div>
-                              <Button
-                                className="hover:bg-red-50 text-destructive"
-                                variant="ghost"
-                                size="icon"
-                                onClick={() =>
-                                  handleDelete(cart.default_variant?.id ?? "0")
-                                }
-                              >
-                                <Trash2 />
-                              </Button>
-                            </div>
-                            <div className="whitespace-nowrap font-semibold w-32 flex-none">
-                              {formatRupiah(cart.default_variant.total)}
-                            </div>
-                          </div>
-                        )}
-
-                        {/* MULTI VARIANT */}
-                        {cart.variants && (
-                          <div className="flex flex-col border-t divide-y">
-                            {cart.variants.map((item) => (
-                              <div
-                                key={item.id}
-                                className="flex items-center gap-3 py-3"
-                              >
-                                <div className="flex justify-center flex-none w-6">
-                                  <Checkbox
-                                    className="data-[state=checked]:bg-red-500 data-[state=checked]:border-red-500"
-                                    checked={item.checked}
-                                    onCheckedChange={(e) =>
-                                      handleChecked([item.id], e)
-                                    }
-                                  />
-                                </div>
-                                <p className="w-full">{item.name}</p>
-                                <p className="w-32 flex-none">
-                                  {formatRupiah(item.price)}
-                                </p>
-                                <div className="flex items-center gap-3 w-44 flex-none">
-                                  <div className="flex items-center">
-                                    <Button
-                                      variant="outline"
-                                      size="icon"
-                                      className="rounded-r-none"
-                                      onClick={() => handleReduce(item.id)}
-                                    >
-                                      <Minus />
-                                    </Button>
-                                    <input
-                                      className="h-9 text-center w-14 border-y"
-                                      type="number"
-                                      value={
-                                        localQty[item.id]
-                                          ?.toString()
-                                          .replace(/^0+(?=\d)/, "") ??
-                                        item.quantity
-                                          ?.toString()
-                                          .replace(/^0+(?=\d)/, "")
-                                      }
-                                      onChange={(e) =>
-                                        handleQtyChange(item.id, e.target.value)
-                                      }
-                                      onBlur={() => handleQtyBlur(item.id)}
-                                    />
-                                    <TooltipText
-                                      value={"Maximum available stock"}
-                                      className={cn(
-                                        "hidden",
-                                        (localQty[item.id] ?? item.quantity) >=
-                                          item.stock && "flex"
-                                      )}
-                                    >
-                                      <Button
-                                        variant="outline"
-                                        size="icon"
-                                        className="rounded-l-none disabled:opacity-100 disabled:hover:bg-white disabled:pointer-events-auto disabled:cursor-not-allowed"
-                                        onClick={() => handleIncrease(item.id)}
-                                        disabled={
-                                          (localQty[item.id] ??
-                                            item.quantity) >= item.stock
-                                        }
-                                      >
-                                        <Plus />
-                                      </Button>
-                                    </TooltipText>
-                                  </div>
-                                  <Button
-                                    className="hover:bg-red-50 text-destructive"
-                                    variant="ghost"
-                                    size="icon"
-                                    onClick={() => handleDelete(item.id)}
-                                  >
-                                    <Trash2 />
-                                  </Button>
-                                </div>
-                                <div className="whitespace-nowrap font-semibold w-32 flex-none">
-                                  {formatRupiah(item.total)}
-                                </div>
-                              </div>
-                            ))}
-                          </div>
-                        )}
-                      </div>
-                    ))}
-                  </div>
-                ) : (
-                  <div className="bg-white rounded-lg shadow p-5 flex justify-center items-center min-h-[400px] flex-col gap-5">
-                    <div className="size-24 bg-red-500 flex items-center justify-center rounded-full text-white">
-                      <ShoppingBasket className="size-14 stroke-[1.5]" />
-                    </div>
-                    <div className="flex flex-col gap-3">
-                      <div className="flex flex-col gap-1 text-center">
-                        <p className="text-xl font-bold text-red-500">
-                          Cart is empty
-                        </p>
-                        <p className="max-w-lg text-sm text-gray-600">
-                          Looks like you haven&apos;t added anything to your
-                          cart yet. Start shopping to fill it up with amazing
-                          products!
-                        </p>
-                      </div>
-                      <Button variant={"sci"} className="w-fit mx-auto" asChild>
-                        <Link href={"/products"}>
-                          <ShoppingBag />
-                          Browse Products
-                        </Link>
-                      </Button>
-                    </div>
-                  </div>
-                )}
-                {outOfStock && outOfStock.length > 0 && (
-                  <>
-                    <div className="flex items-center gap-2">
-                      <h4 className="text-xl font-bold">
-                        Unavailable products
-                      </h4>
-                    </div>
+        {carted === "checkouted" ? (
+          <div className="w-full h-[300px] flex items-center justify-center flex-col gap-2">
+            <Loader className="size-6 animate-spin" />
+            <p className="ml-2 animate-pulse">Redirecting...</p>
+            <Button
+              className="mt-5"
+              onClick={() => setCarted("")}
+              disabled={available}
+            >
+              Back to cart
+            </Button>
+          </div>
+        ) : (
+          <div className="w-full grid grid-cols-7 gap-6">
+            {/* CART LIST */}
+            {isPending ? (
+              <div className="col-span-5 bg-white rounded-lg shadow p-5 flex justify-center items-center min-h-[400px] flex-col gap-2">
+                <Loader className="size-6 animate-spin" />
+                <p className="ml-2 animate-pulse">Loading...</p>
+              </div>
+            ) : (
+              <div className="col-span-5">
+                <div className="w-full flex flex-col gap-6">
+                  {carts && carts.length > 0 ? (
                     <div className="flex flex-col gap-4">
-                      {outOfStock?.map((out) => (
+                      {carts.map((cart) => (
                         <div
-                          key={out.slug}
+                          key={cart.slug}
                           className={cn(
                             "flex px-5 py-3 gap-3 bg-white rounded-lg shadow text-sm",
-                            out.default_variant ? "items-center" : "flex-col"
+                            cart.default_variant ? "items-center" : "flex-col"
                           )}
                         >
-                          <div className="flex items-center w-full gap-3 opacity-50">
+                          <div className="flex items-center w-full gap-3">
+                            <div className="flex justify-center flex-none w-6">
+                              <Checkbox
+                                disabled={isLoading}
+                                className="data-[state=checked]:bg-red-500 data-[state=checked]:border-red-500"
+                                checked={
+                                  cart.default_variant?.checked ??
+                                  cart.variants?.every((item) => item.checked)
+                                }
+                                onCheckedChange={(e) => {
+                                  if (cart.default_variant) {
+                                    handleChecked([cart.default_variant.id], e);
+                                  } else if (cart.variants) {
+                                    handleChecked(
+                                      cart.variants.map((item) => item.id),
+                                      e
+                                    );
+                                  }
+                                }}
+                              />
+                            </div>
                             <div className="flex items-center w-full gap-2">
                               <div className="relative h-20 aspect-square border rounded-md">
                                 <Image
                                   fill
                                   src={
-                                    out.image ?? `/assets/images/logo-sci.png`
+                                    cart.image ?? `/assets/images/logo-sci.png`
                                   }
                                   alt="product"
                                   sizes={sizesImage}
                                   className="object-contain"
                                 />
                               </div>
-                              <Link
-                                href={`/products/${out.slug}`}
-                                className="line-clamp-1 text-base hover:underline hover:underline-offset-2"
-                              >
-                                {out.name}
-                              </Link>
+                              <div className="flex flex-col">
+                                <Link
+                                  href={`/products/${cart.slug}`}
+                                  className="line-clamp-1 text-base hover:underline hover:underline-offset-2"
+                                >
+                                  {cart.name}
+                                </Link>
+                                {cart.default_variant && (
+                                  <p className="font-semibold">
+                                    {formatRupiah(cart.default_variant.price)}
+                                  </p>
+                                )}
+                              </div>
                             </div>
                           </div>
 
                           {/* DEFAULT VARIANT */}
-                          {out.default_variant && (
-                            <Button
-                              className="hover:bg-red-50 hover:text-destructive text-destructive"
-                              variant="ghost"
-                              size="sm"
-                              onClick={() =>
-                                handleDelete(out.default_variant?.id ?? "0")
-                              }
-                            >
-                              <Trash2 />
-                              Remove
-                            </Button>
+                          {cart.default_variant && (
+                            <div className="flex items-center gap-3">
+                              <div className="flex items-center gap-3 w-44 flex-none">
+                                <div className="flex items-center">
+                                  <Button
+                                    variant="outline"
+                                    size="icon"
+                                    className="rounded-r-none"
+                                    disabled={isLoading}
+                                    onClick={() =>
+                                      handleReduce(
+                                        cart.default_variant?.id ?? "0"
+                                      )
+                                    }
+                                  >
+                                    <Minus />
+                                  </Button>
+                                  <input
+                                    className="h-9 text-center w-14 border-y"
+                                    type="number"
+                                    disabled={isLoading}
+                                    value={
+                                      localQty[cart.default_variant.id]
+                                        ?.toString()
+                                        .replace(/^0+(?=\d)/, "") ??
+                                      cart.default_variant.quantity
+                                        ?.toString()
+                                        .replace(/^0+(?=\d)/, "")
+                                    }
+                                    onFocus={() => setIsTyping(true)}
+                                    onChange={(e) =>
+                                      handleQtyChange(
+                                        cart.default_variant?.id ?? "0",
+                                        e.target.value
+                                      )
+                                    }
+                                    onBlur={() =>
+                                      handleQtyBlur(
+                                        cart.default_variant?.id ?? "0"
+                                      )
+                                    }
+                                  />
+                                  <TooltipText
+                                    value={"Maximum available stock"}
+                                    className={cn(
+                                      "hidden",
+                                      (localQty[cart.default_variant.id] ??
+                                        cart.default_variant.quantity) >=
+                                        cart.default_variant.stock && "flex"
+                                    )}
+                                  >
+                                    <Button
+                                      variant="outline"
+                                      size="icon"
+                                      disabled={
+                                        isLoading ||
+                                        (localQty[cart.default_variant.id] ??
+                                          cart.default_variant.quantity) >=
+                                          cart.default_variant.stock
+                                      }
+                                      className="rounded-l-none disabled:opacity-100 disabled:hover:bg-white disabled:pointer-events-auto disabled:cursor-not-allowed"
+                                      onClick={() =>
+                                        handleIncrease(
+                                          cart.default_variant?.id ?? "0"
+                                        )
+                                      }
+                                    >
+                                      <Plus />
+                                    </Button>
+                                  </TooltipText>
+                                </div>
+                                <Button
+                                  className="hover:bg-red-50 text-destructive"
+                                  variant="ghost"
+                                  size="icon"
+                                  disabled={isLoading}
+                                  onClick={() =>
+                                    handleDelete(
+                                      cart.default_variant?.id ?? "0"
+                                    )
+                                  }
+                                >
+                                  {isDeleting ? (
+                                    <Loader2 className="animate-spin" />
+                                  ) : (
+                                    <Trash2 />
+                                  )}
+                                </Button>
+                              </div>
+                              <div className="whitespace-nowrap font-semibold w-32 flex-none">
+                                {formatRupiah(cart.default_variant.total)}
+                              </div>
+                            </div>
                           )}
 
                           {/* MULTI VARIANT */}
-                          {out.variants && (
+                          {cart.variants && (
                             <div className="flex flex-col border-t divide-y">
-                              {out.variants.map((item) => (
+                              {cart.variants.map((item) => (
                                 <div
                                   key={item.id}
                                   className="flex items-center gap-3 py-3"
                                 >
-                                  <p className="w-full opacity-50">
-                                    {item.name}
+                                  <div className="flex justify-center flex-none w-6">
+                                    <Checkbox
+                                      className="data-[state=checked]:bg-red-500 data-[state=checked]:border-red-500"
+                                      disabled={isLoading}
+                                      checked={item.checked}
+                                      onCheckedChange={(e) =>
+                                        handleChecked([item.id], e)
+                                      }
+                                    />
+                                  </div>
+                                  <p className="w-full">{item.name}</p>
+                                  <p className="w-32 flex-none">
+                                    {formatRupiah(item.price)}
                                   </p>
-                                  <Button
-                                    className="hover:bg-red-50 hover:text-destructive text-destructive"
-                                    variant="ghost"
-                                    size="sm"
-                                    onClick={() => handleDelete(item.id)}
-                                  >
-                                    <Trash2 />
-                                    Remove
-                                  </Button>
+                                  <div className="flex items-center gap-3 w-44 flex-none">
+                                    <div className="flex items-center">
+                                      <Button
+                                        variant="outline"
+                                        size="icon"
+                                        className="rounded-r-none"
+                                        disabled={isLoading}
+                                        onClick={() => handleReduce(item.id)}
+                                      >
+                                        <Minus />
+                                      </Button>
+                                      <input
+                                        className="h-9 text-center w-14 border-y"
+                                        type="number"
+                                        disabled={isLoading}
+                                        value={
+                                          localQty[item.id]
+                                            ?.toString()
+                                            .replace(/^0+(?=\d)/, "") ??
+                                          item.quantity
+                                            ?.toString()
+                                            .replace(/^0+(?=\d)/, "")
+                                        }
+                                        onChange={(e) =>
+                                          handleQtyChange(
+                                            item.id,
+                                            e.target.value
+                                          )
+                                        }
+                                        onBlur={() => handleQtyBlur(item.id)}
+                                      />
+                                      <TooltipText
+                                        value={"Maximum available stock"}
+                                        className={cn(
+                                          "hidden",
+                                          (localQty[item.id] ??
+                                            item.quantity) >= item.stock &&
+                                            "flex"
+                                        )}
+                                      >
+                                        <Button
+                                          variant="outline"
+                                          size="icon"
+                                          className="rounded-l-none disabled:opacity-100 disabled:hover:bg-white disabled:pointer-events-auto disabled:cursor-not-allowed"
+                                          onClick={() =>
+                                            handleIncrease(item.id)
+                                          }
+                                          disabled={
+                                            isLoading ||
+                                            (localQty[item.id] ??
+                                              item.quantity) >= item.stock
+                                          }
+                                        >
+                                          <Plus />
+                                        </Button>
+                                      </TooltipText>
+                                    </div>
+                                    <Button
+                                      className="hover:bg-red-50 text-destructive"
+                                      variant="ghost"
+                                      size="icon"
+                                      onClick={() => handleDelete(item.id)}
+                                      disabled={isLoading}
+                                    >
+                                      {isDeleting ? (
+                                        <Loader2 className="animate-spin" />
+                                      ) : (
+                                        <Trash2 />
+                                      )}
+                                    </Button>
+                                  </div>
+                                  <div className="whitespace-nowrap font-semibold w-32 flex-none">
+                                    {formatRupiah(item.total)}
+                                  </div>
                                 </div>
                               ))}
                             </div>
@@ -521,38 +469,159 @@ const Client = () => {
                         </div>
                       ))}
                     </div>
-                  </>
-                )}
-              </div>
-            </div>
-          )}
+                  ) : (
+                    <div className="bg-white rounded-lg shadow p-5 flex justify-center items-center min-h-[400px] flex-col gap-5">
+                      <div className="size-24 bg-red-500 flex items-center justify-center rounded-full text-white">
+                        <ShoppingBasket className="size-14 stroke-[1.5]" />
+                      </div>
+                      <div className="flex flex-col gap-3">
+                        <div className="flex flex-col gap-1 text-center">
+                          <p className="text-xl font-bold text-red-500">
+                            Cart is empty
+                          </p>
+                          <p className="max-w-lg text-sm text-gray-600">
+                            Looks like you haven&apos;t added anything to your
+                            cart yet. Start shopping to fill it up with amazing
+                            products!
+                          </p>
+                        </div>
+                        <Button
+                          variant={"sci"}
+                          className="w-fit mx-auto"
+                          asChild
+                          disabled={isLoading}
+                        >
+                          <Link href={"/products"}>
+                            <ShoppingBag />
+                            Browse Products
+                          </Link>
+                        </Button>
+                      </div>
+                    </div>
+                  )}
+                  {outOfStock && outOfStock.length > 0 && (
+                    <>
+                      <div className="flex items-center gap-2">
+                        <h4 className="text-xl font-bold">
+                          Unavailable products
+                        </h4>
+                      </div>
+                      <div className="flex flex-col gap-4">
+                        {outOfStock?.map((out) => (
+                          <div
+                            key={out.slug}
+                            className={cn(
+                              "flex px-5 py-3 gap-3 bg-white rounded-lg shadow text-sm",
+                              out.default_variant ? "items-center" : "flex-col"
+                            )}
+                          >
+                            <div className="flex items-center w-full gap-3 opacity-50">
+                              <div className="flex items-center w-full gap-2">
+                                <div className="relative h-20 aspect-square border rounded-md">
+                                  <Image
+                                    fill
+                                    src={
+                                      out.image ?? `/assets/images/logo-sci.png`
+                                    }
+                                    alt="product"
+                                    sizes={sizesImage}
+                                    className="object-contain"
+                                  />
+                                </div>
+                                <Link
+                                  href={`/products/${out.slug}`}
+                                  className="line-clamp-1 text-base hover:underline hover:underline-offset-2"
+                                >
+                                  {out.name}
+                                </Link>
+                              </div>
+                            </div>
 
-          {/* SUMMARY */}
-          <div className="w-full col-span-2">
-            <div className="bg-white shadow rounded-lg p-5 flex flex-col gap-4 text-sm">
-              <h3 className="text-base font-semibold">Summary Cart</h3>
-              <div className="flex items-center justify-between text-gray-500">
-                <p>Total</p>
-                <p className="font-bold text-black">
-                  {formatRupiah(dataCart?.total ?? 0)}
-                </p>
+                            {/* DEFAULT VARIANT */}
+                            {out.default_variant && (
+                              <Button
+                                className="hover:bg-red-50 hover:text-destructive text-destructive"
+                                variant="ghost"
+                                size="sm"
+                                disabled={isLoading}
+                                onClick={() =>
+                                  handleDelete(out.default_variant?.id ?? "0")
+                                }
+                              >
+                                {isDeleting ? (
+                                  <Loader2 className="animate-spin" />
+                                ) : (
+                                  <Trash2 />
+                                )}
+                                Remove
+                              </Button>
+                            )}
+
+                            {/* MULTI VARIANT */}
+                            {out.variants && (
+                              <div className="flex flex-col border-t divide-y">
+                                {out.variants.map((item) => (
+                                  <div
+                                    key={item.id}
+                                    className="flex items-center gap-3 py-3"
+                                  >
+                                    <p className="w-full opacity-50">
+                                      {item.name}
+                                    </p>
+                                    <Button
+                                      className="hover:bg-red-50 hover:text-destructive text-destructive"
+                                      variant="ghost"
+                                      size="sm"
+                                      disabled={isLoading}
+                                      onClick={() => handleDelete(item.id)}
+                                    >
+                                      {isDeleting ? (
+                                        <Loader2 className="animate-spin" />
+                                      ) : (
+                                        <Trash2 />
+                                      )}
+                                      Remove
+                                    </Button>
+                                  </div>
+                                ))}
+                              </div>
+                            )}
+                          </div>
+                        ))}
+                      </div>
+                    </>
+                  )}
+                </div>
               </div>
-              <Button
-                className="w-full rounded-full"
-                variant="destructive"
-                disabled={
-                  (dataCart &&
-                    (dataCart.total_cart_selected < 1 ||
-                      !dataCart?.total_cart_selected)) ||
-                  isPending
-                }
-                onClick={handleCheckout}
-              >
-                Proceed to Checkout
-              </Button>
+            )}
+
+            {/* SUMMARY */}
+            <div className="w-full col-span-2">
+              <div className="bg-white shadow rounded-lg p-5 flex flex-col gap-4 text-sm">
+                <h3 className="text-base font-semibold">Summary Cart</h3>
+                <div className="flex items-center justify-between text-gray-500">
+                  <p>Total</p>
+                  <p className="font-bold text-black">
+                    {formatRupiah(dataCart?.total ?? 0)}
+                  </p>
+                </div>
+                <Button
+                  className="w-full rounded-full"
+                  variant="destructive"
+                  disabled={
+                    isLoading ||
+                    (dataCart &&
+                      (dataCart.total_cart_selected < 1 ||
+                        !dataCart?.total_cart_selected))
+                  }
+                  onClick={handleCheckout}
+                >
+                  {isChekouting ? "Processing..." : "Proceed to Checkout"}
+                </Button>
+              </div>
             </div>
           </div>
-        </div>
+        )}
       </div>
     </div>
   );

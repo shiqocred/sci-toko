@@ -25,6 +25,7 @@ export * from "./user/addresses/[addressId]/default";
 
 export * from "./checkout";
 export * from "./checkout/couriers";
+export * from "./checkout/discounts";
 
 export * from "./orders";
 export * from "./orders/[orderId]";

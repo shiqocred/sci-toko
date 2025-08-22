@@ -72,7 +72,7 @@ export const productsList = async (req: NextRequest) => {
   const finalWhere = filters.length ? and(...filters) : undefined;
 
   const page = parseInt(req.nextUrl.searchParams.get("p") ?? "1");
-  const perPage = 1;
+  const perPage = 12;
   const offset = (page - 1) * perPage;
 
   // Total produk

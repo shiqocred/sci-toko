@@ -44,6 +44,7 @@ export type HistoriesExistProps = {
 export type PaymentProps = {
   subtotal: string;
   shipping_cost: string;
+  discount: string | null;
   total: string;
   status: "CANCELLED" | "PENDING" | "EXPIRED" | "PAID" | null;
   timestamp: Date | null;

@@ -1,15 +1,24 @@
-import { r2Public } from "@/config";
+import { failureXendit, r2Public, successXendit } from "@/config";
+import { errorRes } from "@/lib/auth";
 import {
+  carts,
   db,
+  invoices,
+  orderDraft,
+  orderDraftShippings,
   orderItems,
   orders,
   productImages,
   products,
   productVariants,
+  shippings,
 } from "@/lib/db";
+import { xendit } from "@/lib/utils";
+import { createId } from "@paralleldrive/cuid2";
 import { add, format } from "date-fns";
 import { id } from "date-fns/locale";
-import { desc, eq, sql } from "drizzle-orm";
+import { and, desc, eq, inArray, sql } from "drizzle-orm";
+import { NextRequest } from "next/server";
 
 // --- TYPES ---
 type Variant = {
@@ -135,4 +144,196 @@ export const getOrder = async (userId: string) => {
   }
 
   return groupByStatus(Array.from(orderMap.values()));
+};
+
+export const createOrder = async (req: NextRequest, userId: string) => {
+  const { Invoice } = xendit;
+  const { note, courierId } = await req.json();
+
+  // Ambil orderDraft aktif sekaligus detail address dan shipping supaya 1x query
+  const orderDraftExist = await db.query.orderDraft.findFirst({
+    where: (od, { eq }) => eq(od.userId, userId),
+    columns: {
+      id: true,
+      addressId: true,
+      totalPrice: true,
+      discountId: true,
+      totalDiscount: true,
+    },
+  });
+
+  if (!orderDraftExist)
+    throw errorRes("Failed to checkout, Order draft not found.", 400);
+  const addressId = orderDraftExist.addressId;
+  if (!addressId)
+    throw errorRes("Failed to checkout, no address selected", 400);
+
+  // Parallel fetch detail store, address, shipping, draft items
+  const [
+    storeDetail,
+    addressSelected,
+    orderDraftShippingsExist,
+    orderDraftItemsExist,
+  ] = await Promise.all([
+    db.query.storeDetail.findFirst(),
+    db.query.addresses.findFirst({
+      where: (a, { eq }) => eq(a.id, addressId),
+    }),
+    db.query.orderDraftShippings.findFirst({
+      where: (ods, { eq }) => eq(ods.id, courierId),
+    }),
+    db.query.orderDraftItems.findMany({
+      where: (odi, { eq }) => eq(odi.orderDraftId, orderDraftExist.id),
+    }),
+  ]);
+
+  if (!storeDetail)
+    throw errorRes("Store detail not found, please contact sales", 400);
+  if (!addressSelected)
+    throw errorRes("Failed to checkout, no selected address found", 400);
+  if (!orderDraftShippingsExist)
+    throw errorRes("Failed to checkout, no selected shipping found", 400);
+  if (!orderDraftItemsExist.length)
+    throw errorRes("Failed to checkout, no items in draft", 400);
+
+  // Ambil stok varian sekaligus
+  const variantIds = orderDraftItemsExist.map((item) => item.variantId);
+  const variantsStock = await db.query.productVariants.findMany({
+    where: (pv, { inArray }) => inArray(pv.id, variantIds),
+    columns: { id: true, stock: true },
+  });
+
+  // Filter item dengan stok cukup (stok > 0 dan qty <= stok)
+  const insufficientStock = new Set(
+    orderDraftItemsExist
+      .filter((item) => {
+        const variant = variantsStock.find((v) => v.id === item.variantId);
+        return (
+          variant &&
+          Number(variant.stock) > 0 &&
+          Number(item.quantity) > Number(variant.stock)
+        );
+      })
+      .map((item) => item.variantId)
+  );
+
+  const itemsToCheckout = orderDraftItemsExist.filter(
+    (item) => !insufficientStock.has(item.variantId)
+  );
+
+  console.log(itemsToCheckout);
+
+  if (itemsToCheckout.length === 0) {
+    throw errorRes("No items with sufficient stock to checkout", 400);
+  }
+
+  const totalPrice =
+    Number(orderDraftExist.totalPrice) +
+    Number(orderDraftShippingsExist.price) -
+    Number(orderDraftExist.totalDiscount);
+
+  const orderId = createId();
+
+  const invoice = await Invoice.createInvoice({
+    data: {
+      amount: totalPrice,
+      currency: "IDR",
+      externalId: orderId,
+      successRedirectUrl: successXendit,
+      failureRedirectUrl: failureXendit,
+      invoiceDuration: 10800,
+    },
+  });
+
+  await db.transaction(async (tx) => {
+    // Lock variant yang dicekout
+    await Promise.all(
+      itemsToCheckout.map((item) =>
+        tx.execute(
+          sql`SELECT * FROM product_variants WHERE id = ${item.variantId} FOR UPDATE`
+        )
+      )
+    );
+
+    // Insert order utama
+    await tx.insert(orders).values({
+      id: orderId,
+      userId,
+      productPrice: orderDraftExist.totalPrice,
+      shippingPrice: orderDraftShippingsExist.price,
+      totalPrice: totalPrice.toString(),
+      discountId: orderDraftExist.discountId,
+      totalDiscount: orderDraftExist.totalDiscount,
+      note,
+    });
+
+    // Update stok hanya untuk item yang cukup stok
+    await Promise.all([
+      // Insert orderItems hanya yang cukup stok
+      await tx.insert(orderItems).values(
+        itemsToCheckout.map((item) => ({
+          orderId,
+          variantId: item.variantId,
+          price: item.price,
+          weight: item.weight,
+          quantity: item.quantity,
+        }))
+      ),
+
+      // Insert invoice
+      await tx.insert(invoices).values({
+        amount: totalPrice.toString(),
+        orderId,
+        paymentId: invoice.id,
+      }),
+
+      // Insert shipping
+      await tx.insert(shippings).values({
+        name: addressSelected.name,
+        phone: addressSelected.phoneNumber,
+        address: `${addressSelected.address}, ${addressSelected.district}, ${addressSelected.city}, ${addressSelected.province}, Indonesia ${addressSelected.postalCode}`,
+        address_note: addressSelected.detail,
+        latitude: addressSelected.latitude,
+        longitude: addressSelected.longitude,
+        courierCompany: orderDraftShippingsExist.company,
+        courierType: orderDraftShippingsExist.type,
+        fastestEstimate: orderDraftShippingsExist.fastestEstimate,
+        longestEstimate: orderDraftShippingsExist.longestEstimate,
+        duration: orderDraftShippingsExist.duration,
+        price: orderDraftShippingsExist.price,
+        courierName: orderDraftShippingsExist.label,
+        orderId,
+      }),
+    ]);
+
+    await Promise.all(
+      itemsToCheckout.map((item) =>
+        tx
+          .update(productVariants)
+          .set({
+            stock: sql`${productVariants.stock}::numeric - ${Number(item.quantity)}`,
+          })
+          .where(eq(productVariants.id, item.variantId))
+      )
+    );
+
+    // Hapus cart user untuk variant yang sudah dicekout
+    await Promise.all([
+      tx
+        .delete(carts)
+        .where(
+          and(eq(carts.userId, userId), inArray(carts.variantId, variantIds))
+        ),
+      tx.delete(orderDraft).where(eq(orderDraft.userId, userId)),
+      tx
+        .delete(orderDraftShippings)
+        .where(eq(orderDraftShippings.userId, userId)),
+    ]);
+  });
+
+  return {
+    orderId,
+    payment_url: invoice.invoiceUrl,
+    payment_status: invoice.status,
+  };
 };

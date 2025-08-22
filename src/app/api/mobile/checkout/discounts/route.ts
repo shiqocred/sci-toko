@@ -1,26 +1,7 @@
-import { createOrder, getOrder } from "@/lib/api";
+import { applyDiscount, removeDiscount } from "@/lib/api";
 import { errorRes, isAuth, successRes } from "@/lib/auth";
 import { isResponse } from "@/lib/utils";
 import { NextRequest } from "next/server";
-
-// --- API HANDLER ---
-export async function GET(req: NextRequest) {
-  try {
-    const auth = await isAuth(req);
-    if (!auth || auth.email || auth.password || !auth.sub)
-      throw errorRes("Unauthorized", 401);
-
-    const { sub: userId } = auth;
-
-    const response = await getOrder(userId);
-
-    return successRes(response, "Orders retrieved with product thumbnails");
-  } catch (error) {
-    if (isResponse(error)) return error;
-    console.error("ERROR_GET_ORDERS", error);
-    return errorRes("Internal Server Error", 500);
-  }
-}
 
 export async function POST(req: NextRequest) {
   try {
@@ -30,12 +11,30 @@ export async function POST(req: NextRequest) {
 
     const { sub: userId } = auth;
 
-    const response = await createOrder(req, userId);
+    await applyDiscount(req, userId);
 
-    return successRes(response, "Order successfully created");
+    return successRes(null, "Discount applied");
   } catch (error) {
     if (isResponse(error)) return error;
-    console.error("ERROR_CREATE_ORDER", error);
+    console.log("ERROR_APPLY_VOUCHER", error);
+    return errorRes("Internal Error", 500);
+  }
+}
+
+export async function DELETE(req: NextRequest) {
+  try {
+    const auth = await isAuth(req);
+    if (!auth || auth.email || auth.password || !auth.sub)
+      throw errorRes("Unauthorized", 401);
+
+    const { sub: userId } = auth;
+
+    await removeDiscount(userId);
+
+    return successRes(null, "Discount removed");
+  } catch (error) {
+    if (isResponse(error)) return error;
+    console.log("ERROR_REMOVED_VOUCHER", error);
     return errorRes("Internal Error", 500);
   }
 }

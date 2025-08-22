@@ -33,7 +33,7 @@ export async function POST(req: NextRequest) {
     return successRes(response, "Order successfully created");
   } catch (error) {
     if (isResponse(error)) return error;
-    console.log(error);
+    console.error("ERROR_CREATE_ORDER", error);
     return errorRes("Internal Error", 500);
   }
 }

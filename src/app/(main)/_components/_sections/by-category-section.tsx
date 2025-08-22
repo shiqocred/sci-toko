@@ -1,16 +1,9 @@
 import { Heading } from "@/components/heading";
-import { cn, sizesImage } from "@/lib/utils";
+import { sizesImage } from "@/lib/utils";
 import Image from "next/image";
 import Link from "next/link";
 import React from "react";
 import { SupplierCategoryPromoProps } from "../../_api";
-
-interface CategoryCardProps {
-  id: string;
-  name: string;
-  className?: string;
-  image: string;
-}
 
 export const ByCategorySection = ({
   data,

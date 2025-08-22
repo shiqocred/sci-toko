@@ -4,8 +4,13 @@ import { formatRupiah, sizesImage } from "@/lib/utils";
 import { Check, Clipboard, TagIcon } from "lucide-react";
 import Image from "next/image";
 import React, { MouseEvent } from "react";
-import { TransformedOrderGroup, useRepayOrder } from "../../_api";
+import {
+  TransformedOrderGroup,
+  useCancelOrder,
+  useRepayOrder,
+} from "../../_api";
 import Link from "next/link";
+import { useConfirm } from "@/hooks/use-confirm";
 
 const parseQty = (qty?: string) => Number.parseFloat(qty ?? "0") || 0;
 
@@ -107,14 +112,28 @@ export const OrderList = ({
     setTimeout(() => setCopied(false), 2000);
   };
 
-  const { mutate: repayOrder } = useRepayOrder();
+  const [CancelDialog, confirmCancel] = useConfirm(
+    "Cancel Selected Order?",
+    "This action cannot be undone",
+    "destructive"
+  );
+
+  const { mutate: cancelOrder, isPending: isCancelling } = useCancelOrder();
+  const { mutate: repayOrder, isPending: isRepaying } = useRepayOrder();
   const handleRePay = (e: MouseEvent, id: string) => {
     e.preventDefault();
     repayOrder({ params: { id } });
   };
+  const handleCancel = async (e: MouseEvent, id: string) => {
+    e.preventDefault();
+    const ok = await confirmCancel();
+    if (!ok) return;
+    cancelOrder({ params: { id } });
+  };
 
   return (
     <Card className="rounded-md shadow-none border-green-400">
+      <CancelDialog />
       <CardContent className="flex flex-col w-full">
         {/* Header */}
         <div className="flex items-center justify-between">
@@ -179,20 +198,31 @@ export const OrderList = ({
               </p>
             )}
             <div className="flex items-center gap-3 ml-auto">
-              {state === "failed" && <Button variant={"sci"}>Buy Again</Button>}
               {state === "unpaid" && (
                 <>
-                  <Button variant={"sciOutline"}>Cancel Order</Button>
+                  <Button
+                    variant={"sciOutline"}
+                    onClick={(e) => handleCancel(e, order.id)}
+                    disabled={isRepaying || isCancelling}
+                  >
+                    {isCancelling ? "Canceling..." : "Cancel Order"}
+                  </Button>
                   <Button
                     variant={"sci"}
                     onClick={(e) => handleRePay(e, order.id)}
+                    disabled={isRepaying || isCancelling}
                   >
-                    Pay Now
+                    {isCancelling ? "Re-Paying..." : "Pay Now"}
                   </Button>
                 </>
               )}
               {state === "completed" && (
-                <Button variant="sciOutline">Review</Button>
+                <Button
+                  variant="sciOutline"
+                  onClick={() => alert("Comming soon")}
+                >
+                  Review
+                </Button>
               )}
               {(state === "shipping" || state === "completed") && (
                 <Button variant={"sciOutline"}>

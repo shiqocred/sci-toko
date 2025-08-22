@@ -262,6 +262,10 @@ const PriceSummary = ({ payment }: { payment?: PaymentProps }) => (
         <p>{formatRupiah(payment?.subtotal ?? 0)}</p>
       </div>
       <div className="flex items-center justify-between">
+        <p>Voucher applied</p>
+        <p>-{formatRupiah(payment?.discount ?? 0)}</p>
+      </div>
+      <div className="flex items-center justify-between">
         <p>Shipping Cost</p>
         <p>{formatRupiah(payment?.shipping_cost ?? 0)}</p>
       </div>
@@ -272,9 +276,25 @@ const PriceSummary = ({ payment }: { payment?: PaymentProps }) => (
       <p>{formatRupiah(payment?.total ?? 0)}</p>
     </div>
     <Separator />
-    <div className="flex items-center p-3 justify-between">
-      <p>Payment Method</p>
-      <p>{payment?.method ?? "-"}</p>
+    <div className="flex flex-col gap-2 p-3">
+      <div className="flex items-center justify-between">
+        <p>Payment Method</p>
+        <p>{payment?.method ?? "-"}</p>
+      </div>
+      {payment?.status !== "PENDING" && (
+        <div className="flex items-center justify-between">
+          <p>
+            {payment?.status === "PAID" && "Paid at"}
+            {payment?.status === "EXPIRED" && "Expired at"}
+            {payment?.status === "CANCELLED" && "Canceled at"}:
+          </p>
+          <p>
+            {format(new Date(payment?.timestamp ?? ""), "PPP HH:mm", {
+              locale: id,
+            })}
+          </p>
+        </div>
+      )}
     </div>
   </div>
 );

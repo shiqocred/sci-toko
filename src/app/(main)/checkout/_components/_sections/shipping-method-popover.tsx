@@ -33,13 +33,13 @@ export function ShippingMethodPopover({
           variant="outline"
           className="justify-between min-h-9 h-auto text-start hover:bg-green-50"
         >
-          {ongkir.express && shipping === "express" && (
+          {ongkir.express && shipping === ongkir.express.id && (
             <ShippingDisplay courier={ongkir.express} name="Express" />
           )}
-          {ongkir.regular && shipping === "regular" && (
+          {ongkir.regular && shipping === ongkir.regular.id && (
             <ShippingDisplay courier={ongkir.regular} name="Regular" />
           )}
-          {ongkir.economy && shipping === "economy" && (
+          {ongkir.economy && shipping === ongkir.economy.id && (
             <ShippingDisplay courier={ongkir.economy} name="Economy" />
           )}
           <ChevronDown className="transition-transform duration-200 group-data-[state=open]:rotate-180" />
@@ -51,24 +51,24 @@ export function ShippingMethodPopover({
             <CommandGroup>
               {ongkir.express && (
                 <ShippingOption
-                  selected={shipping === "express"}
-                  onSelect={() => setShipping("express")}
+                  selected={shipping === ongkir.express.id}
+                  onSelect={() => setShipping(ongkir?.express?.id ?? "")}
                   courier={ongkir.express}
                   name="Express"
                 />
               )}
               {ongkir.regular && (
                 <ShippingOption
-                  selected={shipping === "regular"}
-                  onSelect={() => setShipping("regular")}
+                  selected={shipping === ongkir?.regular?.id}
+                  onSelect={() => setShipping(ongkir?.regular?.id ?? "")}
                   courier={ongkir.regular}
                   name="Regular"
                 />
               )}
               {ongkir.economy && (
                 <ShippingOption
-                  selected={shipping === "economy"}
-                  onSelect={() => setShipping("economy")}
+                  selected={shipping === ongkir?.economy?.id}
+                  onSelect={() => setShipping(ongkir?.economy?.id ?? "")}
                   courier={ongkir.economy}
                   name="Economy"
                 />

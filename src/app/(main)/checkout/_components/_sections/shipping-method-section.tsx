@@ -22,12 +22,14 @@ export function ShippingMethodSection({
 
   useEffect(() => {
     if (ongkir?.data) {
-      if (ongkir.data.express) setShipping("express");
-      else if (ongkir.data.regular) setShipping("regular");
-      else if (ongkir.data.economy) setShipping("economy");
+      if (ongkir.data.express) setShipping(ongkir.data.express.id);
+      else if (ongkir.data.regular) setShipping(ongkir.data.regular.id);
+      else if (ongkir.data.economy) setShipping(ongkir.data.economy.id);
       else setShipping("");
     }
   }, [ongkir]);
+
+  console.log(shipping);
 
   const renderContext = () => {
     if (isLoading) {
