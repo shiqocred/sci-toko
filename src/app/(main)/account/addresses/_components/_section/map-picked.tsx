@@ -361,14 +361,14 @@ const Maps = ({
   const isSomeError = errors.address || errors.latitude || errors.longitude;
 
   return (
-    <div className="w-full flex-col flex-none relative flex gap-1.5 justify-center overflow-hidden">
+    <div className="w-full flex-col flex-none relative flex gap-1.5 justify-center">
       <div
         className={cn(
-          "flex flex-col gap-4 relative border border-gray-300 rounded-md p-3 w-full",
+          "flex flex-col gap-4 relative md:border border-gray-300 rounded-md md:p-3 w-full",
           isSomeError && "border-red-500"
         )}
       >
-        <Command className="h-fit absolute top-3 z-10 w-[calc(100%-24px)]">
+        <Command className="h-fit absolute top-3 z-10 w-full md:w-[calc(100%-24px)]">
           <div className="flex flex-col gap-1.5">
             <Label>Search Address</Label>
             <div className="w-full relative flex items-center">
@@ -409,9 +409,9 @@ const Maps = ({
           )}
         </Command>
 
-        <div className="w-full h-full mt-[70px]">
-          <div className="w-full aspect-[5/3] relative overflow-hidden flex items-center justify-center border-gray-300">
-            <div className="w-full h-full relative overflow-hidden rounded shadow">
+        <div className="w-full h-full mt-20 md:mt-[70px]">
+          <div className="w-full aspect-square md:aspect-[5/3] relative flex items-center justify-center border-gray-300">
+            <div className="w-full h-full relative overflow-hidden rounded-md md:rounded shadow">
               <GoogleMap
                 mapContainerClassName="w-full h-full scale-110"
                 options={{
@@ -452,7 +452,7 @@ const Maps = ({
                   </g>
                 </svg>
               </div>
-              <div className="w-6 h-[150px] bg-white absolute left-3 bottom-3 flex items-center justify-center rounded-md shadow-md border">
+              <div className="w-6 h-[150px] bg-white absolute left-3 bottom-3 md:flex items-center justify-center rounded-md shadow-md border hidden">
                 <input
                   type="range"
                   min="5"
@@ -466,7 +466,7 @@ const Maps = ({
               <Button
                 onClick={handleCurrentLocation}
                 variant={"destructiveOutline"}
-                className="absolute right-3 bottom-3 hover:bg-red-50"
+                className="absolute right-3 bottom-3 hover:bg-red-50 hidden md:flex"
                 type="button"
               >
                 <Locate />
@@ -475,36 +475,45 @@ const Maps = ({
             </div>
           </div>
         </div>
+        <Button
+          onClick={handleCurrentLocation}
+          variant={"destructiveOutline"}
+          className="hover:bg-red-50 md:hidden"
+          type="button"
+        >
+          <Locate />
+          Use current location
+        </Button>
         {(input.province || input.city || input.district) && (
-          <div className="grid grid-cols-2 gap-4">
+          <div className="grid md:grid-cols-2 gap-4">
             <LabelInput
               label="Address"
-              className="bg-gray-100 focus-visible:border-gray-300 read-only:cursor-default read-only:focus-visible:border-gray-300"
-              classContainer="col-span-2"
+              className="bg-gray-100 focus-visible:border-gray-300 read-only:cursor-default read-only:focus-visible:border-gray-300 read-only:pointer-events-none"
+              classContainer="md:col-span-2"
               value={input.address ?? ""}
               readOnly
             />
             <LabelInput
               label="Province"
-              className="bg-gray-100 focus-visible:border-gray-300 read-only:cursor-default read-only:focus-visible:border-gray-300"
+              className="bg-gray-100 focus-visible:border-gray-300 read-only:cursor-default read-only:focus-visible:border-gray-300 read-only:pointer-events-none"
               value={input.province ?? ""}
               readOnly
             />
             <LabelInput
               label="City"
-              className="bg-gray-100 focus-visible:border-gray-300 read-only:cursor-default read-only:focus-visible:border-gray-300"
+              className="bg-gray-100 focus-visible:border-gray-300 read-only:cursor-default read-only:focus-visible:border-gray-300 read-only:pointer-events-none"
               value={input.city ?? ""}
               readOnly
             />
             <LabelInput
               label="District"
-              className="bg-gray-100 focus-visible:border-gray-300 read-only:cursor-default read-only:focus-visible:border-gray-300"
+              className="bg-gray-100 focus-visible:border-gray-300 read-only:cursor-default read-only:focus-visible:border-gray-300 read-only:pointer-events-none"
               value={input.district ?? ""}
               readOnly
             />
             <LabelInput
               label="Postal Code"
-              className="bg-gray-100 focus-visible:border-gray-300 read-only:cursor-default read-only:focus-visible:border-gray-300"
+              className="bg-gray-100 focus-visible:border-gray-300 read-only:cursor-default read-only:focus-visible:border-gray-300 read-only:pointer-events-none"
               value={input.postal_code ?? ""}
               readOnly
             />

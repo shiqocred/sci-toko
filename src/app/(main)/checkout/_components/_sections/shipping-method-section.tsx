@@ -29,8 +29,6 @@ export function ShippingMethodSection({
     }
   }, [ongkir]);
 
-  console.log(shipping);
-
   const renderContext = () => {
     if (isLoading) {
       return (
@@ -55,9 +53,9 @@ export function ShippingMethodSection({
   };
 
   return (
-    <div className="w-full rounded-lg shadow p-5 bg-white border flex flex-col gap-4">
-      <h3 className="font-semibold text-lg flex items-center gap-2">
-        <Truck className="size-5" />
+    <div className="w-full rounded-lg shadow p-3 md:p-5 bg-white border flex flex-col gap-3 md:gap-4">
+      <h3 className="font-semibold md:text-lg flex items-center gap-2">
+        <Truck className="size-[18px] md:size-5" />
         Shipping Method
       </h3>
 

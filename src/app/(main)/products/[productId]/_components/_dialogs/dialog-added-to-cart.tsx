@@ -9,14 +9,14 @@ import {
 } from "@/components/ui/dialog";
 import { ShoppingCart, Undo2 } from "lucide-react";
 import Link from "next/link";
-import React, { Dispatch, SetStateAction } from "react";
+import React from "react";
 
 export const DialogAddedToCart = ({
   open,
   onOpenChange,
 }: {
   open: boolean;
-  onOpenChange: Dispatch<SetStateAction<boolean>>;
+  onOpenChange: () => void;
 }) => {
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -29,10 +29,7 @@ export const DialogAddedToCart = ({
           </DialogDescription>
         </DialogHeader>
         <DialogFooter>
-          <Button
-            variant={"destructiveOutline"}
-            onClick={() => onOpenChange(false)}
-          >
+          <Button variant={"destructiveOutline"} onClick={onOpenChange}>
             <Undo2 />
             Continue Shopping
           </Button>

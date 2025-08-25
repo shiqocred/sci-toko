@@ -14,8 +14,8 @@ export function ProductCardVariants({ image, title, variants }: Props) {
   return (
     <div className="border rounded-md overflow-hidden flex flex-col">
       <div className="flex border-b">
-        <div className="size-24 border-r flex-none flex items-center justify-center">
-          <div className="size-20 relative rounded-sm overflow-hidden">
+        <div className="size-20 md:size-24 border-r flex-none flex items-center justify-center">
+          <div className="size-16 md:size-20 relative rounded-sm overflow-hidden">
             <Image
               src={image ?? "/assets/images/logo-sci.png"}
               alt={title}

@@ -1,16 +1,14 @@
 "use client";
 
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
 import { cn, numericString } from "@/lib/utils";
 import Link from "next/link";
 import React, { useState, ChangeEvent, FormEvent } from "react";
 import { PasswordInput } from "../../_components/form/password-input";
 import { ConfirmPasswordInput } from "../../_components/form/confirm-password-input";
-import { PhoneNumberInput } from "./form/phone-number-input";
 import { useRegister } from "../_api";
 import { signIn } from "next-auth/react";
+import { LabelInput } from "@/components/label-input";
 
 const initialValue = {
   name: "",
@@ -101,51 +99,47 @@ const Client = () => {
           backgroundImage: "url('/assets/images/homepage.webp')",
         }}
       />
-      <div className="w-full flex flex-col items-center py-32 relative z-10">
+      <div className="w-full flex flex-col items-center py-10 md:py-32 relative z-10 px-4 md:px-0">
         <form
           onSubmit={handleSubmit}
           className="max-w-md w-full p-5 bg-white rounded-2xl flex flex-col gap-6"
         >
-          <h1 className="text-3xl font-bold w-full text-center mt-4">
+          <h1 className="text-2xl md:text-3xl font-bold w-full text-center mt-4">
             Create Account
           </h1>
           <div className="flex flex-col gap-4 w-full">
             <div className="flex flex-col gap-1.5 w-full">
-              <Label htmlFor="name" className="required">
-                Name
-              </Label>
-              <Input
-                id="name"
+              <LabelInput
+                label="Name"
+                placeholder="Type your name"
                 className={cn(
-                  "bg-gray-100 border-gray-100 focus-visible:ring-0 focus-visible:border-gray-500",
+                  "bg-gray-100 border-0 focus-visible:border",
                   errors.name && "border-red-500 focus-visible:border-red-500"
                 )}
-                placeholder="Type your name"
-                onChange={handleChange}
-                value={input.name}
-                required
+                classLabel="required"
+                id="name"
                 disabled={isRegistering}
+                value={input.name}
+                onChange={handleChange}
               />
               {errors.name && (
                 <p className="text-xs text-red-500">{errors.name}</p>
               )}
             </div>
             <div className="flex flex-col gap-1.5 w-full">
-              <Label htmlFor="email" className="required">
-                Email
-              </Label>
-              <Input
-                id="email"
+              <LabelInput
+                label="Email"
+                placeholder="Type your email"
                 className={cn(
-                  "bg-gray-100 border-gray-100 focus-visible:ring-0 focus-visible:border-gray-500",
+                  "bg-gray-100 border-0 focus-visible:border",
                   errors.email && "border-red-500 focus-visible:border-red-500"
                 )}
-                placeholder="Type your email"
+                classLabel="required"
+                id="email"
                 type="email"
-                onChange={handleChange}
-                value={input.email}
-                required
                 disabled={isRegistering}
+                value={input.email}
+                onChange={handleChange}
               />
               {errors.email && (
                 <p className="text-xs text-red-500">{errors.email}</p>
@@ -165,12 +159,18 @@ const Client = () => {
               disabled={isRegistering}
               errors={errors}
             />
-            <PhoneNumberInput
-              input={input}
-              handleChange={handleChange}
+            <LabelInput
+              label="Phone Number"
+              placeholder="Type your phone number"
+              className="bg-gray-100 border-0 focus-visible:border"
+              classLabel="required"
+              id="phone_number"
+              isPhone
               dialCode={dialCode}
               setDialCode={setDialCode}
               disabled={isRegistering}
+              value={input.phone_number}
+              onChange={(e) => handleChange(e, true)}
             />
           </div>
           <Button
@@ -181,11 +181,11 @@ const Client = () => {
           >
             Sign Up
           </Button>
-          <p className="text-sm text-center text-gray-500">
+          <p className="text-xs md:text-sm text-center text-gray-500">
             Already have an account{" "}
             <Link
               href="/sign-in"
-              className="underline underline-offset-2 text-red-500 font-semibold text-sm"
+              className="underline underline-offset-2 text-red-500 font-semibold text-xs md:text-sm"
             >
               Sign In
             </Link>

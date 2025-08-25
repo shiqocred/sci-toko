@@ -12,38 +12,37 @@ import { and, desc, eq, inArray, sql } from "drizzle-orm";
 import { NextRequest } from "next/server";
 
 export const productsList = async (req: NextRequest) => {
-  const q = req.nextUrl.searchParams.get("q") ?? "";
+  const searchParams = req.nextUrl.searchParams;
+  const q = searchParams.get("q") ?? "";
 
-  const categorySlugs = req.nextUrl.searchParams
-    .getAll("categories")
-    .map(decodeURIComponent);
-  const supplierSlugs = req.nextUrl.searchParams
-    .getAll("suppliers")
-    .map(decodeURIComponent);
-  const petSlugs = req.nextUrl.searchParams
-    .getAll("pets")
-    .map(decodeURIComponent);
+  const getSlugs = (key: string) =>
+    searchParams.getAll(key).map(decodeURIComponent);
 
-  // Ambil ID masing-masing filter secara paralel
+  const [categorySlugs, supplierSlugs, petSlugs] = [
+    getSlugs("categories"),
+    getSlugs("suppliers"),
+    getSlugs("pets"),
+  ];
+
   const [categoriesRes, suppliersRes, petsRes] = await Promise.all([
     categorySlugs.length
       ? db.query.categories.findMany({
           columns: { id: true },
           where: (c, { inArray }) => inArray(c.slug, categorySlugs),
         })
-      : [],
+      : Promise.resolve([]),
     supplierSlugs.length
       ? db.query.suppliers.findMany({
           columns: { id: true },
           where: (s, { inArray }) => inArray(s.slug, supplierSlugs),
         })
-      : [],
+      : Promise.resolve([]),
     petSlugs.length
       ? db.query.pets.findMany({
           columns: { id: true },
           where: (p, { inArray }) => inArray(p.slug, petSlugs),
         })
-      : [],
+      : Promise.resolve([]),
   ]);
 
   const categoryIds = categoriesRes.map((c) => c.id);
@@ -59,23 +58,27 @@ export const productsList = async (req: NextRequest) => {
     )`,
   ];
 
-  if (q)
+  if (q) {
     filters.push(
-      sql`${products.name} ILIKE ${`%${q}%`} OR ${products.slug} ILIKE ${`%${q}%`}`
+      sql`(${products.name} ILIKE ${`%${q}%`} OR ${products.slug} ILIKE ${`%${q}%`})`
     );
-  if (categoryIds.length)
+  }
+  if (categoryIds.length) {
     filters.push(inArray(products.categoryId, categoryIds));
-  if (supplierIds.length)
+  }
+  if (supplierIds.length) {
     filters.push(inArray(products.supplierId, supplierIds));
-  if (petIds.length) filters.push(inArray(productToPets.petId, petIds));
+  }
+  if (petIds.length) {
+    filters.push(inArray(productToPets.petId, petIds));
+  }
 
-  const finalWhere = filters.length ? and(...filters) : undefined;
+  const finalWhere = and(...filters);
 
-  const page = parseInt(req.nextUrl.searchParams.get("p") ?? "1");
+  const page = Number(searchParams.get("p") ?? 1);
   const perPage = 12;
   const offset = (page - 1) * perPage;
 
-  // Total produk
   const totalQuery = await db
     .select({ count: sql<number>`COUNT(DISTINCT ${products.id})` })
     .from(products)
@@ -84,7 +87,6 @@ export const productsList = async (req: NextRequest) => {
 
   const total = totalQuery[0]?.count ?? 0;
 
-  // List produk
   const productsList = await db
     .select({
       title: products.name,
@@ -113,7 +115,7 @@ export const productsList = async (req: NextRequest) => {
       image: item.image ? `${r2Public}/${item.image as string}` : null,
     })),
     pagination: {
-      total: Number(total),
+      total,
       page,
       totalPages: Math.ceil(total / perPage),
     },

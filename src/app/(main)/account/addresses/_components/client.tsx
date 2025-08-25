@@ -123,7 +123,7 @@ const Client = () => {
 
   // --- Render helpers ---
   return (
-    <div className="bg-white p-5 flex flex-col text-sm gap-4">
+    <div className="bg-white p-3 md:p-4 lg:p-5 flex flex-col text-sm gap-4">
       <DeleteDialog />
       <Header address={address} setAddress={setAddress} />
       {!address && (

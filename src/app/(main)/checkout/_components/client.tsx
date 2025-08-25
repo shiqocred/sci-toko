@@ -138,8 +138,8 @@ export default function Client() {
   return (
     <div className="bg-sky-50 h-full">
       <OrderDialog />
-      <div className="max-w-[1240px] mx-auto w-full flex flex-col gap-7 px-4 lg:px-8 py-14">
-        <div className="flex items-center gap-2">
+      <div className="max-w-[1240px] mx-auto w-full flex flex-col gap-4 md:gap-7 px-4 lg:px-8 py-10 md:py-14">
+        <div className="flex items-center md:gap-2">
           <Button
             variant={"ghost"}
             size={"icon"}
@@ -149,7 +149,7 @@ export default function Client() {
               <ArrowLeft className="size-5 stroke-2" />
             </Link>
           </Button>
-          <h1 className="text-3xl font-bold">Checkout</h1>
+          <h1 className="text-2xl md:text-3xl font-bold">Checkout</h1>
         </div>
 
         {checkouted === "order" || checkouted === "proceed" ? (
@@ -169,8 +169,8 @@ export default function Client() {
             )}
           </div>
         ) : (
-          <div className="grid grid-cols-5 gap-6">
-            <div className="col-span-3 flex flex-col gap-4">
+          <div className="grid md:grid-cols-5 gap-4 md:gap-6">
+            <div className="md:col-span-3 flex flex-col gap-3 md:gap-4">
               <AddressSection
                 addressId={checkout?.addressId}
                 addresses={addresses}
@@ -191,22 +191,22 @@ export default function Client() {
               />
             </div>
 
-            <div className="col-span-2 flex flex-col gap-4">
-              <div className="w-full rounded-lg shadow p-5 bg-white border flex flex-col gap-4">
-                <h3 className="font-semibold text-lg flex items-center gap-2">
-                  <NotebookPen className="size-5" />
+            <div className="md:col-span-2 flex flex-col gap-3 md:gap-4">
+              <div className="w-full rounded-lg shadow p-3 md:p-5 bg-white border flex flex-col gap-2 md:gap-3">
+                <h3 className="font-semibold md:text-lg flex items-center gap-2">
+                  <NotebookPen className="size-[18px] md:size-5" />
                   Note for seller
                 </h3>
                 <Textarea
-                  className="border-gray-300 focus-visible:ring-0 focus-visible:border-gray-400 row-span-6 min-h-20 resize-none"
+                  className="border-gray-300 focus-visible:ring-0 focus-visible:border-gray-400 row-span-6 min-h-20 resize-none placeholder:text-xs md:placeholder:text-sm"
                   placeholder="Please leave a note..."
                   value={input}
                   onChange={(e) => setInput(e.target.value)}
                 />
               </div>
-              <div className="w-full rounded-lg shadow p-5 bg-white border flex flex-col gap-2">
-                <h3 className="font-semibold text-lg flex items-center gap-2">
-                  <BadgePercent className="size-5" />
+              <div className="w-full rounded-lg shadow p-3 md:p-5 bg-white border flex flex-col gap-2 md:gap-3">
+                <h3 className="font-semibold md:text-lg flex items-center gap-2">
+                  <BadgePercent className="size-[18px] md:size-5" />
                   Voucher
                 </h3>
                 {checkout?.discount ? (

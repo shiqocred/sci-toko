@@ -1,9 +1,13 @@
+"use client";
+
 import React from "react";
 import { Facebook, Instagram, LinkedinIcon } from "lucide-react";
 
 import { Sosmed } from "./sosmed";
 import { Menus } from "./menus";
 import { Address } from "./address";
+import { usePathname } from "next/navigation";
+import { cn } from "@/lib/utils";
 
 const data = {
   sosmed: [
@@ -83,10 +87,19 @@ const data = {
 };
 
 export const Footer = () => {
+  const pathname = usePathname();
   return (
-    <div className="[--color:#CCCCCC] w-full bg-white flex flex-col gap-6 border-t border-[var(--color)] pt-12 mt-auto">
-      <div className="[--max-width-foot:1240px] flex flex-col gap-6 w-full max-w-[var(--max-width-foot)] mx-auto px-4 lg:px-8">
-        <div className="flex justify-between">
+    <div className="[--color:#CCCCCC] w-full bg-white flex-col gap-6 border-t border-[var(--color)] pt-12 mt-auto flex">
+      <div
+        className={cn(
+          "[--max-width-foot:1240px] flex flex-col gap-6 w-full max-w-[var(--max-width-foot)] mx-auto px-4 lg:px-8",
+          pathname.includes("/products") &&
+            pathname !== "/products" &&
+            "pb-5 md:pb-0",
+          pathname === "/cart" && "pb-16 md:pb-20 lg:pb-0"
+        )}
+      >
+        <div className="flex justify-between flex-col lg:flex-row gap-6">
           <Sosmed data={data.sosmed} />
           <Menus data={data.menu} />
         </div>

@@ -1,14 +1,12 @@
 "use client";
 
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 import React, { ChangeEvent, FormEvent, useEffect, useState } from "react";
 import { signIn } from "next-auth/react";
 import { toast } from "sonner";
-import { Eye, EyeOff } from "lucide-react";
+import { LabelInput } from "@/components/label-input";
 
 const initialValue = {
   email: "",
@@ -20,7 +18,6 @@ const Client = () => {
   const redirectURL = searchParams.get("redirect");
 
   const [input, setInput] = useState(initialValue);
-  const [isVisible, setIsVisible] = useState(false);
 
   const handleChange = (e: ChangeEvent<HTMLInputElement>) => {
     const v = e.target;
@@ -46,7 +43,7 @@ const Client = () => {
     const code = searchParams.get("code");
 
     if (error === "CredentialsSignin" && code === "credential_not_match") {
-      toast.error("Email atau password tidak cocok");
+      toast.error("Credential not match");
 
       // Menghapus query parameter tanpa reload
       const newParams = new URLSearchParams(window.location.search);
@@ -70,53 +67,40 @@ const Client = () => {
           backgroundImage: "url('/assets/images/homepage.webp')",
         }}
       />
-      <div className="w-full flex flex-col items-center py-32 relative z-10">
+      <div className="w-full flex flex-col items-center py-20 md:py-32 relative z-10 px-4 md:px-0">
         <form
           onSubmit={credentialsAction}
-          className="max-w-md w-full p-5 bg-white rounded-2xl flex flex-col gap-4"
+          className="max-w-md w-full p-5 bg-white rounded-2xl flex flex-col gap-4 shadow"
         >
-          <div className="flex flex-col gap-1 text-center">
-            <h1 className="text-3xl font-bold">Sign In</h1>
-            <p className="text-[:#707070]">Hi, welcome back</p>
+          <div className="flex flex-col md:gap-1 text-center">
+            <h1 className="text-2xl md:text-3xl font-bold">Sign In</h1>
+            <p className="text-[#707070] text-sm md:text-base">
+              Hi, welcome back
+            </p>
           </div>
-          <div className="flex flex-col gap-1.5 w-full">
-            <Label htmlFor="email">Email</Label>
-            <Input
-              id="email"
-              className="bg-gray-100 border-gray-100 focus-visible:ring-0 focus-visible:border-gray-500"
-              placeholder="Type your email"
-              type="email"
-              onChange={handleChange}
-              value={input.email}
-              autoFocus
-            />
-          </div>
-          <div className="flex flex-col gap-1.5 w-full">
-            <Label htmlFor="password">Password</Label>
-            <div className="relative flex items-center">
-              <Input
-                id="password"
-                className="bg-gray-100 border-gray-100 focus-visible:ring-0 focus-visible:border-gray-500"
-                placeholder="Type your password"
-                type={isVisible ? "text" : "password"}
-                onChange={handleChange}
-                value={input.password}
-              />
-              <Button
-                type="button"
-                className="absolute right-2 size-6 hover:bg-gray-200"
-                size={"icon"}
-                variant={"ghost"}
-                onClick={() => setIsVisible(!isVisible)}
-              >
-                {isVisible ? <EyeOff /> : <Eye />}
-              </Button>
-            </div>
-          </div>
+          <LabelInput
+            label="Email"
+            id="email"
+            type="email"
+            value={input.email}
+            onChange={handleChange}
+            placeholder="Type your email"
+            className="bg-gray-100 border-gray-100 focus-visible:ring-0 focus-visible:border-gray-500"
+            autoFocus
+          />
+          <LabelInput
+            label="Password"
+            id="password"
+            value={input.password}
+            onChange={handleChange}
+            isPassword
+            placeholder="Type your password"
+            className="bg-gray-100 border-gray-100 focus-visible:ring-0 focus-visible:border-gray-500"
+          />
           <div className="flex justify-end">
             <Link
               href="/forgot-password"
-              className="underline underline-offset-2 text-red-500 font-semibold text-sm"
+              className="underline underline-offset-2 text-red-500 font-semibold text-xs md:text-sm"
             >
               Forgot Password?
             </Link>
@@ -129,11 +113,11 @@ const Client = () => {
           >
             Sign In
           </Button>
-          <p className="text-sm text-center text-gray-500">
+          <p className="text-xs md:text-sm text-center text-gray-500">
             Don&apos;t have an account{" "}
             <Link
               href="/sign-up"
-              className="underline underline-offset-2 text-red-500 font-semibold text-sm"
+              className="underline underline-offset-2 text-red-500 font-semibold text-xs md:text-sm"
             >
               Sign Up
             </Link>

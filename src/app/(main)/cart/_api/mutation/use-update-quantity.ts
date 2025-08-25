@@ -1,6 +1,5 @@
 import { invalidateQuery, useMutate } from "@/lib/query";
 import { useQueryClient } from "@tanstack/react-query";
-import { toast } from "sonner";
 
 type Body = { qty: string };
 
@@ -11,8 +10,7 @@ export const useUpdateQuantity = () => {
   const mutation = useMutate<Body, Params>({
     endpoint: "/carts/:variantId",
     method: "put",
-    onSuccess: async ({ data }) => {
-      toast.success(data.message);
+    onSuccess: async () => {
       await invalidateQuery(queryClient, [["carts"]]);
     },
     onError: {

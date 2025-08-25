@@ -1,22 +1,21 @@
+"use client";
+
 import React from "react";
-import { SearchIcon } from "lucide-react";
+import { InputSearch } from "./input-search";
 
-import { Input } from "../ui/input";
-import { Button } from "../ui/button";
+export const Search = ({
+  pathname,
+  isMobile,
+}: {
+  pathname: string;
+  isMobile: boolean;
+}) => {
+  if ((pathname === "/" || pathname.includes("/products")) && !isMobile)
+    return (
+      <div className="w-full mx-4 md:mx-8 lg:mx-12 flex items-center justify-center">
+        <InputSearch pathname={pathname} />
+      </div>
+    );
 
-export const Search = () => {
-  return (
-    <div className="[--margin-inline:50px] w-full mx-[var(--margin-inline)] flex items-center justify-center">
-      <Input
-        placeholder="Find Product"
-        className="placeholder:text-center shadow-none rounded-r-none border-r-0 border-sci focus-visible:outline-0 focus-visible:ring-0 focus-visible:border-sci-hover"
-      />
-      <Button
-        size={"icon"}
-        className="rounded-l-none bg-sci hover:bg-sci-hover"
-      >
-        <SearchIcon />
-      </Button>
-    </div>
-  );
+  return <div className="w-full mx-4 md:mx-8 lg:mx-12" />;
 };

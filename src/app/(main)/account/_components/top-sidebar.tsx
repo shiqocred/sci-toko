@@ -10,7 +10,7 @@ export const TopSidebar = () => {
 
   const user = useMemo(() => data?.data, [data]);
   return (
-    <div className="flex flex-col gap-4">
+    <div className="grid md:grid-cols-2 lg:grid-cols-1 gap-2 lg::gap-4 px-3 pt-3 lg::pt-0 lg::px-0">
       <Profile user={user} loading={isPending} />
       <UpgradeRole user={user} loading={isPending} />
     </div>

@@ -104,11 +104,11 @@ const Client = () => {
   }, [input.image, imageOld]);
 
   return (
-    <div className="bg-white p-5 text-sm gap-4 flex flex-col">
+    <div className="bg-white p-3 md:p-4 lg:p-5 text-sm gap-4 flex flex-col">
       <h4 className="font-bold text-lg">Basic Info</h4>
-      <div className="grid grid-cols-3 gap-4">
+      <div className="grid md:grid-cols-3 gap-4">
         <div className="flex flex-col items-center gap-3">
-          <div className="size-32 relative rounded-full overflow-hidden border">
+          <div className="size-24 md:size-28 lg:size-32 relative rounded-full overflow-hidden border">
             <Image
               fill
               alt="profile"
@@ -152,7 +152,7 @@ const Client = () => {
 
         <form
           onSubmit={handleUpdateUser}
-          className="col-span-2 flex flex-col gap-4"
+          className="md:col-span-2 flex flex-col gap-4"
         >
           <div className="flex flex-col gap-3">
             <div className="flex flex-col gap-2">

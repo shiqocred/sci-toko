@@ -5,11 +5,8 @@ import Link from "next/link";
 
 export const Logo = () => {
   return (
-    <Link
-      href={"/"}
-      className="[--width-logo:100px] [--height-logo:38px] h-[var(--height-logo)] w-[var(--width-logo)]"
-    >
-      <div className="size-full relative">
+    <Link href={"/"} className="flex-none w-[60px] md:w-[80px] aspect-[100/38]">
+      <div className="size-full relative overflow-hidden">
         <Image
           alt="Logo SCI"
           src={"/assets/images/logo-sci.png"}

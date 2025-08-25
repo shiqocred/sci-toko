@@ -16,13 +16,14 @@ import {
 import { useGetResend, useResendOTP, useVerify } from "../_api";
 import { useSession } from "next-auth/react";
 import { pronoun } from "@/lib/utils";
-import { useSearchParams } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 
 const Client = () => {
   const { update } = useSession();
   const searchParams = useSearchParams();
   const emailQuery = searchParams.get("email") ?? "";
   const [sendAgain, setSendAgain] = useState(0);
+  const router = useRouter();
 
   const [input, setInput] = useState("");
 
@@ -73,6 +74,12 @@ const Client = () => {
     return () => clearInterval(interval);
   }, [resendAgain]);
 
+  useEffect(() => {
+    if (!emailQuery) {
+      router.push("/forgot-password");
+    }
+  }, [emailQuery]);
+
   const [isMounted, setIsMounted] = useState(false);
 
   useEffect(() => {
@@ -91,14 +98,14 @@ const Client = () => {
           backgroundImage: "url('/assets/images/homepage.webp')",
         }}
       />
-      <div className="w-full flex flex-col items-center py-32 relative z-10">
+      <div className="w-full flex flex-col items-center py-20 md:py-32 relative z-10 px-4 md:px-0">
         <form
           onSubmit={handleVerify}
           className="max-w-md w-full p-5 bg-white rounded-2xl flex flex-col gap-5"
         >
           <div className="flex flex-col gap-1 text-center">
-            <h1 className="text-3xl font-bold">Get Your Code</h1>
-            <p className="text-gray-500">
+            <h1 className="text-2xl md:text-3xl font-bold">Get Your Code</h1>
+            <p className="text-gray-500 text-sm md:text-base">
               We&apos;ve sent a verification code to your email. Please enter it
               below to Verify Your Account.
             </p>
@@ -128,12 +135,12 @@ const Client = () => {
           >
             Verify and Proceed
           </Button>
-          <div className="flex items-center gap-2 text-sm justify-center my-3">
+          <div className="flex items-center gap-2 text-xs md:text-sm justify-center my-3">
             <p>Didn&apos;t receive the code?</p>
             <Button
               type="button"
               variant={"ghost"}
-              className="hover:bg-transparent text-red-400 hover:text-red-500 p-0 h-auto disabled:opacity-70 hover:underline"
+              className="hover:bg-transparent text-red-400 hover:text-red-500 p-0 h-auto disabled:opacity-70 hover:underline text-xs md:text-sm"
               onClick={handleResend}
               disabled={sendAgain > 0 || loading}
             >

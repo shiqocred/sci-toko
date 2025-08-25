@@ -38,14 +38,14 @@ const Client = () => {
           backgroundImage: "url('/assets/images/homepage.webp')",
         }}
       />
-      <div className="w-full flex flex-col items-center py-32 relative z-10">
+      <div className="w-full flex flex-col items-center py-20 md:py-32 relative z-10 px-4 md:px-0">
         <form
           onSubmit={handleSubmit}
           className="max-w-md w-full p-5 bg-white rounded-2xl flex flex-col gap-4"
         >
-          <div className="flex flex-col gap-1 text-center">
-            <h1 className="text-3xl font-bold">Forgot Password?</h1>
-            <p className="text-[:#707070]">
+          <div className="flex flex-col md:gap-1 text-center">
+            <h1 className="text-2xl md:text-3xl font-bold">Forgot Password?</h1>
+            <p className="text-[#707070] text-sm md:text-base">
               No worries — enter your email to reset it.
             </p>
           </div>
@@ -76,21 +76,21 @@ const Client = () => {
           >
             Send code
           </Button>
-          <div className="flex flex-col gap-1 items-center">
-            <p className="text-sm text-center text-gray-500">
+          <div className="flex flex-col gap-1.5 mt-3 md:mt-5 items-center">
+            <p className="text-xs md:text-sm text-center text-gray-500">
               Remember your password?{" "}
               <Link
                 href="/sign-in"
-                className="underline underline-offset-2 text-red-500 font-semibold text-sm"
+                className="underline underline-offset-2 text-red-500 font-semibold text-xs md:text-sm"
               >
                 Sign In
               </Link>
             </p>
-            <p className="text-sm text-center text-gray-500">
+            <p className="text-xs md:text-sm text-center text-gray-500">
               Need create an account{" "}
               <Link
                 href="/sign-up"
-                className="underline underline-offset-2 text-red-500 font-semibold text-sm"
+                className="underline underline-offset-2 text-red-500 font-semibold text-xs md:text-sm"
               >
                 Sign Up
               </Link>

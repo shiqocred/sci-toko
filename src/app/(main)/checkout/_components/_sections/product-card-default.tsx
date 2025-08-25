@@ -12,8 +12,8 @@ interface Props {
 export function ProductCardDefault({ image, title, qty, price }: Props) {
   return (
     <div className="border rounded-md overflow-hidden flex">
-      <div className="size-24 border-r flex-none flex items-center justify-center">
-        <div className="size-20 relative rounded-sm overflow-hidden">
+      <div className="size-20 md:size-24 border-r flex-none flex items-center justify-center">
+        <div className="size-16 md:size-20 relative rounded-sm overflow-hidden">
           <Image
             src={image ?? "/assets/images/logo-sci.png"}
             alt={title}

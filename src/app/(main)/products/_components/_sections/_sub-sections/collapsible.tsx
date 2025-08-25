@@ -1,4 +1,3 @@
-// FilterCollapsible.tsx
 "use client";
 
 import {
@@ -18,6 +17,33 @@ interface FilterCollapsibleProps {
   onSelect: (slug: string) => void;
 }
 
+// Reusable FilterButton component
+type FilterButtonProps = {
+  item: { name: string; slug: string };
+  selected: string[];
+  onSelect: (slug: string) => void;
+};
+
+const FilterButton = ({ item, selected, onSelect }: FilterButtonProps) => (
+  <Button
+    key={item.slug}
+    variant="ghost"
+    className="w-full justify-start"
+    onClick={() => onSelect(item.slug)}
+  >
+    <div
+      className={cn(
+        "rounded size-4 flex items-center justify-center border border-gray-500 [&_svg]:text-transparent",
+        selected.includes(decodeURIComponent(item.slug)) &&
+          "bg-primary border-primary [&_svg]:text-white"
+      )}
+    >
+      <Check className="size-3" />
+    </div>
+    <p className="capitalize">{item.name}</p>
+  </Button>
+);
+
 export const FilterCollapsible = ({
   items,
   selected,
@@ -35,43 +61,21 @@ export const FilterCollapsible = ({
       className="flex flex-col w-full"
     >
       {shownItems.map((item) => (
-        <Button
+        <FilterButton
           key={item.slug}
-          variant="ghost"
-          className="w-full justify-start"
-          onClick={() => onSelect(item.slug)}
-        >
-          <div
-            className={cn(
-              "rounded size-4 flex items-center justify-center border border-gray-500 [&_svg]:text-transparent",
-              selected.includes(decodeURIComponent(item.slug)) &&
-                "bg-primary border-primary [&_svg]:text-white"
-            )}
-          >
-            <Check className="size-3" />
-          </div>
-          <p className="capitalize">{item.name}</p>
-        </Button>
+          item={item}
+          selected={selected}
+          onSelect={onSelect}
+        />
       ))}
       <CollapsibleContent className="flex flex-col w-full">
         {hiddenItems.map((item) => (
-          <Button
+          <FilterButton
             key={item.slug}
-            variant="ghost"
-            className="w-full justify-start"
-            onClick={() => onSelect(item.slug)}
-          >
-            <div
-              className={cn(
-                "rounded size-4 flex items-center justify-center border border-gray-500 [&_svg]:text-transparent",
-                selected.includes(decodeURIComponent(item.slug)) &&
-                  "bg-primary border-primary [&_svg]:text-white"
-              )}
-            >
-              <Check className="size-3" />
-            </div>
-            <p className="capitalize">{item.name}</p>
-          </Button>
+            item={item}
+            selected={selected}
+            onSelect={onSelect}
+          />
         ))}
       </CollapsibleContent>
       {hiddenItems.length > 0 && (

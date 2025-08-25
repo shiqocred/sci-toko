@@ -25,15 +25,15 @@ export const AddressItem = ({
   handleSetDefault: (id: string) => void;
 }) => (
   <div className="flex flex-col border border-green-500 rounded-md">
-    <div className="flex gap-4 flex-col p-3">
+    <div className="flex gap-3 md:gap-4 flex-col p-2 md:p-3">
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-2">
-          <p className="font-semibold text-lg">{item.name}</p>
+          <p className="font-semibold md:text-lg">{item.name}</p>
           <p className="text-xs">{item.phone}</p>
         </div>
         <div className="flex items-center gap-2">
           {item.isDefault && (
-            <Badge className="rounded-full bg-green-400 text-black">
+            <Badge className="rounded-full bg-green-200 text-black">
               Default
             </Badge>
           )}
@@ -48,7 +48,7 @@ export const AddressItem = ({
                 <MoreHorizontal />
               </Button>
             </DropdownMenuTrigger>
-            <DropdownMenuContent>
+            <DropdownMenuContent align="end">
               <DropdownMenuGroup>
                 <DropdownMenuItem
                   disabled={isDeleting || isSettingDefault || item.isDefault}
@@ -67,7 +67,7 @@ export const AddressItem = ({
                 <DropdownMenuItem
                   disabled={isDeleting || isSettingDefault}
                   onSelect={() => handleDelete(item.id)}
-                  className="focus:bg-red-100 focus:text-red-500 group"
+                  className="focus:bg-red-100 focus:text-red-500 group text-red-500"
                 >
                   <Trash2 className="group-focus:text-red-500" />
                   Delete
@@ -77,8 +77,8 @@ export const AddressItem = ({
           </DropdownMenu>
         </div>
       </div>
-      <div className="flex flex-col gap-1.5 text-sm">
-        <p>{item.detail}</p>
+      <div className="flex flex-col gap-1 md:gap-1.5 text-xs md:text-sm leading-relaxed">
+        <p className="text-gray-600">{item.detail}</p>
         <p>{item.address}</p>
       </div>
     </div>

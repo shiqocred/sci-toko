@@ -115,12 +115,12 @@ const DeliveryAddress = ({ address }: { address?: AddressProps }) => (
       <h3 className="font-semibold">Delivery Address</h3>
     </div>
     <div className="p-3 border-t border-gray-300 flex flex-col gap-3">
-      <div className="w-full flex gap-2 font-medium">
+      <div className="w-full flex gap-2 font-medium items-center">
         <p>{address?.name}</p>
         <p>|</p>
-        <p>{address?.phone}</p>
+        <p className="text-xs md:text-sm">{address?.phone}</p>
       </div>
-      <p className="text-gray-600">
+      <p className="text-gray-600 text-xs md:text-sm">
         {address?.note}, {address?.address}
       </p>
     </div>
@@ -138,12 +138,12 @@ const ShippingInfo = ({
   history?: HistoriesExistProps | null;
 }) => (
   <div className="flex flex-col border rounded-md border-gray-300 overflow-hidden">
-    <div className="p-3 w-full bg-green-50 flex items-center justify-between gap-3">
+    <div className="p-3 w-full bg-green-50 flex md:items-center md:justify-between gap-2 md:gap-3 flex-col md:flex-row">
       <div className="flex items-center gap-2">
         <Truck className="size-4" />
         <h3 className="font-semibold">Shipping Information</h3>
       </div>
-      <div className="flex items-center gap-2">
+      <div className="flex items-center gap-2 text-xs md:text-sm">
         <p>{shipping?.courier_name}</p>
         <p>|</p>
         <p>{shipping?.waybill_id ?? "-"}</p>
@@ -154,12 +154,9 @@ const ShippingInfo = ({
         <div className="flex items-center gap-4">
           <HistoryStatusIcon status={history.status} />
           <div className="flex flex-col w-full gap-0.5">
-            <p className="font-medium">
-              {/* You might want to make this dynamic based on status */}
-              Order is being prepared for shipment
-            </p>
+            <p className="font-medium text-xs md:text-sm">{history.note}</p>
             {history.updatedAt && (
-              <p className="text-xs">
+              <p className="text-xs text-gray-500">
                 {format(new Date(history.updatedAt), "PP HH:mm", {
                   locale: id,
                 })}
@@ -172,7 +169,9 @@ const ShippingInfo = ({
           <div className="size-9 rounded-full flex items-center justify-center bg-green-100 flex-none">
             <FileText className="size-4" />
           </div>
-          <p className="font-medium">Order is being prepared for shipment</p>
+          <p className="font-medium text-xs md:text-sm">
+            Order is being prepared for shipment
+          </p>
         </div>
       )}
     </div>
@@ -188,7 +187,7 @@ const ShippingInfo = ({
           size="sm"
           variant="link"
           asChild
-          className="ml-auto h-7 text-xs"
+          className="ml-auto h-7 text-xs !px-0 md:!px-3"
         >
           <Link href={`/account/orders/${orderId}/track`}>
             Track <ArrowRight />
@@ -205,8 +204,8 @@ const ProductItem = ({ product }: { product: ProductOutput }) => (
     key={product.id}
     className="flex bg-white rounded-md border border-gray-300 text-sm flex-col"
   >
-    <div className="flex items-center gap-3 p-3">
-      <div className="relative h-20 aspect-square border rounded">
+    <div className="flex items-center gap-3 p-2 md:p-3">
+      <div className="relative h-20 aspect-square border border-gray-300 rounded">
         <Image
           fill
           src={product.image ?? `/assets/images/logo-sci.png`}
@@ -215,10 +214,12 @@ const ProductItem = ({ product }: { product: ProductOutput }) => (
           className="object-contain"
         />
       </div>
-      <div className="flex flex-col justify-between h-full w-full">
-        <p className="line-clamp-2 font-semibold">{product.name}</p>
+      <div className="flex flex-col justify-between h-20 w-full">
+        <p className="line-clamp-2 leading-relaxed font-medium md:font-semibold">
+          {product.name}
+        </p>
         {product.default_variant && (
-          <div className="items-center flex justify-between">
+          <div className="items-center flex justify-between text-xs md:text-sm">
             <p>
               x
               {parseFloat(
@@ -232,18 +233,20 @@ const ProductItem = ({ product }: { product: ProductOutput }) => (
         )}
       </div>
     </div>
-    {product.variant && (
+    {product.variant && product.variant.length > 0 && (
       <div className="flex flex-col border-t divide-y border-gray-300">
         {product.variant.map((variant) => (
           <div key={variant.id} className="grid grid-cols-5 gap-3 p-3">
-            <div className="flex items-center gap-3 col-span-2">
-              <TagIcon className="size-3.5" />
-              <p className="font-semibold line-clamp-1">{variant.name}</p>
+            <div className="flex items-center gap-2 md:gap-3 col-span-2">
+              <TagIcon className="size-3 md:size-3.5" />
+              <p className="font-semibold line-clamp-1 text-xs md:text-sm">
+                {variant.name}
+              </p>
             </div>
-            <p className="flex items-center col-span-1">
+            <p className="flex items-center col-span-1 text-xs md:text-sm">
               x{parseFloat(variant.quantity ?? "0").toLocaleString()}
             </p>
-            <div className="whitespace-nowrap col-span-2 flex-none text-end font-medium">
+            <div className="whitespace-nowrap col-span-2 flex-none text-end font-medium text-xs md:text-sm">
               {formatRupiah(variant.price ?? 0)}
             </div>
           </div>
@@ -255,7 +258,7 @@ const ProductItem = ({ product }: { product: ProductOutput }) => (
 
 /** Price summary card */
 const PriceSummary = ({ payment }: { payment?: PaymentProps }) => (
-  <div className="flex flex-col border rounded-md">
+  <div className="flex flex-col border rounded-md border-gray-300">
     <div className="flex flex-col gap-2 p-3">
       <div className="flex items-center justify-between">
         <p>Subtotal</p>
@@ -270,12 +273,12 @@ const PriceSummary = ({ payment }: { payment?: PaymentProps }) => (
         <p>{formatRupiah(payment?.shipping_cost ?? 0)}</p>
       </div>
     </div>
-    <Separator />
+    <Separator className="bg-gray-300" />
     <div className="flex items-center p-3 justify-between font-semibold">
       <p>Total Price</p>
       <p>{formatRupiah(payment?.total ?? 0)}</p>
     </div>
-    <Separator />
+    <Separator className="bg-gray-300" />
     <div className="flex flex-col gap-2 p-3">
       <div className="flex items-center justify-between">
         <p>Payment Method</p>
@@ -309,33 +312,29 @@ const Client = () => {
   const productsList = useMemo(() => orderData?.products, [orderData]);
 
   return (
-    <div className="bg-white p-5 flex flex-col text-sm gap-4">
-      <header className="flex items-center w-full justify-between border-b border-gray-400 pb-4">
-        <div className="flex items-center gap-3">
-          <Button size="icon" variant="ghost" className="size-7" asChild>
-            <Link href={`/account/orders${tab ? `?tab=${tab}` : ""}`}>
-              <ArrowLeft />
-            </Link>
-          </Button>
-          <h4 className="font-bold text-base">Detail Order</h4>
-        </div>
-        <div className="flex items-center gap-3">
-          {!isPending && (
-            <Badge
-              variant={"outline"}
-              className="capitalize px-3 py-1 border-gray-300 font-normal"
-            >
-              Order no: <span className="font-semibold">{orderData?.id}</span>
-            </Badge>
-          )}
-          {!isPending && <OrderStatusBadge status={orderData?.status} />}
-        </div>
+    <div className="bg-white p-3 md:p-5 flex flex-col text-sm gap-4">
+      <header className="flex items-center w-full border-b border-gray-400 pb-4">
+        <Button size="icon" variant="ghost" className="size-7" asChild>
+          <Link href={`/account/orders${tab ? `?tab=${tab}` : ""}`}>
+            <ArrowLeft />
+          </Link>
+        </Button>
+        <h4 className="font-bold text-base">Detail Order</h4>
       </header>
 
       {isPending ? (
         <Loading />
       ) : (
         <div className="flex flex-col gap-4">
+          <div className="flex md:items-center flex-col md:flex-row gap-2 md:gap-3">
+            <Badge
+              variant={"outline"}
+              className="capitalize px-3 py-1 border-gray-300 font-normal"
+            >
+              Order no: <span className="font-semibold">{orderData?.id}</span>
+            </Badge>
+            <OrderStatusBadge status={orderData?.status} />
+          </div>
           <section className="flex flex-col gap-4 w-full text-sm">
             <DeliveryAddress address={orderData?.address} />
 

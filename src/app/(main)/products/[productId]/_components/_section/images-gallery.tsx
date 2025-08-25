@@ -23,7 +23,7 @@ export const ImagesGallery = ({
   images,
 }: ImagesGalleryProps) => {
   return (
-    <div className="flex flex-col gap-4 w-full">
+    <div className="flex flex-col gap-3 md:gap-4 w-full order-1">
       <div className="w-full relative aspect-square bg-white rounded-lg overflow-hidden shadow">
         <Image
           alt="product"
@@ -50,9 +50,12 @@ export const ImagesGallery = ({
             variant={"default"}
             icon={ChevronRight}
           />
-          <CarouselContent className="-ml-4 pb-2">
+          <CarouselContent className="-ml-3 md:-ml-4 pb-2">
             {images.map((item) => (
-              <CarouselItem key={item} className="basis-1/3 pl-4 select-none">
+              <CarouselItem
+                key={item}
+                className="basis-1/4 lg:basis-1/3 pl-3 md:pl-4 select-none"
+              >
                 <div
                   className={cn(
                     "w-full relative aspect-square bg-white rounded-lg overflow-hidden shadow",

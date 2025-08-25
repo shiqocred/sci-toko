@@ -11,7 +11,7 @@ interface DetailProductProps {
 
 export const DetailProduct = ({ product }: DetailProductProps) => {
   return (
-    <div className="w-full ">
+    <div className="w-full order-3 lg:order-2">
       <Tabs
         defaultValue="detail"
         className="gap-0 h-fit shadow rounded-lg overflow-hidden"

@@ -1,16 +1,17 @@
 "use client";
 
 import { Button } from "@/components/ui/button";
-import React, { ChangeEvent, FormEvent, useState } from "react";
+import React, { ChangeEvent, FormEvent, useEffect, useState } from "react";
 import { useResetPassword } from "../_api";
 import { PasswordInput } from "../../_components/form/password-input";
 import { ConfirmPasswordInput } from "../../_components/form/confirm-password-input";
-import { useSearchParams } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 
 const initialValue = { password: "", confirm_password: "" };
 const Client = () => {
   const searchParams = useSearchParams();
   const tokenQuery = searchParams.get("token") ?? "";
+  const router = useRouter();
   const token = decodeURIComponent(tokenQuery);
   const [input, setInput] = useState(initialValue);
   const [errors, setErrors] = useState(initialValue);
@@ -67,6 +68,12 @@ const Client = () => {
     );
   };
 
+  useEffect(() => {
+    if (!token) {
+      router.push("/forgot-password");
+    }
+  }, [token]);
+
   return (
     <div className="w-full bg-sky-50 relative h-full">
       <div
@@ -75,14 +82,14 @@ const Client = () => {
           backgroundImage: "url('/assets/images/homepage.webp')",
         }}
       />
-      <div className="w-full flex flex-col items-center py-32 relative z-10">
+      <div className="w-full flex flex-col items-center py-20 md:py-32 relative z-10 px-4 md:px-0">
         <form
           onSubmit={handleSubmit}
           className="max-w-md w-full p-5 bg-white rounded-2xl flex flex-col gap-4"
         >
-          <div className="flex flex-col gap-1 text-center">
-            <h1 className="text-3xl font-bold">Reset Password</h1>
-            <p className="text-[:#707070]">
+          <div className="flex flex-col md:gap-1 text-center">
+            <h1 className="text-2xl md:text-3xl font-bold">Reset Password</h1>
+            <p className="text-[#707070] text-sm md:text-base">
               Tap below to reset it and regain access to your account.
             </p>
           </div>

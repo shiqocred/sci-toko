@@ -31,3 +31,5 @@ export * from "./orders";
 export * from "./orders/[orderId]";
 export * from "./orders/[orderId]/pay";
 export * from "./orders/[orderId]/track";
+
+export * from "./metadata/products";

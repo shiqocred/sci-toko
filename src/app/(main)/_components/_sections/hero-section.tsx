@@ -49,15 +49,15 @@ export const HeroSection = ({ data }: { data: BannerProps[] }) => {
         onMouseEnter={plugin.stop}
         onMouseLeave={() => plugin.play()}
       >
-        <CarouselContent className="-ml-8">
+        <CarouselContent className="ml-0 lg:-ml-8">
           {data.map((item) => (
             <CarouselItem
               key={item.name}
               className={cn(
-                "pl-8",
+                "pl-0 lg:pl-8",
                 data.length < 3
                   ? "h-[550px] w-full flex items-center"
-                  : "flex-[0_0_75.3%]"
+                  : "lg:flex-[0_0_75.3%]"
               )}
             >
               <Link
@@ -67,7 +67,7 @@ export const HeroSection = ({ data }: { data: BannerProps[] }) => {
                 )}
                 href={handleHref(item)}
               >
-                <div className="relative aspect-[21/10] h-full rounded-lg overflow-hidden">
+                <div className="relative aspect-[21/10] h-full lg:rounded-lg overflow-hidden">
                   <Image
                     alt={item.name}
                     src={item.image ?? DEFAULT_IMAGE}
@@ -82,7 +82,7 @@ export const HeroSection = ({ data }: { data: BannerProps[] }) => {
           ))}
         </CarouselContent>
 
-        <div className="[--max-witdh:75.3%] absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 w-full max-w-[var(--max-witdh)] z-10  justify-between items-center pointer-events-none hidden group-hover:flex">
+        <div className="[--max-witdh:75.3%] absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 w-full max-w-[var(--max-witdh)] z-10  justify-between items-center pointer-events-none hidden lg:group-hover:flex">
           <div className="pointer-events-auto">
             <CarouselPrevious className="relative -ml-4 lg:-ml-5 left-auto top-auto translate-0 lg:size-10 shadow-lg" />
           </div>

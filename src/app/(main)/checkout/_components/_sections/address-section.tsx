@@ -22,15 +22,15 @@ export function AddressSection({
   const selected = addresses?.find((a) => a.id === addressId);
 
   return (
-    <div className="w-full rounded-lg shadow p-5 bg-white border flex flex-col gap-4">
+    <div className="w-full rounded-lg shadow p-3 md:p-5 bg-white border flex flex-col gap-3 md:gap-4">
       <div className="flex items-center justify-between">
-        <h3 className="font-semibold text-lg flex items-center gap-2">
-          <MapPinned className="size-5" />
+        <h3 className="font-semibold md:text-lg flex items-center gap-2">
+          <MapPinned className="size-[18px] md:size-5" />
           Shipping Address
         </h3>
         <Button
           variant="outline"
-          className="hover:bg-green-50"
+          className="hover:bg-green-50 px-3 text-xs py-1.5 h-8 md:px-4 md:text-sm md:py-2 md:h-9"
           onClick={() => setOpen(true)}
         >
           Select
@@ -48,7 +48,9 @@ export function AddressSection({
             <div className="flex flex-col border rounded-md overflow-hidden gap-0">
               <div className="flex items-center justify-between border-b py-2 px-3 bg-green-50">
                 <div className="flex items-center gap-2">
-                  <p className="font-semibold">{selected.name}</p>
+                  <p className="text-sm md:text-base font-semibold">
+                    {selected.name}
+                  </p>
                   <span>|</span>
                   <p className="text-xs">{selected.phone}</p>
                 </div>
@@ -58,7 +60,7 @@ export function AddressSection({
                   </span>
                 )}
               </div>
-              <div className="p-3 text-sm">
+              <div className="p-3 text-xs md:text-sm">
                 <p className="text-gray-500">{selected.detail}</p>
                 <p>{selected.address}</p>
               </div>

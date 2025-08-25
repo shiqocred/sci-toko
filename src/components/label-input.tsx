@@ -152,7 +152,7 @@ const CustomInput = ({
           variant={"ghost"}
           onClick={() => setIsVisible(!isVisible)}
         >
-          {isVisible ? <Eye /> : <EyeOff />}
+          {isVisible ? <EyeOff /> : <Eye />}
         </Button>
       </div>
     );

@@ -30,7 +30,7 @@ export const AddressList = ({
   }
 
   return (
-    <div className="flex flex-col gap-4">
+    <div className="flex flex-col gap-3 lg:gap-4">
       {listAddresses.map((item) => (
         <AddressItem
           key={item.id}

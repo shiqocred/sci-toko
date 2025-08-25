@@ -29,7 +29,7 @@ export const ProductCard = ({
       href={`/products/${encodeURIComponent(slug)}`}
       className="group h-full"
     >
-      <Card className="p-0 overflow-hidden gap-0 rounded-xl shadow h-full">
+      <Card className="p-0 overflow-hidden gap-0 rounded-md md:rounded-lg lg:rounded-xl shadow border-none h-full">
         <CardHeader className="w-full aspect-4/3 relative p-0 overflow-hidden flex-none">
           <Image
             alt={title}
@@ -44,7 +44,7 @@ export const ProductCard = ({
           <CardTitle className="leading-tight text-sm line-clamp-2">
             {title}
           </CardTitle>
-          <CardDescription className="line-clamp-3 text-xs leading-relaxed">
+          <CardDescription className="line-clamp-3 text-xs lg:text-sm leading-relaxed">
             {description}
           </CardDescription>
           <div className="flex items-center gap-3 mt-auto">

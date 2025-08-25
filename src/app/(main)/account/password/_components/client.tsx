@@ -88,7 +88,8 @@ const Client = () => {
   };
 
   return (
-    <div className="bg-white p-5">
+    <div className="bg-white p-3 md:p-4 lg:p-5 flex flex-col gap-4">
+      <h4 className="font-bold text-lg">Change Password</h4>
       <form onSubmit={handleSubmit} className="flex flex-col text-sm gap-3">
         <div className="flex flex-col w-full gap-1.5">
           <LabelInput

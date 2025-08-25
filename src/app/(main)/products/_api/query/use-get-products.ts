@@ -23,12 +23,14 @@ export const useGetProducts = ({
   pets,
   promos,
   p,
+  q,
 }: {
   categories?: string[];
   suppliers?: string[];
   pets?: string[];
   promos?: string[];
   p: number;
+  q: string;
 }) => {
   const query = useApiQuery<Response>({
     key: [
@@ -39,6 +41,7 @@ export const useGetProducts = ({
         pets,
         promos,
         p,
+        q,
       },
     ],
     endpoint: `/products`,
@@ -48,6 +51,7 @@ export const useGetProducts = ({
       pets,
       promos,
       p,
+      q,
     },
   });
   return query;

@@ -17,9 +17,9 @@ export function OrderSummarySection({
   totalPrice,
 }: Props) {
   return (
-    <div className="w-full rounded-lg shadow p-5 bg-white border flex flex-col gap-4">
-      <h3 className="font-semibold text-lg flex items-center gap-2">
-        <ReceiptText className="size-5" />
+    <div className="w-full rounded-lg shadow p-3 md:p-5 bg-white border flex flex-col gap-3 md:gap-4">
+      <h3 className="font-semibold md:text-lg flex items-center gap-2">
+        <ReceiptText className="size-[18px] md:size-5" />
         Order Summary
       </h3>
       <div className="flex flex-col gap-3 text-sm">
@@ -28,10 +28,12 @@ export function OrderSummarySection({
             <p>Subtotal:</p>
             <p className="font-semibold">{formatRupiah(subtotal)}</p>
           </div>
-          <div className="flex items-center justify-between ml-2">
-            <p>- Discount:</p>
-            <p className="font-semibold">- {formatRupiah(discount)}</p>
-          </div>
+          {!!discount && (
+            <div className="flex items-center justify-between ml-2">
+              <p>- Discount:</p>
+              <p className="font-semibold">- {formatRupiah(discount)}</p>
+            </div>
+          )}
         </div>
         <Separator />
         <div className="flex items-center justify-between">
@@ -39,9 +41,9 @@ export function OrderSummarySection({
           <p className="font-semibold">{formatRupiah(shippingPrice)}</p>
         </div>
         <Separator />
-        <div className="flex items-center justify-between">
+        <div className="flex items-center justify-between font-semibold">
           <p>Total Price:</p>
-          <p className="font-semibold">{formatRupiah(totalPrice)}</p>
+          <p>{formatRupiah(totalPrice)}</p>
         </div>
       </div>
     </div>

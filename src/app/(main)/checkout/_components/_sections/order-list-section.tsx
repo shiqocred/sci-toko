@@ -12,9 +12,9 @@ interface Props {
 
 export function OrderListSection({ products, totalItems, isLoading }: Props) {
   return (
-    <div className="w-full rounded-lg shadow p-5 bg-white border flex flex-col gap-4">
-      <h3 className="font-semibold text-lg flex items-center gap-2">
-        <Layers className="size-5" />
+    <div className="w-full rounded-lg shadow p-3 md:p-5 bg-white border flex flex-col gap-3 md:gap-4">
+      <h3 className="font-semibold md:text-lg flex items-center gap-2">
+        <Layers className="size-[18px] md:size-5" />
         Order List ({totalItems})
       </h3>
       {isLoading ? (

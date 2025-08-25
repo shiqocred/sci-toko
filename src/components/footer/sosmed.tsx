@@ -15,10 +15,10 @@ interface SosmedProps {
 
 export const Sosmed = ({ data }: { data: SosmedProps[] }) => {
   return (
-    <div className="flex flex-col gap-12">
+    <div className="flex flex-col gap-4 lg:gap-12 w-fit">
       <Link
         href={"/"}
-        className="[--width-logo:150px] [--height-logo:57px] w-[var(--width-logo)] h-[var(--height-logo)] relative"
+        className="w-[100px] md:w-[150px] aspect-[150/57] relative flex-none"
       >
         <Image
           alt="Logo SCI"

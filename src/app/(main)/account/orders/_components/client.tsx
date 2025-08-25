@@ -34,14 +34,14 @@ const Client = () => {
   const orderList = useMemo(() => data?.data || {}, [data]) as any;
 
   return (
-    <div className="bg-white p-5 flex flex-col text-sm gap-4">
+    <div className="bg-white p-3 md:p-4 lg:p-5 flex flex-col text-sm gap-3 md:gap-4">
       <h4 className="font-bold text-lg">My Order</h4>
       <Tabs
         value={orderState}
         onValueChange={setOrderState}
         className="gap-0 h-full w-full"
       >
-        <TabsList className="w-full bg-transparent h-auto gap-2 *:h-28 *:flex *:w-full *:flex-col *:items-center *:justify-center *:p-2 *:bg-green-50/50 *:rounded-md *:border-green-200 *:border *:gap-2 *:text-sm *:data-[state=active]:bg-green-50/50 *:data-[state=active]:shadow-none *:data-[state=active]:border-green-500">
+        <TabsList className="w-full bg-transparent flex justify-start h-auto gap-3 md:gap-4 overflow-x-scroll scrollbar-hide *:h-28 *:flex *:w-auto *:md:w-full *:flex-col *:items-center *:justify-center *:p-2 *:bg-green-50/50 *:rounded-md *:border-green-200 *:border *:gap-2 *:data-[state=active]:bg-green-50/50 *:data-[state=active]:shadow-none *:data-[state=active]:border-green-500 *:aspect-square *:md:aspect-auto *:flex-none *:md:flex-auto *:text-xs *:md:text-sm">
           {tabs.map(({ value, label, Icon }) => (
             <TabsTrigger key={value} value={value}>
               <p>{label}</p>
@@ -57,7 +57,7 @@ const Client = () => {
           <TabsContent
             key={value}
             value={value}
-            className="flex text-sm pt-5 w-full"
+            className="flex text-sm pt-3 md:pt-4 lg:pt-5 w-full"
           >
             <OrderTabContent
               orders={orderList[value]}
@@ -94,7 +94,7 @@ const OrderTabContent = ({
   }
 
   return (
-    <div className="w-full flex flex-col gap-4">
+    <div className="w-full flex flex-col gap-2 md:gap-3 lg:gap-4">
       {orders.map((order) => (
         <OrderList key={order.id} order={order} state={state} />
       ))}

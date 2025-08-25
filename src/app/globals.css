@@ -148,3 +148,12 @@ input[type="number"] {
   writing-mode: bt-lr; /* Vertikal, bottom to top */
   margin: 0 auto; /* Pusatkan secara horizontal */
 }
+
+/* hide scrollbar */
+.scrollbar-hide::-webkit-scrollbar {
+  display: none;
+}
+.scrollbar-hide {
+  -ms-overflow-style: none; /* IE and Edge */
+  scrollbar-width: none; /* Firefox */
+}

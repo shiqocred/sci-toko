@@ -46,8 +46,9 @@ export async function POST(req: NextRequest) {
         db
           .update(orders)
           .set({
-            status: "EXPIRED",
+            status,
             updatedAt: sql`NOW()`,
+            expiredAt: sql`NOW()`,
           })
           .where(eq(orders.id, externalIdExist.orderId)),
 
@@ -81,8 +82,10 @@ export async function POST(req: NextRequest) {
         .set({
           status: "PACKING",
           updatedAt: sql`NOW()`,
+          paidAt: sql`NOW()`,
         })
         .where(eq(orders.id, externalIdExist.orderId)),
+
       resend.emails.send({
         from: "SCI Team<inpo@support.sro.my.id>",
         to: [externalIdExist.email ?? ""],
