@@ -21,7 +21,7 @@ export const DetailProduct = ({ product }: DetailProductProps) => {
             <Button>Detail</Button>
           </TabsTrigger>
           <TabsTrigger value="compotition" asChild>
-            <Button>Compotition</Button>
+            <Button>Composition</Button>
           </TabsTrigger>
           <TabsTrigger value="notes" asChild>
             <Button>Notes</Button>

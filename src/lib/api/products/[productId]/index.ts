@@ -11,7 +11,7 @@ import {
   productVariants,
   suppliers,
 } from "@/lib/db";
-import { desc, eq, InferSelectModel } from "drizzle-orm";
+import { and, desc, eq, exists, InferSelectModel, sql } from "drizzle-orm";
 
 type RoleType = InferSelectModel<typeof productAvailableRoles>["role"];
 
@@ -42,7 +42,19 @@ export const productDetail = async (
     .from(products)
     .leftJoin(categories, eq(categories.id, products.categoryId))
     .leftJoin(suppliers, eq(suppliers.id, products.supplierId))
-    .where(eq(products.slug, slugFormatted));
+    .where(
+      and(
+        eq(products.slug, slugFormatted),
+        eq(products.status, true),
+        exists(
+          sql`(
+        SELECT 1 FROM ${productVariants}
+        WHERE ${productVariants.productId} = ${products.id}
+          AND ${productVariants.stock} > 0
+      )`
+        )
+      )
+    );
 
   if (!productExist) throw errorRes("Product not found", 404);
 

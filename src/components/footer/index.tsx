@@ -1,6 +1,6 @@
 "use client";
 
-import React from "react";
+import React, { useEffect, useState } from "react";
 import { Facebook, Instagram, LinkedinIcon } from "lucide-react";
 
 import { Sosmed } from "./sosmed";
@@ -88,6 +88,15 @@ const data = {
 
 export const Footer = () => {
   const pathname = usePathname();
+  const [isMounted, setIsMounted] = useState(false);
+
+  useEffect(() => {
+    setIsMounted(true);
+  }, []);
+
+  if (!isMounted) {
+    return <div></div>;
+  }
   return (
     <div className="[--color:#CCCCCC] w-full bg-white flex-col gap-6 border-t border-[var(--color)] pt-12 mt-auto flex">
       <div

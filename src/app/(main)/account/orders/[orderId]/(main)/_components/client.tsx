@@ -11,7 +11,7 @@ import {
   AddressProps,
   HistoriesExistProps,
   HistoryStatus,
-  PaymentProps,
+  OrderDetailProps,
   ProductOutput,
   ShippingProps,
   useGetOrder,
@@ -257,44 +257,104 @@ const ProductItem = ({ product }: { product: ProductOutput }) => (
 );
 
 /** Price summary card */
-const PriceSummary = ({ payment }: { payment?: PaymentProps }) => (
+const PriceSummary = ({ data }: { data?: OrderDetailProps }) => (
   <div className="flex flex-col border rounded-md border-gray-300">
     <div className="flex flex-col gap-2 p-3">
       <div className="flex items-center justify-between">
         <p>Subtotal</p>
-        <p>{formatRupiah(payment?.subtotal ?? 0)}</p>
+        <p>{formatRupiah(data?.payment?.subtotal ?? 0)}</p>
       </div>
-      <div className="flex items-center justify-between">
-        <p>Voucher applied</p>
-        <p>-{formatRupiah(payment?.discount ?? 0)}</p>
-      </div>
+      {data?.payment.discount && (
+        <div className="flex items-center justify-between">
+          <p>Voucher applied</p>
+          <p>-{formatRupiah(data?.payment?.discount ?? 0)}</p>
+        </div>
+      )}
       <div className="flex items-center justify-between">
         <p>Shipping Cost</p>
-        <p>{formatRupiah(payment?.shipping_cost ?? 0)}</p>
+        <p>{formatRupiah(data?.payment?.shipping_cost ?? 0)}</p>
       </div>
     </div>
     <Separator className="bg-gray-300" />
     <div className="flex items-center p-3 justify-between font-semibold">
       <p>Total Price</p>
-      <p>{formatRupiah(payment?.total ?? 0)}</p>
+      <p>{formatRupiah(data?.payment?.total ?? 0)}</p>
     </div>
     <Separator className="bg-gray-300" />
     <div className="flex flex-col gap-2 p-3">
       <div className="flex items-center justify-between">
         <p>Payment Method</p>
-        <p>{payment?.method ?? "-"}</p>
+        <p>{data?.payment?.method ?? "-"}</p>
       </div>
-      {payment?.status !== "PENDING" && (
+      <div className="flex items-center justify-between">
+        <p>Order at</p>
+        <p>
+          {data?.timestamp.createdAt
+            ? format(new Date(data.timestamp.createdAt), "PPP HH:mm", {
+                locale: id,
+              })
+            : "-"}
+        </p>
+      </div>
+      {(data?.status === "delivered" ||
+        data?.status === "shipping" ||
+        data?.status === "processed") && (
         <div className="flex items-center justify-between">
+          <p>Paid at</p>
           <p>
-            {payment?.status === "PAID" && "Paid at"}
-            {payment?.status === "EXPIRED" && "Expired at"}
-            {payment?.status === "CANCELLED" && "Canceled at"}:
+            {data?.timestamp.paidAt
+              ? format(new Date(data?.timestamp.paidAt), "PPP HH:mm", {
+                  locale: id,
+                })
+              : "-"}
           </p>
+        </div>
+      )}
+      {(data?.status === "delivered" || data?.status === "shipping") && (
+        <div className="flex items-center justify-between">
+          <p>Shipping at</p>
           <p>
-            {format(new Date(payment?.timestamp ?? ""), "PPP HH:mm", {
-              locale: id,
-            })}
+            {data?.timestamp.shippingAt
+              ? format(new Date(data?.timestamp.shippingAt), "PPP HH:mm", {
+                  locale: id,
+                })
+              : "-"}
+          </p>
+        </div>
+      )}
+      {data?.status === "delivered" && (
+        <div className="flex items-center justify-between">
+          <p>Delivered at</p>
+          <p>
+            {data?.timestamp.deliveredAt
+              ? format(new Date(data?.timestamp.deliveredAt), "PPP HH:mm", {
+                  locale: id,
+                })
+              : "-"}
+          </p>
+        </div>
+      )}
+      {data?.status === "cancelled" && (
+        <div className="flex items-center justify-between">
+          <p>Canceled at</p>
+          <p>
+            {data?.timestamp.cancelledAt
+              ? format(new Date(data?.timestamp.cancelledAt), "PPP HH:mm", {
+                  locale: id,
+                })
+              : "-"}
+          </p>
+        </div>
+      )}
+      {data?.status === "expired" && (
+        <div className="flex items-center justify-between">
+          <p>Expired at</p>
+          <p>
+            {data?.timestamp.expiredAt
+              ? format(new Date(data?.timestamp.expiredAt), "PPP HH:mm", {
+                  locale: id,
+                })
+              : "-"}
           </p>
         </div>
       )}
@@ -312,7 +372,7 @@ const Client = () => {
   const productsList = useMemo(() => orderData?.products, [orderData]);
 
   return (
-    <div className="bg-white p-3 md:p-5 flex flex-col text-sm gap-4">
+    <div className="bg-white p-3 md:p-5 flex flex-col text-xs md:text-sm gap-4">
       <header className="flex items-center w-full border-b border-gray-400 pb-4">
         <Button size="icon" variant="ghost" className="size-7" asChild>
           <Link href={`/account/orders${tab ? `?tab=${tab}` : ""}`}>
@@ -352,7 +412,18 @@ const Client = () => {
             ))}
           </section>
 
-          <PriceSummary payment={orderData?.payment} />
+          <PriceSummary data={orderData} />
+          {orderData?.status === "delivered" && (
+            <Button
+              variant={"sciOutline"}
+              onClick={() => window.scrollTo({ top: 0, behavior: "smooth" })}
+              asChild
+            >
+              <Link href={`/account/orders/${orderData?.id}/review`}>
+                {orderData?.isReviewed ? "View Rating" : "Rate"}
+              </Link>
+            </Button>
+          )}
         </div>
       )}
     </div>

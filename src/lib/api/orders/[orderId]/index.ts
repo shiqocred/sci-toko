@@ -10,9 +10,10 @@ import {
   productVariants,
   shippingHistories,
   shippings,
+  testimonies,
 } from "@/lib/db";
 import { pronoun } from "@/lib/utils";
-import { and, desc, eq, sql } from "drizzle-orm";
+import { and, desc, eq, isNotNull, sql } from "drizzle-orm";
 
 // --- TYPES ---
 type Variant = {
@@ -130,12 +131,6 @@ const formatShippingDuration = (
   return `${fastest} - ${longest} ${unit.toLowerCase()}${pronoun(Number(longest))}`;
 };
 
-const getPaymentTimestamp = (order: any) => {
-  if (order.invoice_status === "EXPIRED") return order.expiredAt;
-  if (order.invoice_status === "CANCELLED") return order.cancelledAt;
-  return order.paidAt;
-};
-
 // --- MAIN FUNCTION ---
 export const detailOrder = async (
   params: Promise<{ orderId: string }>,
@@ -150,12 +145,15 @@ export const detailOrder = async (
       total_price: orders.totalPrice,
       status: orders.status,
       total_discount: orders.totalDiscount,
+      expiredAt: orders.expiredAt,
+      cancelledAt: orders.cancelledAt,
+      paidAt: orders.paidAt,
+      shippingAt: orders.shippingAt,
+      createdAt: orders.createdAt,
+      deliveredAt: orders.deliveredAt,
       invoice_status: invoices.status,
       paymentChannel: invoices.paymentChannel,
       paymentMethod: invoices.paymentMethod,
-      expiredAt: invoices.expiredAt,
-      cancelledAt: invoices.cancelledAt,
-      paidAt: invoices.paidAt,
       shipping_id: shippings.id,
       shipping_name: shippings.name,
       shipping_phone: shippings.phone,
@@ -168,10 +166,12 @@ export const detailOrder = async (
       shipping_fastest: shippings.fastestEstimate,
       shipping_longest: shippings.longestEstimate,
       shipping_status: shippings.status,
+      isReviewed: sql<boolean>`${isNotNull(testimonies.id)}`.as("isReviewed"),
     })
     .from(orders)
     .leftJoin(invoices, eq(invoices.orderId, orders.id))
     .leftJoin(shippings, eq(shippings.orderId, orders.id))
+    .leftJoin(testimonies, eq(testimonies.orderId, orders.id))
     .where(and(eq(orders.id, orderId), eq(orders.userId, userId)))
     .limit(1);
 
@@ -217,8 +217,6 @@ export const detailOrder = async (
       shipping_cost: orderRes.shipping_price,
       discount: orderRes.total_discount,
       total: orderRes.total_price,
-      status: orderRes.invoice_status,
-      timestamp: getPaymentTimestamp(orderRes),
       method: formatPayment(orderRes.paymentMethod, orderRes.paymentChannel),
     },
     address: {
@@ -237,8 +235,17 @@ export const detailOrder = async (
       ),
       status: orderRes.shipping_status,
     },
+    timestamp: {
+      expiredAt: orderRes.expiredAt,
+      cancelledAt: orderRes.cancelledAt,
+      paidAt: orderRes.paidAt,
+      shippingAt: orderRes.shippingAt,
+      createdAt: orderRes.createdAt,
+      deliveredAt: orderRes.deliveredAt,
+    },
     products: productsList,
     history: history ?? null,
+    isReviewed: orderRes.isReviewed,
   };
 };
 
@@ -250,7 +257,11 @@ export const cancelOrder = async (
 
   await db
     .update(orders)
-    .set({ status: "CANCELLED" })
+    .set({
+      status: "CANCELLED",
+      cancelledAt: sql`NOW()`,
+      updatedAt: sql`NOW()`,
+    })
     .where(and(eq(orders.id, orderId), eq(orders.userId, userId)));
 
   return { id: orderId };

@@ -227,7 +227,7 @@ const Client = () => {
           </div>
         ) : (
           <div className="flex flex-col gap-5 w-full min-h-full relative">
-            <div className="flex items-center gap-2 justify-end w-full">
+            <div className="flex items-center gap-2 justify-end w-full lg:hidden">
               <Button
                 variant={"sciOutline"}
                 className="bg-transparent rounded-full"
@@ -238,7 +238,7 @@ const Client = () => {
               </Button>
             </div>
             {products && (
-              <div className="grid grid-cols-2 md:grid-cols-4 gap-3.5 w-full h-full">
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-3.5 w-full">
                 {products.length > 0 ? (
                   products.map((item, idx) => (
                     <ProductCard key={`${item.title}-${idx}`} {...item} />

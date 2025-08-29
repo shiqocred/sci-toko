@@ -14,6 +14,9 @@ import {
   discountToRoles,
   discountUsers,
   discounts,
+  freeShippingApplies,
+  freeShippingEligibilities,
+  freeShippings,
   invoices,
   orderItems,
   orderDraftShippings,
@@ -37,6 +40,8 @@ import {
   shippings,
   storeDetail,
   suppliers,
+  testimoniImage,
+  testimoniProduct,
   testimonies,
   userRoleDetails,
   users,
@@ -60,6 +65,9 @@ export const schema = {
   discountToRoles,
   discountUsers,
   discounts,
+  freeShippingApplies,
+  freeShippingEligibilities,
+  freeShippings,
   invoices,
   orderItems,
   orderDraftShippings,
@@ -83,6 +91,8 @@ export const schema = {
   shippings,
   storeDetail,
   suppliers,
+  testimoniImage,
+  testimoniProduct,
   testimonies,
   userRoleDetails,
   users,
@@ -101,6 +111,8 @@ export * from "./courier";
 export * from "./discount-relations";
 export * from "./discounts";
 export * from "./enums";
+export * from "./free-shippings";
+export * from "./free-shipping-relations";
 export * from "./invoice";
 export * from "./order-items";
 export * from "./order-draft-items";
@@ -122,6 +134,8 @@ export * from "./shipping-histories";
 export * from "./shippings";
 export * from "./store-detail";
 export * from "./suppliers";
+export * from "./testimoni-images";
+export * from "./testimoni-products";
 export * from "./testimonies";
 export * from "./user-role-details";
 export * from "./users";

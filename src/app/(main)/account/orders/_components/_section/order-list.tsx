@@ -205,7 +205,7 @@ export const OrderList = ({
                   Pay before <span className="underline">{order.expired}</span>
                 </p>
               )}
-              <div className="flex items-center gap-3 ml-auto *:px-2.5 *:py-1 *:h-8 *:text-xs *:md:px-4 *:md:py-2 *:md:h-9 *:md:text-sm">
+              <div className="flex items-center gap-2 md:gap-3 ml-auto *:px-2.5 *:py-1 *:h-8 *:text-xs *:md:px-4 *:md:py-2 *:md:h-9 *:md:text-sm">
                 {state === "unpaid" && (
                   <>
                     <Button
@@ -227,9 +227,14 @@ export const OrderList = ({
                 {state === "completed" && (
                   <Button
                     variant="sciOutline"
-                    onClick={() => alert("Comming soon")}
+                    onClick={() =>
+                      window.scrollTo({ top: 0, behavior: "smooth" })
+                    }
+                    asChild
                   >
-                    Review
+                    <Link href={`/account/orders/${order.id}/review`}>
+                      Rate
+                    </Link>
                   </Button>
                 )}
                 {(state === "shipping" || state === "completed") && (

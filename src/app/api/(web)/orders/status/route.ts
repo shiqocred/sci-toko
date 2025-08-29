@@ -152,8 +152,20 @@ export async function POST(req: NextRequest) {
         .where(eq(shippings.id, shippingExist.id));
       await tx
         .update(orders)
-        .set({ status: await sanitizeStatus(body.status) })
+        .set({
+          status: await sanitizeStatus(body.status),
+          updatedAt: sql`NOW()`,
+        })
         .where(eq(orders.id, shippingExist.orderId));
+      if (body.status === "delivered") {
+        await tx
+          .update(orders)
+          .set({
+            deliveredAt: sql`NOW()`,
+            updatedAt: sql`NOW()`,
+          })
+          .where(eq(orders.id, shippingExist.orderId));
+      }
     });
 
     return successRes(null, "Retrieve");

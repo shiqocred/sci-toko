@@ -1,5 +1,6 @@
 import { r2Public } from "@/config";
-import { db } from "@/lib/db";
+import { db, productVariants } from "@/lib/db";
+import { sql } from "drizzle-orm";
 
 export type MetadataProductDetailProps = {
   status: boolean;
@@ -23,7 +24,22 @@ export const metadataProductDetail = async (
 
   const productExist = await db.query.products.findFirst({
     columns: { id: true, name: true, description: true },
-    where: (p, { eq }) => eq(p.slug, productSlug),
+    where: (p, { eq, and, exists }) =>
+      and(
+        eq(p.slug, productSlug),
+        exists(
+          db
+            .select()
+            .from(productVariants)
+            .where(
+              and(
+                eq(productVariants.productId, p.id),
+                sql`${productVariants.stock} > 0`
+              )
+            )
+        ),
+        eq(p.status, true)
+      ),
   });
 
   if (!productExist)

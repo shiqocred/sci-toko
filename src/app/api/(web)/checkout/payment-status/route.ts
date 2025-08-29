@@ -34,25 +34,26 @@ export async function POST(req: NextRequest) {
       return successRes(null, "Admin has been paid payment");
 
     if (status === "EXPIRED") {
-      await Promise.all([
-        db
-          .update(invoices)
-          .set({
-            status,
-            expiredAt: sql`NOW()`,
-          })
-          .where(eq(invoices.id, externalIdExist.id)),
+      await db.transaction(async (tx) => {
+        await Promise.all([
+          tx
+            .update(invoices)
+            .set({
+              status,
+              expiredAt: sql`NOW()`,
+            })
+            .where(eq(invoices.id, externalIdExist.id)),
 
-        db
-          .update(orders)
-          .set({
-            status,
-            updatedAt: sql`NOW()`,
-            expiredAt: sql`NOW()`,
-          })
-          .where(eq(orders.id, externalIdExist.orderId)),
-
-        resend.emails.send({
+          tx
+            .update(orders)
+            .set({
+              status,
+              updatedAt: sql`NOW()`,
+              expiredAt: sql`NOW()`,
+            })
+            .where(eq(orders.id, externalIdExist.orderId)),
+        ]);
+        await resend.emails.send({
           from: "SCI Team<inpo@support.sro.my.id>",
           to: [externalIdExist.email ?? ""],
           subject: "Payment Failed",
@@ -60,42 +61,43 @@ export async function POST(req: NextRequest) {
             name: "Fulan",
             code: "123456",
           }),
-        }),
-      ]);
+        });
+      });
 
       return successRes(null, "Payment expired");
     }
 
-    await Promise.all([
-      db
-        .update(invoices)
-        .set({
-          status,
-          updatedAt: sql`NOW()`,
-          paidAt: new Date(paid_at),
-          paymentChannel: payment_channel,
-          paymentMethod: payment_method,
-        })
-        .where(eq(invoices.id, externalIdExist.id)),
-      db
-        .update(orders)
-        .set({
-          status: "PACKING",
-          updatedAt: sql`NOW()`,
-          paidAt: sql`NOW()`,
-        })
-        .where(eq(orders.id, externalIdExist.orderId)),
-
-      resend.emails.send({
-        from: "SCI Team<inpo@support.sro.my.id>",
-        to: [externalIdExist.email ?? ""],
-        subject: "Payment Success",
-        react: PaymentSuccess({
-          name: "Fulan",
-          code: "123456",
-        }),
+    await db.transaction(async (tx) => {
+      await Promise.all([
+        tx
+          .update(invoices)
+          .set({
+            status,
+            updatedAt: sql`NOW()`,
+            paidAt: new Date(paid_at),
+            paymentChannel: payment_channel,
+            paymentMethod: payment_method,
+          })
+          .where(eq(invoices.id, externalIdExist.id)),
+        tx
+          .update(orders)
+          .set({
+            status: "PACKING",
+            updatedAt: sql`NOW()`,
+            paidAt: sql`NOW()`,
+          })
+          .where(eq(orders.id, externalIdExist.orderId)),
+      ]);
+    });
+    await resend.emails.send({
+      from: "SCI Team<inpo@support.sro.my.id>",
+      to: [externalIdExist.email ?? ""],
+      subject: "Payment Success",
+      react: PaymentSuccess({
+        name: "Fulan",
+        code: "123456",
       }),
-    ]);
+    });
 
     return successRes(null, "Payment Success");
   } catch (error) {

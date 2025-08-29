@@ -28,14 +28,14 @@ export const Sosmed = ({ data }: { data: SosmedProps[] }) => {
           sizes={sizesImage}
         />
       </Link>
-      <div className="flex gap-4 items-center justify-between">
+      <div className="flex gap-2 md:gap-4 items-center justify-between">
         {data.map((item) => (
           <Button
             key={item.title}
-            className="[--color:#FF1E1B] text-white size-10 rounded-full bg-[var(--color)] hover:bg-red-600"
+            className="[--color:#FF1E1B] text-white size-8 md:size-10 rounded-full bg-[var(--color)] hover:bg-red-600"
             size={"icon"}
           >
-            <item.icon className={cn("size-5", item.className)} />
+            <item.icon className={cn("size-3.5 md:size-5", item.className)} />
             <span className="sr-only">{item.title}</span>
           </Button>
         ))}

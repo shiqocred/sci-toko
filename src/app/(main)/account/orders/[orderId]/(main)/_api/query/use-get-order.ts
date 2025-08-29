@@ -46,8 +46,6 @@ export type PaymentProps = {
   shipping_cost: string;
   discount: string | null;
   total: string;
-  status: "CANCELLED" | "PENDING" | "EXPIRED" | "PAID" | null;
-  timestamp: Date | null;
   method: string | null;
 };
 export type AddressProps = {
@@ -62,17 +60,35 @@ export type ShippingProps = {
   duration: string;
   status: string | null;
 };
+export type TimestampProps = {
+  createdAt: string | null;
+  paidAt: string | null;
+  shippingAt: string | null;
+  deliveredAt: string | null;
+  cancelledAt: string | null;
+  expiredAt: string | null;
+};
+
+export type OrderDetailProps = {
+  id: string;
+  status:
+    | "cancelled"
+    | "delivered"
+    | "expired"
+    | "waiting payment"
+    | "processed"
+    | "shipping";
+  payment: PaymentProps;
+  address: AddressProps;
+  shipping: ShippingProps;
+  products: ProductOutput[];
+  history: HistoriesExistProps | null;
+  isReviewed: boolean;
+  timestamp: TimestampProps;
+};
 
 type Response = {
-  data: {
-    id: string;
-    status: string;
-    payment: PaymentProps;
-    address: AddressProps;
-    shipping: ShippingProps;
-    products: ProductOutput[];
-    history: HistoriesExistProps | null;
-  };
+  data: OrderDetailProps;
 };
 
 export const useGetOrder = ({ orderId }: { orderId: string }) => {

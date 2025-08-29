@@ -11,6 +11,8 @@ export async function generateMetadata({
   const { productId } = await params;
   const data = await metadataProductDetail(productId);
 
+  if (!data.data) return {};
+
   return {
     title: `Product ${data.data?.name}`,
     description: data.data?.description,

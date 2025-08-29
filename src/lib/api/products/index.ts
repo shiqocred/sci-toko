@@ -6,25 +6,28 @@ import {
   products,
   productToPets,
   productVariants,
+  promoItems,
   suppliers,
 } from "@/lib/db";
 import { and, desc, eq, inArray, sql } from "drizzle-orm";
 import { NextRequest } from "next/server";
 
 export const productsList = async (req: NextRequest) => {
+  const now = new Date();
   const searchParams = req.nextUrl.searchParams;
   const q = searchParams.get("q") ?? "";
 
   const getSlugs = (key: string) =>
     searchParams.getAll(key).map(decodeURIComponent);
 
-  const [categorySlugs, supplierSlugs, petSlugs] = [
+  const [categorySlugs, supplierSlugs, petSlugs, promoSlugs] = [
     getSlugs("categories"),
     getSlugs("suppliers"),
     getSlugs("pets"),
+    getSlugs("promos"),
   ];
 
-  const [categoriesRes, suppliersRes, petsRes] = await Promise.all([
+  const [categoriesRes, suppliersRes, petsRes, promoRes] = await Promise.all([
     categorySlugs.length
       ? db.query.categories.findMany({
           columns: { id: true },
@@ -43,11 +46,23 @@ export const productsList = async (req: NextRequest) => {
           where: (p, { inArray }) => inArray(p.slug, petSlugs),
         })
       : Promise.resolve([]),
+    promoSlugs.length
+      ? db.query.promos.findMany({
+          columns: { id: true },
+          where: (p, { inArray, and, or, lte, gte, isNull }) =>
+            and(
+              inArray(p.slug, promoSlugs),
+              lte(p.startAt, now),
+              or(isNull(p.endAt), gte(p.endAt, now))
+            ),
+        })
+      : Promise.resolve([]),
   ]);
 
   const categoryIds = categoriesRes.map((c) => c.id);
   const supplierIds = suppliersRes.map((s) => s.id);
   const petIds = petsRes.map((p) => p.id);
+  const promoIds = promoRes.map((p) => p.id);
 
   const filters = [
     eq(products.status, true),
@@ -72,6 +87,9 @@ export const productsList = async (req: NextRequest) => {
   if (petIds.length) {
     filters.push(inArray(productToPets.petId, petIds));
   }
+  if (promoIds.length) {
+    filters.push(inArray(promoItems.promoId, promoIds));
+  }
 
   const finalWhere = and(...filters);
 
@@ -83,6 +101,7 @@ export const productsList = async (req: NextRequest) => {
     .select({ count: sql<number>`COUNT(DISTINCT ${products.id})` })
     .from(products)
     .leftJoin(productToPets, eq(products.id, productToPets.productId))
+    .leftJoin(promoItems, eq(products.id, promoItems.productId))
     .where(finalWhere);
 
   const total = totalQuery[0]?.count ?? 0;
@@ -103,6 +122,7 @@ export const productsList = async (req: NextRequest) => {
     .leftJoin(categories, eq(products.categoryId, categories.id))
     .leftJoin(suppliers, eq(products.supplierId, suppliers.id))
     .leftJoin(productToPets, eq(products.id, productToPets.productId))
+    .leftJoin(promoItems, eq(products.id, promoItems.productId))
     .where(finalWhere)
     .groupBy(products.id)
     .orderBy(desc(products.createdAt))
