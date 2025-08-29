@@ -185,7 +185,7 @@ export const detailOrder = async (
         (SELECT ${productImages.url} 
          FROM ${productImages} 
          WHERE ${productImages.productId} = ${products.id} 
-         ORDER BY ${productImages.createdAt} ASC 
+         ORDER BY ${productImages.position} ASC 
          LIMIT 1)`.as("product_image"),
       variant_id: orderItems.variantId,
       variant_name: productVariants.name,

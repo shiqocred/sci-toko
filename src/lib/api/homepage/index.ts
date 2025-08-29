@@ -10,7 +10,7 @@ import {
   promos,
   suppliers,
 } from "@/lib/db";
-import { and, eq, exists, inArray, sql } from "drizzle-orm";
+import { and, eq, exists, inArray, isNull, sql } from "drizzle-orm";
 
 // 🔹 helper format image
 const formatImage = (image: string | null) =>
@@ -32,24 +32,14 @@ export const hompage = async () => {
         title: products.name,
         slug: products.slug,
         description: products.description,
-        image: productImages.url,
+        image: sql`
+        (SELECT ${productImages.url} 
+         FROM ${productImages} 
+         WHERE ${productImages.productId} = ${products.id} 
+         ORDER BY ${productImages.position} ASC 
+         LIMIT 1)`.as("image"),
       })
       .from(products)
-      .leftJoin(
-        productImages,
-        and(
-          eq(productImages.productId, products.id),
-          eq(
-            productImages.id,
-            sql`(
-              SELECT id FROM product_images
-              WHERE product_id = ${products.id}
-              ORDER BY created_at ASC
-              LIMIT 1
-            )`
-          )
-        )
-      )
       .where(
         and(
           exists(
@@ -59,7 +49,8 @@ export const hompage = async () => {
                 AND ${productVariants.stock} > 0
             )`
           ),
-          eq(products.status, true)
+          eq(products.status, true),
+          isNull(products.deletedAt)
         )
       )
       .orderBy(sql`RANDOM()`)
@@ -112,7 +103,13 @@ export const hompage = async () => {
         .leftJoin(categories, eq(categories.id, bannerItems.categoryId))
         .leftJoin(suppliers, eq(suppliers.id, bannerItems.supplierId))
         .leftJoin(pets, eq(pets.id, bannerItems.petId))
-        .leftJoin(products, eq(products.id, bannerItems.productId))
+        .leftJoin(
+          products,
+          and(
+            eq(products.id, bannerItems.productId),
+            isNull(products.deletedAt)
+          )
+        )
         .leftJoin(promos, eq(promos.id, bannerItems.promoId))
         .where(inArray(bannerItems.bannerId, bannerIds))
     : [];
@@ -143,7 +140,7 @@ export const hompage = async () => {
   return {
     products: trendingProductsRaw.map((p) => ({
       ...p,
-      image: formatImage(p.image),
+      image: formatImage(p.image as string),
     })),
     suppliers: suppliersHomeRaw.map((s) => ({
       ...s,

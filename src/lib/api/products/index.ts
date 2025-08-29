@@ -9,7 +9,7 @@ import {
   promoItems,
   suppliers,
 } from "@/lib/db";
-import { and, desc, eq, inArray, sql } from "drizzle-orm";
+import { and, desc, eq, inArray, isNull, sql } from "drizzle-orm";
 import { NextRequest } from "next/server";
 
 export const productsList = async (req: NextRequest) => {
@@ -71,6 +71,7 @@ export const productsList = async (req: NextRequest) => {
       WHERE ${productVariants.productId} = ${products.id}
       AND ${productVariants.stock} > 0
     )`,
+    isNull(products.deletedAt),
   ];
 
   if (q) {
@@ -115,7 +116,7 @@ export const productsList = async (req: NextRequest) => {
         (SELECT ${productImages.url} 
          FROM ${productImages} 
          WHERE ${productImages.productId} = ${products.id} 
-         ORDER BY ${productImages.createdAt} ASC 
+         ORDER BY ${productImages.position} ASC 
          LIMIT 1)`.as("image"),
     })
     .from(products)

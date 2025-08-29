@@ -24,7 +24,7 @@ export const metadataProductDetail = async (
 
   const productExist = await db.query.products.findFirst({
     columns: { id: true, name: true, description: true },
-    where: (p, { eq, and, exists }) =>
+    where: (p, { eq, and, exists, isNull }) =>
       and(
         eq(p.slug, productSlug),
         exists(
@@ -38,7 +38,8 @@ export const metadataProductDetail = async (
               )
             )
         ),
-        eq(p.status, true)
+        eq(p.status, true),
+        isNull(p.deletedAt)
       ),
   });
 
@@ -52,7 +53,7 @@ export const metadataProductDetail = async (
   const productImage = await db.query.productImages.findFirst({
     columns: { url: true },
     where: (pi, { eq }) => eq(pi.productId, productExist.id),
-    orderBy: (pi, { asc }) => asc(pi.createdAt),
+    orderBy: (pi, { asc }) => asc(pi.position),
   });
 
   return {

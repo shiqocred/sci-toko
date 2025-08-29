@@ -12,7 +12,7 @@ import {
 } from "@/lib/db";
 import { formatRupiah } from "@/lib/utils";
 import { createId } from "@paralleldrive/cuid2";
-import { and, eq, inArray, InferSelectModel } from "drizzle-orm";
+import { and, eq, inArray, InferSelectModel, isNull } from "drizzle-orm";
 
 type DiscountType = InferSelectModel<typeof discounts>;
 
@@ -58,7 +58,8 @@ export const drafOrder = async (userId: string) => {
   const [productList, images] = await Promise.all([
     db.query.products.findMany({
       columns: { id: true, name: true },
-      where: (p, { inArray }) => inArray(p.id, productIds),
+      where: (p, { inArray, isNull, and }) =>
+        and(inArray(p.id, productIds), isNull(p.deletedAt)),
     }),
     db.query.productImages.findMany({
       columns: { url: true, productId: true },
@@ -166,7 +167,13 @@ export const createDraftOrder = async (userId: string) => {
         })
         .from(carts)
         .leftJoin(productVariants, eq(carts.variantId, productVariants.id))
-        .leftJoin(products, eq(productVariants.productId, products.id))
+        .leftJoin(
+          products,
+          and(
+            eq(productVariants.productId, products.id),
+            isNull(products.deletedAt)
+          )
+        )
         .where(and(eq(carts.userId, userId), eq(carts.checked, true))),
     ]);
 

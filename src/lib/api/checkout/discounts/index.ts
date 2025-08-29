@@ -10,7 +10,15 @@ import {
   productToPets,
   productVariants,
 } from "@/lib/db";
-import { and, eq, exists, inArray, InferSelectModel, sql } from "drizzle-orm";
+import {
+  and,
+  eq,
+  exists,
+  inArray,
+  InferSelectModel,
+  isNull,
+  sql,
+} from "drizzle-orm";
 import { NextRequest } from "next/server";
 
 type ApplyType = InferSelectModel<typeof discounts>["apply"];
@@ -24,16 +32,17 @@ export const applyDiscount = async (req: NextRequest, userId: string) => {
 
   const now = new Date();
 
-  // Ambil discount terlebih dulu (dengan guard waktu aktif)
+  // Ambil discount terlebih dulu (tanpa guard waktu aktif)
   const discount = await db.query.discounts.findFirst({
-    where: (d, { eq, and, or, lte, gte, isNull }) =>
-      and(
-        eq(d.code, voucher),
-        lte(d.startAt, now),
-        or(isNull(d.endAt), gte(d.endAt, now))
-      ),
+    where: (d, { eq }) => eq(d.code, voucher),
   });
-  if (!discount) throw errorRes("Voucher not found or expired", 404);
+
+  if (!discount) throw errorRes("Voucher not found", 404);
+
+  // Cek periode aktif
+  if (discount.startAt > now || (discount.endAt && discount.endAt < now)) {
+    throw errorRes("Voucher expired", 400);
+  }
 
   // Paralel: user role + draft + items
   const [userRow, draftCtx] = await Promise.all([
@@ -221,7 +230,13 @@ async function getDiscountedVariantIds(
     const rows = await db
       .select({ variantId: productVariants.id })
       .from(productVariants)
-      .innerJoin(products, eq(productVariants.productId, products.id))
+      .innerJoin(
+        products,
+        and(
+          eq(productVariants.productId, products.id),
+          isNull(products.deletedAt)
+        )
+      )
       .where(
         and(
           inArray(products.categoryId, categoryIds),
@@ -244,7 +259,13 @@ async function getDiscountedVariantIds(
     const rows = await db
       .select({ variantId: productVariants.id })
       .from(productToPets)
-      .innerJoin(products, eq(productToPets.productId, products.id))
+      .innerJoin(
+        products,
+        and(
+          eq(productToPets.productId, products.id),
+          isNull(products.deletedAt)
+        )
+      )
       .innerJoin(productVariants, eq(productVariants.productId, products.id))
       .where(
         and(
@@ -272,7 +293,8 @@ async function getDiscountedVariantIds(
       .where(
         and(
           inArray(products.supplierId, supplierIds),
-          inArray(productVariants.id, draftVariantIds)
+          inArray(productVariants.id, draftVariantIds),
+          isNull(products.deletedAt)
         )
       );
 

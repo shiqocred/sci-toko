@@ -1,7 +1,7 @@
 import { r2Public } from "@/config";
 import { errorRes, successRes } from "@/lib/auth";
 import { carts, db, productImages, products, productVariants } from "@/lib/db";
-import { and, eq, inArray, sql } from "drizzle-orm";
+import { and, eq, inArray, isNull, sql } from "drizzle-orm";
 import { NextRequest } from "next/server";
 import { z } from "zod/v4";
 
@@ -41,7 +41,13 @@ export const cartsList = async (userId: string) => {
     })
     .from(carts)
     .innerJoin(productVariants, eq(carts.variantId, productVariants.id))
-    .innerJoin(products, eq(productVariants.productId, products.id))
+    .innerJoin(
+      products,
+      and(
+        eq(productVariants.productId, products.id),
+        isNull(products.deletedAt)
+      )
+    )
     .where(eq(carts.userId, userId));
 
   if (!cartItems.length) {
@@ -55,9 +61,7 @@ export const cartsList = async (userId: string) => {
   const imageSubquery = db
     .select({
       productId: productImages.productId,
-      firstCreatedAt: sql<Date>`MIN(${productImages.createdAt})`.as(
-        "firstCreatedAt"
-      ),
+      first: sql`MIN(${productImages.position})`.as("first"),
     })
     .from(productImages)
     .where(inArray(productImages.productId, productIds))
@@ -74,7 +78,7 @@ export const cartsList = async (userId: string) => {
       imageSubquery,
       and(
         eq(productImages.productId, imageSubquery.productId),
-        eq(productImages.createdAt, imageSubquery.firstCreatedAt)
+        eq(productImages.position, imageSubquery.first)
       )
     );
 
@@ -272,12 +276,13 @@ export const addToCart = async (req: NextRequest, userId: string) => {
 
     await db
       .update(carts)
-      .set({ quantity: newQty.toString() })
+      .set({ quantity: newQty.toString(), checked: true })
       .where(eq(carts.id, existingCart.id));
   } else {
     await db.insert(carts).values({
       userId,
       variantId: variant_id,
+      checked: true,
       quantity,
     });
   }

@@ -11,7 +11,15 @@ import {
   productVariants,
   suppliers,
 } from "@/lib/db";
-import { and, desc, eq, exists, InferSelectModel, sql } from "drizzle-orm";
+import {
+  and,
+  desc,
+  eq,
+  exists,
+  InferSelectModel,
+  isNull,
+  sql,
+} from "drizzle-orm";
 
 type RoleType = InferSelectModel<typeof productAvailableRoles>["role"];
 
@@ -46,6 +54,7 @@ export const productDetail = async (
       and(
         eq(products.slug, slugFormatted),
         eq(products.status, true),
+        isNull(products.deletedAt),
         exists(
           sql`(
         SELECT 1 FROM ${productVariants}
@@ -68,7 +77,7 @@ export const productDetail = async (
       db.query.productImages.findMany({
         columns: { url: true },
         where: (c, { eq }) => eq(c.productId, productExist.id),
-        orderBy: desc(productImages.createdAt),
+        orderBy: desc(productImages.position),
       }),
       db
         .select({ name: pets.name, slug: pets.slug })

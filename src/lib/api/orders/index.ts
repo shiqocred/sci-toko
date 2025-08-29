@@ -118,7 +118,7 @@ export const getOrder = async (userId: string) => {
         (SELECT ${productImages.url} 
          FROM ${productImages} 
          WHERE ${productImages.productId} = ${products.id} 
-         ORDER BY ${productImages.createdAt} ASC 
+         ORDER BY ${productImages.position} ASC 
          LIMIT 1)`.as("image"),
       variant_name: productVariants.name,
       variant_qty: orderItems.quantity,
