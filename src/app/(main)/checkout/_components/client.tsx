@@ -88,11 +88,12 @@ export default function Client() {
   }, [ongkir, shipping]);
 
   const totalPrice = useMemo(() => {
-    return (
-      parseFloat(shippingPrice) +
-      (checkout?.price ?? 0) -
-      (checkout?.total_discount || 0)
-    );
+    const shippingCost = checkout?.freeShipping ? 0 : parseFloat(shippingPrice);
+
+    const total =
+      (checkout?.price ?? 0) + shippingCost - (checkout?.total_discount || 0);
+
+    return total < 0 ? 0 : total;
   }, [shippingPrice, checkout]);
 
   const isLoading = isPendingAddresses || isPendingCheckout || isPendingOngkir;
@@ -181,8 +182,10 @@ export default function Client() {
               <ShippingMethodSection
                 ongkir={ongkir}
                 shipping={shipping}
+                checkout={checkout}
                 setShipping={setShipping}
                 isLoading={isPendingOngkir || isRefetchingOngkir}
+                isPendingCheckout={isPendingCheckout}
               />
               <OrderListSection
                 products={checkout?.products || []}
@@ -210,8 +213,9 @@ export default function Client() {
                   Voucher
                 </h3>
                 {checkout?.discount ? (
-                  <div className="flex border rounded-md border-gray-300 items-center">
-                    <div className="flex w-full flex-col gap-1 ml-5 border-l p-3 border-gray-300 border-dashed text-sm">
+                  <div className="flex border rounded-md border-gray-300 items-center overflow-hidden">
+                    <div className="w-5 h-full bg-red-400 flex-none" />
+                    <div className="flex w-full flex-col gap-1 border-l-4 p-3 border-red-400 border-dashed text-sm">
                       <p className="font-medium">
                         Applied{" "}
                         <span className="font-semibold">
@@ -258,7 +262,7 @@ export default function Client() {
 
               <OrderSummarySection
                 subtotal={checkout?.price || 0}
-                discount={checkout?.total_discount || 0}
+                checkout={checkout}
                 shippingPrice={shippingPrice}
                 totalPrice={totalPrice}
               />

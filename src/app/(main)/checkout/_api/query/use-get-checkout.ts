@@ -28,6 +28,7 @@ export type CheckoutProps = {
   } | null;
   total_discount: number;
   addressId: string | null;
+  freeShipping: string;
 };
 
 type Response = {

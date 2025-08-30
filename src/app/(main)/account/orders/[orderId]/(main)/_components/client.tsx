@@ -274,6 +274,12 @@ const PriceSummary = ({ data }: { data?: OrderDetailProps }) => (
         <p>Shipping Cost</p>
         <p>{formatRupiah(data?.payment?.shipping_cost ?? 0)}</p>
       </div>
+      {data?.shipping.isFreeShipping && (
+        <div className="flex items-center justify-between">
+          <p>Free Shipping</p>
+          <p>-{formatRupiah(data?.payment?.shipping_cost ?? 0)}</p>
+        </div>
+      )}
     </div>
     <Separator className="bg-gray-300" />
     <div className="flex items-center p-3 justify-between font-semibold">

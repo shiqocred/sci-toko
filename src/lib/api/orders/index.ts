@@ -159,6 +159,7 @@ export const createOrder = async (req: NextRequest, userId: string) => {
       totalPrice: true,
       discountId: true,
       totalDiscount: true,
+      freeShippingId: true,
     },
   });
 
@@ -221,15 +222,17 @@ export const createOrder = async (req: NextRequest, userId: string) => {
     (item) => !insufficientStock.has(item.variantId)
   );
 
-  console.log(itemsToCheckout);
-
   if (itemsToCheckout.length === 0) {
     throw errorRes("No items with sufficient stock to checkout", 400);
   }
 
+  const shippingCost = orderDraftExist.freeShippingId
+    ? 0
+    : Number(orderDraftShippingsExist.price);
+
   const totalPrice =
     Number(orderDraftExist.totalPrice) +
-    Number(orderDraftShippingsExist.price) -
+    shippingCost -
     Number(orderDraftExist.totalDiscount);
 
   const orderId = createId();
@@ -261,6 +264,7 @@ export const createOrder = async (req: NextRequest, userId: string) => {
       userId,
       productPrice: orderDraftExist.totalPrice,
       shippingPrice: orderDraftShippingsExist.price,
+      freeShippingId: orderDraftExist.freeShippingId,
       totalPrice: totalPrice.toString(),
       discountId: orderDraftExist.discountId,
       totalDiscount: orderDraftExist.totalDiscount,

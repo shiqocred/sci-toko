@@ -2,17 +2,18 @@
 import { ReceiptText } from "lucide-react";
 import { Separator } from "@/components/ui/separator";
 import { formatRupiah } from "@/lib/utils";
+import { CheckoutProps } from "../../_api";
 
 interface Props {
   subtotal: number;
-  discount: number;
+  checkout?: CheckoutProps;
   shippingPrice: string;
   totalPrice: number;
 }
 
 export function OrderSummarySection({
   subtotal,
-  discount,
+  checkout,
   shippingPrice,
   totalPrice,
 }: Props) {
@@ -28,17 +29,27 @@ export function OrderSummarySection({
             <p>Subtotal:</p>
             <p className="font-semibold">{formatRupiah(subtotal)}</p>
           </div>
-          {!!discount && (
+          {!!checkout?.total_discount && (
             <div className="flex items-center justify-between ml-2">
               <p>- Discount:</p>
-              <p className="font-semibold">- {formatRupiah(discount)}</p>
+              <p className="font-semibold">
+                - {formatRupiah(checkout.total_discount)}
+              </p>
             </div>
           )}
         </div>
         <Separator />
-        <div className="flex items-center justify-between">
-          <p>Shipping Fee:</p>
-          <p className="font-semibold">{formatRupiah(shippingPrice)}</p>
+        <div className="flex flex-col gap-2">
+          <div className="flex items-center justify-between">
+            <p>Shipping Fee:</p>
+            <p className="font-semibold">{formatRupiah(shippingPrice)}</p>
+          </div>
+          {!!checkout?.freeShipping && (
+            <div className="flex items-center justify-between ml-2">
+              <p>- Free Shipping:</p>
+              <p className="font-semibold">- {formatRupiah(shippingPrice)}</p>
+            </div>
+          )}
         </div>
         <Separator />
         <div className="flex items-center justify-between font-semibold">

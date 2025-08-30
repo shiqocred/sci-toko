@@ -151,6 +151,7 @@ export const detailOrder = async (
       shippingAt: orders.shippingAt,
       createdAt: orders.createdAt,
       deliveredAt: orders.deliveredAt,
+      freeShippingId: orders.freeShippingId,
       invoice_status: invoices.status,
       paymentChannel: invoices.paymentChannel,
       paymentMethod: invoices.paymentMethod,
@@ -234,6 +235,7 @@ export const detailOrder = async (
         orderRes.shipping_duration
       ),
       status: orderRes.shipping_status,
+      isFreeShipping: !!orderRes.freeShippingId,
     },
     timestamp: {
       expiredAt: orderRes.expiredAt,

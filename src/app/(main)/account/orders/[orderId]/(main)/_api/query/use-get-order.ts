@@ -58,6 +58,7 @@ export type ShippingProps = {
   waybill_id: string | null;
   courier_name: string | null;
   duration: string;
+  isFreeShipping: boolean;
   status: string | null;
 };
 export type TimestampProps = {

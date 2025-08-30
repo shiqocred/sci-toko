@@ -3,7 +3,6 @@ import { errorRes } from "@/lib/auth";
 import {
   carts,
   db,
-  discounts,
   orderDraft,
   orderDraftItems,
   orderDraftShippings,
@@ -12,12 +11,11 @@ import {
 } from "@/lib/db";
 import { formatRupiah } from "@/lib/utils";
 import { createId } from "@paralleldrive/cuid2";
-import { and, eq, inArray, InferSelectModel, isNull } from "drizzle-orm";
-
-type DiscountType = InferSelectModel<typeof discounts>;
+import { and, eq, inArray, isNull } from "drizzle-orm";
 
 export const drafOrder = async (userId: string) => {
-  const [draftOrder, storeAddress] = await Promise.all([
+  // ✅ Parallel queries untuk data dasar
+  const [draftOrder, storeAddress, userExist] = await Promise.all([
     db.query.orderDraft.findFirst({
       columns: {
         id: true,
@@ -25,15 +23,23 @@ export const drafOrder = async (userId: string) => {
         addressId: true,
         discountId: true,
         totalDiscount: true,
+        freeShippingId: true,
       },
       where: (o, { eq }) => eq(o.userId, userId),
     }),
     db.query.storeDetail.findFirst(),
+    db.query.users.findFirst({
+      columns: { id: true, role: true }, // ✅ hanya ambil kolom yang dibutuhkan
+      where: (u, { eq }) => eq(u.id, userId),
+    }),
   ]);
 
+  // ✅ Early validation
+  if (!userExist) throw errorRes("Unauthorized", 401);
   if (!draftOrder) throw errorRes("No draft order found", 400);
   if (!storeAddress) throw errorRes("Store address not found", 400);
 
+  // ✅ Ambil items dengan satu query
   const items = await db
     .select({
       id: orderDraftItems.id,
@@ -48,63 +54,112 @@ export const drafOrder = async (userId: string) => {
   if (items.length === 0) throw errorRes("No item in order", 400);
 
   const variantIds = items.map((i) => i.variantId);
-  const variants = await db
-    .select()
-    .from(productVariants)
-    .where(inArray(productVariants.id, variantIds));
+
+  const discountId = draftOrder.discountId;
+
+  // ✅ Parallel queries untuk data produk dan discount
+  const [variants, discount] = await Promise.all([
+    db
+      .select()
+      .from(productVariants)
+      .where(inArray(productVariants.id, variantIds)),
+    discountId
+      ? db.query.discounts.findFirst({
+          where: (d, { eq }) => eq(d.id, discountId),
+        })
+      : Promise.resolve(null),
+  ]);
+
+  // ✅ Validasi discount
+  if (discountId && !discount) {
+    throw errorRes("Discount not available", 400);
+  }
 
   const productIds = [...new Set(variants.map((v) => v.productId))];
 
+  // ✅ Parallel queries untuk produk dan gambar
   const [productList, images] = await Promise.all([
     db.query.products.findMany({
-      columns: { id: true, name: true },
+      columns: { id: true, name: true, categoryId: true, supplierId: true },
       where: (p, { inArray, isNull, and }) =>
         and(inArray(p.id, productIds), isNull(p.deletedAt)),
     }),
     db.query.productImages.findMany({
       columns: { url: true, productId: true },
       where: (pi, { inArray }) => inArray(pi.productId, productIds),
+      orderBy: (pi, { asc }) => asc(pi.position),
     }),
   ]);
-
-  let discount: DiscountType | null = null;
-  const discountId = draftOrder.discountId;
-
-  if (discountId) {
-    const discountExist = await db.query.discounts.findFirst({
-      where: (d, { eq }) => eq(d.id, discountId),
-    });
-    if (!discountExist) return errorRes("Discount not available");
-    discount = discountExist;
+  const validFreeShipping = await checkFreeShipping(
+    draftOrder,
+    userExist,
+    userId,
+    items,
+    variantIds,
+    productList,
+    productIds
+  );
+  if (draftOrder.freeShippingId !== validFreeShipping) {
+    await db
+      .update(orderDraft)
+      .set({ freeShippingId: validFreeShipping?.id ?? null })
+      .where(eq(orderDraft.userId, userId));
   }
 
-  // ✅ buat map biar lookup O(1)
-  const imageMap = new Map(images.map((img) => [img.productId, img.url]));
-  const priceMap = new Map(items.map((i) => [i.variantId, i.price]));
-  const qtyMap = new Map(items.map((i) => [i.variantId, i.quantity]));
+  // ✅ Buat maps untuk O(1) lookup
+  const imageMap = new Map(
+    images.reduce((acc, img) => {
+      if (!acc.has(img.productId)) {
+        acc.set(img.productId, img.url); // ✅ hanya ambil gambar pertama
+      }
+      return acc;
+    }, new Map<string, string>())
+  );
 
-  // ✅ format produk
-  const productsFormatted = productList.map((p) => {
-    const relatedVariants = variants.filter((v) => v.productId === p.id);
+  const itemMaps = items.reduce(
+    (acc, item) => {
+      acc.price.set(item.variantId, item.price);
+      acc.quantity.set(item.variantId, item.quantity);
+      return acc;
+    },
+    {
+      price: new Map<string, string>(),
+      quantity: new Map<string, string>(),
+    }
+  );
 
-    const defaultVariant = relatedVariants.find((v) => v.isDefault);
-    const otherVariants = relatedVariants.filter((v) => !v.isDefault);
+  // ✅ Format produk dengan algoritma lebih efisien
+  const variantsByProduct = variants.reduce(
+    (acc, variant) => {
+      if (!acc[variant.productId]) acc[variant.productId] = [];
+      acc[variant.productId].push(variant);
+      return acc;
+    },
+    {} as Record<string, typeof variants>
+  );
+
+  const productsFormatted = productList.map((product) => {
+    const productVariants = variantsByProduct[product.id] || [];
+    const defaultVariant = productVariants.find((v) => v.isDefault);
+    const otherVariants = productVariants.filter((v) => !v.isDefault);
 
     return {
-      id: p.id,
-      title: p.name,
-      image: imageMap.has(p.id) ? `${r2Public}/${imageMap.get(p.id)}` : null,
+      id: product.id,
+      title: product.name,
+      image: imageMap.has(product.id)
+        ? `${r2Public}/${imageMap.get(product.id)}`
+        : null,
       default_variant: defaultVariant && {
         id: defaultVariant.id,
         name: defaultVariant.name,
-        price: priceMap.get(defaultVariant.id) ?? "0",
-        qty: qtyMap.get(defaultVariant.id) ?? "0",
+        price: itemMaps.price.get(defaultVariant.id) ?? "0",
+        qty: itemMaps.quantity.get(defaultVariant.id) ?? "0",
       },
-      variants: otherVariants.map((v) => ({
-        id: v.id,
-        name: v.name,
-        price: priceMap.get(v.id) ?? "0",
-        qty: qtyMap.get(v.id) ?? "0",
+      variants: otherVariants.map((variant) => ({
+        id: variant.id,
+        name: variant.name,
+        price: itemMaps.price.get(variant.id) ?? "0",
+        qty: itemMaps.quantity.get(variant.id) ?? "0",
       })),
     };
   });
@@ -114,6 +169,7 @@ export const drafOrder = async (userId: string) => {
     price: Number(draftOrder.totalPrice),
     products: productsFormatted,
     total_discount: Number(draftOrder.totalDiscount),
+    freeShipping: validFreeShipping?.id ?? null,
     discount: discount
       ? {
           code: discount.code,
@@ -126,6 +182,111 @@ export const drafOrder = async (userId: string) => {
     addressId: draftOrder.addressId,
   };
 };
+
+// ✅ Pisahkan logika free shipping ke fungsi terpisah
+async function checkFreeShipping(
+  draftOrder: any,
+  userExist: any,
+  userId: string,
+  items: any[],
+  variantIds: string[],
+  productList: any[],
+  productIds: string[]
+): Promise<{ id: string } | null> {
+  const now = new Date();
+  const activeFreeShippings = await db.query.freeShippings.findMany({
+    where: (fs, { lte, gte, and, isNull, or }) =>
+      and(lte(fs.startAt, now), or(isNull(fs.endAt), gte(fs.endAt, now))),
+  });
+
+  if (activeFreeShippings.length === 0) return null;
+
+  // ✅ Pre-calculate values yang sering dipakai
+  const totalPrice = Number(draftOrder.totalPrice);
+  const totalQty = items.reduce((sum, v) => sum + Number(v.quantity ?? 0), 0);
+  const categoryIds = productList.map((i) => i.categoryId as string);
+  const supplierIds = productList.map((i) => i.supplierId as string);
+
+  // ✅ Batch query untuk semua eligibilities dan applies
+  const freeShippingIds = activeFreeShippings.map((fs) => fs.id);
+  const [eligibilities, applies, productToPets] = await Promise.all([
+    db.query.freeShippingEligibilities.findMany({
+      where: (fse, { inArray }) => inArray(fse.freeShippingId, freeShippingIds),
+    }),
+    db.query.freeShippingApplies.findMany({
+      where: (fa, { inArray }) => inArray(fa.freeShippingId, freeShippingIds),
+    }),
+    db.query.productToPets.findMany({
+      where: (pp, { inArray }) => inArray(pp.productId, productIds),
+    }),
+  ]);
+
+  const petIds = productToPets.map((i) => i.petId);
+
+  // ✅ Group data untuk lookup yang lebih cepat
+  const eligibilityMap = eligibilities.reduce(
+    (acc, e) => {
+      if (!acc[e.freeShippingId]) acc[e.freeShippingId] = [];
+      acc[e.freeShippingId].push(e);
+      return acc;
+    },
+    {} as Record<string, typeof eligibilities>
+  );
+
+  const appliesMap = applies.reduce(
+    (acc, a) => {
+      if (!acc[a.freeShippingId]) acc[a.freeShippingId] = [];
+      acc[a.freeShippingId].push(a);
+      return acc;
+    },
+    {} as Record<string, typeof applies>
+  );
+
+  // ✅ Check setiap free shipping dengan logika yang dioptimasi
+  for (const fs of activeFreeShippings) {
+    const fsEligibilities = eligibilityMap[fs.id] || [];
+    const fsApplies = appliesMap[fs.id] || [];
+
+    // Check eligibility
+    let eligible = false;
+    if (fs.eligibilityType === "role") {
+      eligible = fsEligibilities.some((e) => e.role === userExist.role);
+    } else if (fs.eligibilityType === "user") {
+      eligible = fsEligibilities.some((e) => e.userId === userId);
+    } else {
+      eligible = true;
+    }
+
+    if (!eligible) continue;
+
+    // Check minimum requirement
+    let minOk = true;
+    if (fs.minimumType === "amount") {
+      minOk = totalPrice >= Number(fs.minimum ?? 0);
+    } else if (fs.minimumType === "quantity") {
+      minOk = totalQty >= Number(fs.minimum ?? 0);
+    }
+    if (!minOk) continue;
+
+    // Check apply conditions
+    let applyOk = true;
+    if (fs.apply === "products") {
+      applyOk = fsApplies.some((a) => variantIds.includes(a.variantId ?? ""));
+    } else if (fs.apply === "categories") {
+      applyOk = fsApplies.some((a) => categoryIds.includes(a.categoryId ?? ""));
+    } else if (fs.apply === "suppliers") {
+      applyOk = fsApplies.some((a) => supplierIds.includes(a.supplierId ?? ""));
+    } else if (fs.apply === "pets") {
+      applyOk = fsApplies.some((a) => petIds.includes(a.petId ?? ""));
+    }
+
+    if (applyOk) {
+      return { id: fs.id };
+    }
+  }
+
+  return null;
+}
 
 export const createDraftOrder = async (userId: string) => {
   const user = await db.query.users.findFirst({
