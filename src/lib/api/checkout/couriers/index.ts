@@ -386,7 +386,7 @@ export const courier = async (userId: string) => {
       columns: { value: true },
       where: (c, { eq }) => eq(c.isActive, true),
     }),
-    db.query.storeDetail.findFirst({
+    db.query.about.findFirst({
       columns: { latitude: true, longitude: true },
     }),
   ]);

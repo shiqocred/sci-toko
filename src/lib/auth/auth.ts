@@ -101,6 +101,7 @@ export const { handlers, auth, unstable_update } = NextAuth({
   session: {
     strategy: "jwt",
   },
+  trustHost: true,
   callbacks: {
     jwt({ token, user, trigger, session }) {
       if (user) {

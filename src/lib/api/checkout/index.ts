@@ -27,7 +27,7 @@ export const drafOrder = async (userId: string) => {
       },
       where: (o, { eq }) => eq(o.userId, userId),
     }),
-    db.query.storeDetail.findFirst(),
+    db.query.about.findFirst(),
     db.query.users.findFirst({
       columns: { id: true, role: true }, // ✅ hanya ambil kolom yang dibutuhkan
       where: (u, { eq }) => eq(u.id, userId),

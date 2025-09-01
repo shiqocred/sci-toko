@@ -176,7 +176,7 @@ export const createOrder = async (req: NextRequest, userId: string) => {
     orderDraftShippingsExist,
     orderDraftItemsExist,
   ] = await Promise.all([
-    db.query.storeDetail.findFirst(),
+    db.query.about.findFirst(),
     db.query.addresses.findFirst({
       where: (a, { eq }) => eq(a.id, addressId),
     }),
