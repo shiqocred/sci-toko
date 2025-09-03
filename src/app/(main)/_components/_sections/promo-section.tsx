@@ -38,7 +38,11 @@ export const PromoSection = ({
         className="w-full max-w-[1440px] mx-auto group"
         plugins={[plugin]}
         onMouseEnter={plugin.stop}
-        onMouseLeave={() => plugin.play()}
+        onMouseLeave={() => {
+          if (data.length > 1) {
+            plugin.play();
+          }
+        }}
       >
         <CarouselContent className="lg:-ml-6">
           {data.map((item) => (

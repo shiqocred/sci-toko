@@ -27,7 +27,7 @@ export const Profile = ({
     return (
       <div className="rounded-lg shadow h-24 lg:h-[142px] flex flex-col justify-center items-center gap-1 bg-white text-sm">
         <Loader className="size-5 animate-spin" />
-        <p className="ml-2 animate-pulse">Memuat...</p>
+        <p className="ml-2 animate-pulse">Loading...</p>
       </div>
     );
 

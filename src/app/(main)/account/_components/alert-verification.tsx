@@ -2,15 +2,14 @@
 
 import { Button } from "@/components/ui/button";
 import { Loader2, MailWarning } from "lucide-react";
-import { useSession } from "next-auth/react";
 import React, { MouseEvent } from "react";
-import { useSendOTP } from "../_api";
+import { useGetUser, useSendOTP } from "../_api";
 import { useRouter } from "next/navigation";
 
 export const AlertVerification = () => {
-  const { data } = useSession();
   const router = useRouter();
   const { mutate: sendOTP, isPending: isSendingOTP } = useSendOTP();
+  const { data } = useGetUser();
 
   const handleSendOTP = (e: MouseEvent) => {
     e.preventDefault();
@@ -23,9 +22,8 @@ export const AlertVerification = () => {
       }
     );
   };
-  const user = data?.user;
 
-  if (!user?.emailVerified)
+  if (!data?.data.emailVerified)
     return (
       <div className="w-full flex items-center gap-4 justify-between bg-yellow-100 rounded-lg p-3">
         <div className="flex items-center gap-2">

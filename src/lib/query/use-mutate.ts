@@ -16,6 +16,7 @@ export const useMutate = <
   method,
   onSuccess,
   onError,
+  errorCustom,
 }: UseMutateConfig<TBody, TParams, TSearchParams>) =>
   useMutation<
     AxiosResponse,
@@ -66,9 +67,14 @@ export const useMutate = <
       }
     },
     onSuccess,
-    onError: (err) =>
-      errorResponse({
-        err,
-        title: onError.title,
-      }),
+    onError: (err, v, c) => {
+      if (errorCustom) {
+        errorCustom(err, v, c);
+      } else {
+        errorResponse({
+          err,
+          title: onError?.title,
+        });
+      }
+    },
   });

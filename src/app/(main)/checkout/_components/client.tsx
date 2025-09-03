@@ -33,6 +33,7 @@ import { parseAsString, useQueryState } from "nuqs";
 import { Textarea } from "@/components/ui/textarea";
 import { Input } from "@/components/ui/input";
 import { TooltipText } from "@/providers/tooltip-provider";
+import { useGetUser } from "../../account/_api";
 
 export default function Client() {
   const [shipping, setShipping] = useState("");
@@ -55,6 +56,7 @@ export default function Client() {
   const { mutate: createOrder, isPending: isCreating } = useCreateOrder();
   const { mutate: addVoucher, isPending: isAdding } = useAddVoucher();
   const { mutate: removeVoucher, isPending: isRemoving } = useRemoveVoucher();
+  const { data: user, isPending: isPendingUser } = useGetUser();
 
   const { data: addressesRes, isPending: isPendingAddresses } =
     useGetAddresses();
@@ -135,6 +137,19 @@ export default function Client() {
       }, 5000);
     }
   }, [checkouted]);
+
+  if (isPendingUser) {
+    return (
+      <div className="h-[300px] flex items-center justify-center flex-col gap-1">
+        <Loader className="animate-spin size-5" />
+        <p className="ml-1 text-sm">Loading...</p>
+      </div>
+    );
+  }
+
+  if (!user?.data.emailVerified) {
+    return (window.location.href = "/cart?access=403");
+  }
 
   return (
     <div className="bg-sky-50 h-full">

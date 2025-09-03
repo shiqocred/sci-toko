@@ -373,7 +373,7 @@ const Maps = ({
             <Label>Search Address</Label>
             <div className="w-full relative flex items-center">
               <Input
-                className="pr-10 bg-gray-100 border-gray-300 focus-visible:border-gray-500 focus-visible:ring-transparent"
+                className="pr-10 bg-gray-100 border-gray-300 focus-visible:border-gray-500 focus-visible:ring-transparent text-sm focus-visible:text-base lg:text-base"
                 value={address}
                 onChange={(e) => {
                   setAddress(e.target.value);
@@ -488,32 +488,32 @@ const Maps = ({
           <div className="grid md:grid-cols-2 gap-4">
             <LabelInput
               label="Address"
-              className="bg-gray-100 focus-visible:border-gray-300 read-only:cursor-default read-only:focus-visible:border-gray-300 read-only:pointer-events-none"
+              className="bg-gray-100 focus-visible:border-gray-300 read-only:cursor-default read-only:focus-visible:border-gray-300 read-only:pointer-events-none text-sm lg:text-base"
               classContainer="md:col-span-2"
               value={input.address ?? ""}
               readOnly
             />
             <LabelInput
               label="Province"
-              className="bg-gray-100 focus-visible:border-gray-300 read-only:cursor-default read-only:focus-visible:border-gray-300 read-only:pointer-events-none"
+              className="bg-gray-100 focus-visible:border-gray-300 read-only:cursor-default read-only:focus-visible:border-gray-300 read-only:pointer-events-none text-sm lg:text-base"
               value={input.province ?? ""}
               readOnly
             />
             <LabelInput
               label="City"
-              className="bg-gray-100 focus-visible:border-gray-300 read-only:cursor-default read-only:focus-visible:border-gray-300 read-only:pointer-events-none"
+              className="bg-gray-100 focus-visible:border-gray-300 read-only:cursor-default read-only:focus-visible:border-gray-300 read-only:pointer-events-none text-sm lg:text-base"
               value={input.city ?? ""}
               readOnly
             />
             <LabelInput
               label="District"
-              className="bg-gray-100 focus-visible:border-gray-300 read-only:cursor-default read-only:focus-visible:border-gray-300 read-only:pointer-events-none"
+              className="bg-gray-100 focus-visible:border-gray-300 read-only:cursor-default read-only:focus-visible:border-gray-300 read-only:pointer-events-none text-sm lg:text-base"
               value={input.district ?? ""}
               readOnly
             />
             <LabelInput
               label="Postal Code"
-              className="bg-gray-100 focus-visible:border-gray-300 read-only:cursor-default read-only:focus-visible:border-gray-300 read-only:pointer-events-none"
+              className="bg-gray-100 focus-visible:border-gray-300 read-only:cursor-default read-only:focus-visible:border-gray-300 read-only:pointer-events-none text-sm lg:text-base"
               value={input.postal_code ?? ""}
               readOnly
             />

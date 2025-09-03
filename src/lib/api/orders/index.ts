@@ -12,12 +12,13 @@ import {
   products,
   productVariants,
   shippings,
+  testimonies,
 } from "@/lib/db";
 import { xendit } from "@/lib/utils";
 import { createId } from "@paralleldrive/cuid2";
 import { add, format } from "date-fns";
 import { id } from "date-fns/locale";
-import { and, desc, eq, inArray, sql } from "drizzle-orm";
+import { and, desc, eq, inArray, isNotNull, sql } from "drizzle-orm";
 import { NextRequest } from "next/server";
 
 // --- TYPES ---
@@ -40,6 +41,7 @@ type TransformedOrderGroup = {
   status: string;
   total_price: string;
   expired: string | null;
+  isReviewed: boolean;
   items: OrderItem[];
 };
 
@@ -60,6 +62,7 @@ const getOrCreateOrder = (
       id: row.id,
       status: row.status,
       total_price: row.total_price,
+      isReviewed: row.isReviewed,
       expired:
         row.status === "WAITING_PAYMENT" && row.created
           ? format(
@@ -127,11 +130,13 @@ export const getOrder = async (userId: string) => {
       status: orders.status,
       total_price: orders.totalPrice,
       created: orders.createdAt,
+      isReviewed: sql<boolean>`${isNotNull(testimonies.id)}`.as("isReviewed"),
     })
     .from(orders)
     .innerJoin(orderItems, eq(orderItems.orderId, orders.id))
     .innerJoin(productVariants, eq(productVariants.id, orderItems.variantId))
     .innerJoin(products, eq(products.id, productVariants.productId))
+    .leftJoin(testimonies, eq(testimonies.orderId, orders.id))
     .where(eq(orders.userId, userId))
     .orderBy(desc(orders.createdAt));
 

@@ -15,7 +15,7 @@ import { BannerProps } from "../../_api";
 
 export const HeroSection = ({ data }: { data: BannerProps[] }) => {
   const plugin = useMemo(
-    () => Autoplay({ delay: 5000, stopOnInteraction: true }),
+    () => Autoplay({ delay: 10000, stopOnInteraction: true }),
     []
   );
 
@@ -47,7 +47,11 @@ export const HeroSection = ({ data }: { data: BannerProps[] }) => {
         className="w-full max-w-[1440px] mx-auto group"
         plugins={[plugin]}
         onMouseEnter={plugin.stop}
-        onMouseLeave={() => plugin.play()}
+        onMouseLeave={() => {
+          if (data.length > 1) {
+            plugin.play();
+          }
+        }}
       >
         <CarouselContent className="ml-0 lg:-ml-8">
           {data.map((item) => (
@@ -56,14 +60,14 @@ export const HeroSection = ({ data }: { data: BannerProps[] }) => {
               className={cn(
                 "pl-0 lg:pl-8",
                 data.length < 3
-                  ? "h-[550px] w-full flex items-center"
+                  ? "lg:h-[550px] w-full flex items-center"
                   : "lg:flex-[0_0_75.3%]"
               )}
             >
               <Link
                 className={cn(
                   "w-full",
-                  data.length < 3 && "h-[515px] flex justify-center"
+                  data.length < 3 && "lg:h-[515px] lg:flex lg:justify-center"
                 )}
                 href={handleHref(item)}
               >
@@ -82,7 +86,12 @@ export const HeroSection = ({ data }: { data: BannerProps[] }) => {
           ))}
         </CarouselContent>
 
-        <div className="[--max-witdh:75.3%] absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 w-full max-w-[var(--max-witdh)] z-10  justify-between items-center pointer-events-none hidden lg:group-hover:flex">
+        <div
+          className={cn(
+            "[--max-witdh:75.3%] absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 w-full max-w-[var(--max-witdh)] z-10  justify-between items-center pointer-events-none hidden lg:group-hover:flex",
+            data.length === 1 && "!hidden"
+          )}
+        >
           <div className="pointer-events-auto">
             <CarouselPrevious className="relative -ml-4 lg:-ml-5 left-auto top-auto translate-0 lg:size-10 shadow-lg" />
           </div>

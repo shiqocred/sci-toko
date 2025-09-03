@@ -18,6 +18,7 @@ import {
   useCreateCheckout,
   useDeleteCart,
   useGetCarts,
+  useSendOTP,
   useUpdateCheck,
   useUpdateQuantity,
 } from "../_api";
@@ -36,14 +37,21 @@ import {
   Type as ListType,
 } from "react-swipeable-list";
 import "react-swipeable-list/dist/styles.css";
+import { useRouter } from "next/navigation";
+import { toast } from "sonner";
 
 const Client = () => {
   const [dialog, setDialog] = useState("");
   const [isTyping, setIsTyping] = useState(false);
   const [localQty, setLocalQty] = useState<Record<string, number>>({});
+  const router = useRouter();
   const [available, setAvailable] = useState(false);
   const [carted, setCarted] = useQueryState(
     "carted",
+    parseAsString.withDefault("")
+  );
+  const [access, setAccess] = useQueryState(
+    "access",
     parseAsString.withDefault("")
   );
   const [DeleteDialog, confirmDelete] = useConfirm(
@@ -52,6 +60,14 @@ const Client = () => {
     "destructive"
   );
 
+  const [VerifyDialog, confirmVerify] = useConfirm(
+    "Restricted Access, Email Not Verified",
+    "Please verify your email address to order",
+    "destructive",
+    "Verify"
+  );
+
+  const { mutate: sendOTP, isPending: isSendingOTP } = useSendOTP();
   const { mutate: updateQty, isPending: isUpdatingQty } = useUpdateQuantity();
   const { mutate: deleteCart, isPending: isDeleting } = useDeleteCart();
   const { mutate: checkCart, isPending: isChecking } = useUpdateCheck();
@@ -162,7 +178,26 @@ const Client = () => {
   };
 
   const handleCheckout = () => {
-    checkout({}, { onSuccess: () => setCarted("checkouted") });
+    checkout(
+      {},
+      {
+        onSuccess: () => setCarted("checkouted"),
+        onError: (err) => err.status === 403 && handleSendOTP(),
+      }
+    );
+  };
+
+  const handleSendOTP = async () => {
+    const ok = await confirmVerify();
+    if (!ok) return;
+    sendOTP(
+      {},
+      {
+        onSuccess: () => {
+          router.push("/verification-email?from=account");
+        },
+      }
+    );
   };
 
   useEffect(() => {
@@ -174,8 +209,25 @@ const Client = () => {
     }
   }, [carted]);
 
+  useEffect(() => {
+    if (access === "403") {
+      toast.error("Email not verified");
+      setAccess("");
+    }
+  }, [access]);
+
+  if (access === "403") {
+    return (
+      <div className="lg:col-span-5 bg-white rounded-lg shadow p-5 flex justify-center items-center h-40 md:h-[400px] flex-col gap-2">
+        <Loader className="size-5 md:size-6 animate-spin" />
+        <p className="ml-2 animate-pulse text-sm md:text-base">Loading...</p>
+      </div>
+    );
+  }
+
   return (
     <div className="bg-sky-50 h-full relative">
+      <VerifyDialog />
       <DeleteDialog />
       <DialogRemoveProduct
         open={!!dialog}
@@ -220,7 +272,7 @@ const Client = () => {
         ) : (
           <div className="w-full grid lg:grid-cols-7 gap-6">
             {/* CART LIST */}
-            {isPending ? (
+            {isPending || isSendingOTP ? (
               <div className="lg:col-span-5 bg-white rounded-lg shadow p-5 flex justify-center items-center h-40 md:h-[400px] flex-col gap-2">
                 <Loader className="size-5 md:size-6 animate-spin" />
                 <p className="ml-2 animate-pulse text-sm md:text-base">

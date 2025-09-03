@@ -20,7 +20,7 @@ export const DetailProduct = ({ product }: DetailProductProps) => {
           <TabsTrigger value="detail" asChild>
             <Button>Detail</Button>
           </TabsTrigger>
-          <TabsTrigger value="compotition" asChild>
+          <TabsTrigger value="composition" asChild>
             <Button>Composition</Button>
           </TabsTrigger>
           <TabsTrigger value="notes" asChild>
@@ -60,7 +60,7 @@ export const DetailProduct = ({ product }: DetailProductProps) => {
           </div>
         </TabsContent>
         <TabsContent
-          value="compotition"
+          value="composition"
           className="bg-white p-5 flex flex-col text-sm leading-normal gap-4"
         >
           <span className="font-bold">One tablet contains:</span>

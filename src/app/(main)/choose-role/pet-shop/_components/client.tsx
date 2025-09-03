@@ -102,7 +102,7 @@ const Client = () => {
         <div className="w-full flex flex-col items-center py-20 relative z-10">
           <div className="max-w-md w-full px-5 py-20 bg-white rounded-2xl flex flex-col gap-1 items-center">
             <Loader2 className="animate-spin" />
-            <p>Memuat...</p>
+            <p>Loading...</p>
           </div>
         </div>
       ) : (

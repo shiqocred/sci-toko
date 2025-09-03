@@ -290,11 +290,12 @@ async function checkFreeShipping(
 
 export const createDraftOrder = async (userId: string) => {
   const user = await db.query.users.findFirst({
-    columns: { role: true },
+    columns: { role: true, emailVerified: true },
     where: (u, { eq }) => eq(u.id, userId),
   });
 
   if (!user) throw errorRes("Unauthorized", 401);
+  if (!user.emailVerified) throw errorRes("Email not Verified", 403);
 
   const orderDraftExist = await db.query.orderDraft.findMany({
     columns: { id: true },

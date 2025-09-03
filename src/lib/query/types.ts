@@ -23,7 +23,12 @@ export type UseMutateConfig<
     variables: MutationVariables<TBody, TParams, TSearchParams>,
     context: unknown
   ) => unknown | Promise<unknown>;
-  onError: {
+  errorCustom?: (
+    error: AxiosError<unknown, any>,
+    variables: MutationVariables<TBody, TParams, TSearchParams>,
+    context: unknown
+  ) => Promise<unknown> | unknown;
+  onError?: {
     /**
      * title for error logging like "ADD_USER" it will be "ERROR_ADD_USER"
      */
@@ -39,7 +44,7 @@ export type ErrorResposeType = {
   /**
    * title for error logging like "ADD_USER" it will be "ERROR_ADD_USER"
    */
-  title: string;
+  title?: string;
 };
 
 export type QueryParams = Record<string, string | number>;

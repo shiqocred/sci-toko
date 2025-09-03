@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useMemo, useState } from "react";
 import { Facebook, Instagram, LinkedinIcon } from "lucide-react";
 
 import { Sosmed } from "./sosmed";
@@ -8,40 +8,20 @@ import { Menus } from "./menus";
 import { Address } from "./address";
 import { usePathname } from "next/navigation";
 import { cn } from "@/lib/utils";
+import { useGetFooter } from "./_api";
 
 const data = {
-  sosmed: [
-    {
-      title: "linkedIn",
-      icon: LinkedinIcon,
-      className: "fill-white stroke-[0.5]",
-    },
-    {
-      title: "instagram",
-      icon: Instagram,
-      className: "",
-    },
-    {
-      title: "facebook",
-      icon: Facebook,
-      className: "fill-white stroke-[0.5]",
-    },
-  ],
   menu: [
     {
       title: "Online Shopping",
       menus: [
         {
           name: "Cats",
-          href: "#",
+          href: "/products?pets=pets-67890",
         },
         {
           name: "Dogs",
-          href: "#",
-        },
-        {
-          name: "Promos",
-          href: "#",
+          href: "/products?pets=dogs-12345",
         },
       ],
     },
@@ -50,23 +30,23 @@ const data = {
       menus: [
         {
           name: "My Account",
-          href: "#",
+          href: "/account",
         },
         {
-          name: "Track Your Order",
-          href: "#",
+          name: "FAQ's",
+          href: "/faqs",
         },
         {
           name: "Refund Policy",
-          href: "#",
+          href: "/policies/refund",
         },
         {
           name: "Privacy Policy",
-          href: "#",
+          href: "/policies/privacy",
         },
         {
           name: "Term of Use",
-          href: "#",
+          href: "/policies/term-of-use",
         },
       ],
     },
@@ -78,7 +58,7 @@ const data = {
           href: undefined,
         },
         {
-          name: "Saturday & Sunday: Closed",
+          name: "Saturday, Sunday & National Holiday: Closed",
           href: undefined,
         },
       ],
@@ -89,6 +69,31 @@ const data = {
 export const Footer = () => {
   const pathname = usePathname();
   const [isMounted, setIsMounted] = useState(false);
+
+  const { data: footer } = useGetFooter();
+
+  const footerRes = useMemo(() => footer?.data, [footer]);
+
+  const sosmedList = [
+    {
+      title: "linkedIn",
+      icon: LinkedinIcon,
+      className: "fill-white stroke-[0.5]",
+      href: footerRes?.sosmed.linkedin ?? "#",
+    },
+    {
+      title: "instagram",
+      icon: Instagram,
+      className: "",
+      href: footerRes?.sosmed.instagram ?? "#",
+    },
+    {
+      title: "facebook",
+      icon: Facebook,
+      className: "fill-white stroke-[0.5]",
+      href: footerRes?.sosmed.facebook ?? "#",
+    },
+  ];
 
   useEffect(() => {
     setIsMounted(true);
@@ -109,10 +114,10 @@ export const Footer = () => {
         )}
       >
         <div className="flex justify-between flex-col lg:flex-row gap-6">
-          <Sosmed data={data.sosmed} />
+          <Sosmed data={sosmedList} />
           <Menus data={data.menu} />
         </div>
-        <Address />
+        <Address data={footerRes?.store} />
       </div>
       <div
         className="[--height-grass:85px] h-[var(--height-grass)] w-full aspect-[1140/85] relative bg-repeat-x bg-[position:center_bottom] bg-[length:auto_100%]"

@@ -9,6 +9,7 @@ export * from "./auth/reset-password";
 export * from "./upgrade-role/pet-shop";
 
 export * from "./homepage";
+export * from "./homepage/other";
 
 export * from "./products";
 export * from "./products/filters";
@@ -31,5 +32,6 @@ export * from "./orders";
 export * from "./orders/[orderId]";
 export * from "./orders/[orderId]/pay";
 export * from "./orders/[orderId]/track";
+export * from "./orders/[orderId]/review";
 
 export * from "./metadata/products";

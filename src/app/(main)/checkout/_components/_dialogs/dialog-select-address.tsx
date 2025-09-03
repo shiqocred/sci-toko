@@ -14,7 +14,14 @@ import {
 import { Label } from "@/components/ui/label";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { cn } from "@/lib/utils";
-import { ArrowLeft, Loader, LocateOff, PlusCircle, Send } from "lucide-react";
+import {
+  ArrowLeft,
+  Edit,
+  Loader,
+  LocateOff,
+  PlusCircle,
+  Send,
+} from "lucide-react";
 import React, { FormEvent, MouseEvent, useEffect, useState } from "react";
 import { useGetAddress, useSelectedAddress } from "../../_api";
 import {
@@ -185,8 +192,8 @@ export const DialogSelectAddress = ({
   }, [open]);
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent showCloseButton={false} className="p-0 gap-0 min-w-2xl">
-        <DialogHeader className="border-b p-5  gap-0">
+      <DialogContent showCloseButton={false} className="p-0 gap-0 lg:min-w-2xl">
+        <DialogHeader className="border-b p-3 lg:p-5  gap-0">
           <div className="flex items-center justify-between capitalize">
             <DialogTitle>{state ?? "My"} Address</DialogTitle>
             {!state && (
@@ -204,7 +211,7 @@ export const DialogSelectAddress = ({
           <DialogDescription />
         </DialogHeader>
         {!state && (
-          <div className="flex w-full flex-col gap-4 p-5">
+          <div className="flex w-full flex-col gap-4 p-3 lg:p-5">
             {listAddresses?.length === 0 ? (
               <div className="flex flex-col gap-4">
                 <div className="flex p-3 border border-red-500 rounded-md gap-3 items-center">
@@ -235,15 +242,20 @@ export const DialogSelectAddress = ({
                       key={item.id}
                       className="flex flex-col border rounded-md overflow-hidden gap-0"
                     >
-                      <div className="flex items-center justify-between border-b py-2 px-3 bg-green-50 w-full">
-                        <div className="flex items-center gap-2 w-full">
+                      <div className="flex items-center justify-between border-b py-2 px-3 gap-1 lg:gap-3 bg-green-50 w-full">
+                        <div className="flex items-center gap-1 lg:gap-2 w-full">
                           <RadioGroupItem
                             value={item.id}
                             className="border-sci"
                             circleClassName="fill-sci text-sci"
                           />
-                          <p className="font-semibold text-base">{item.name}</p>
-                          |<p className="text-xs">{item.phone}</p>
+                          <p className="font-semibold text-sm lg:text-base line-clamp-1">
+                            {item.name} Lorem ipsum dolor sit amet.
+                          </p>
+                          |
+                          <p className="text-xs whitespace-nowrap">
+                            {item.phone}
+                          </p>
                         </div>
                         <div className="flex items-center gap-2">
                           {item.isDefault && (
@@ -254,19 +266,20 @@ export const DialogSelectAddress = ({
                           <Button
                             variant={"link"}
                             size={"sm"}
-                            className=""
+                            className="p-0 size-8 lg:w-auto lg:px-3 lg:py-1.5"
                             onClick={() => {
                               setState("edit");
                               setSelectedAddressId(item.id);
                             }}
                             disabled={isLoading}
                           >
-                            Change
+                            <Edit className="lg:hidden" />
+                            <p className="hidden lg:flex">Change</p>
                           </Button>
                         </div>
                       </div>
 
-                      <div className="flex flex-col gap-1.5 text-sm p-3 w-full">
+                      <div className="flex flex-col gap-1.5 lg:text-sm p-3 w-full text-xs">
                         <p className="text-gray-500">{item.detail}</p>
                         <p>{item.address}</p>
                       </div>
@@ -282,7 +295,7 @@ export const DialogSelectAddress = ({
             !!selectedAddressId &&
             !isPendingDetailAddress)) && (
           <form onSubmit={handleCreate} className="flex w-full flex-col gap-4">
-            <div className="flex flex-col relative overflow-x-hidden overflow-y-auto max-h-[60vh] gap-4 p-5">
+            <div className="flex flex-col relative overflow-x-hidden overflow-y-auto max-h-[60vh] gap-3 lg:gap-4 p-3 lg:p-5">
               <div className="flex flex-col w-full gap-1.5">
                 <LabelInput
                   label="Full Name"
@@ -402,13 +415,13 @@ export const DialogSelectAddress = ({
           </form>
         )}
         {state === "edit" && !!selectedAddressId && isPendingDetailAddress && (
-          <div className="h-[50vh] flex-none flex flex-col gap-3 w-full items-center justify-center">
-            <Loader className="animate-spin size-6" />
+          <div className="h-[50vh] flex-none flex flex-col gap-3 w-full items-center justify-center text-sm lg:text-base">
+            <Loader className="animate-spin size-4 lg:size-6" />
             <p>Loading...</p>
           </div>
         )}
         {!state && (
-          <DialogFooter className="px-5 py-3 border-t">
+          <DialogFooter className="px-3 lg:px-5 py-3 border-t">
             <Button
               variant={"outline"}
               disabled={isLoading}

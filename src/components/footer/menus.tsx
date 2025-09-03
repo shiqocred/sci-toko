@@ -15,15 +15,15 @@ export const Menus = ({ data }: { data: MenusProps[] }) => {
   return (
     <div className="flex w-full flex-col md:flex-row justify-between gap-4 md:gap-6 max-w-3xl text-sm lg:text-base leading-relaxed">
       {data.map((item, idx) => (
-        <ul key={item.title} className="flex flex-col">
-          <li className="font-bold text-lg lg:text-xl pb-2 md:pb-3">
+        <ul key={item.title} className="flex flex-col group">
+          <li className="font-bold text-base lg:text-lg pb-2 md:pb-3">
             {item.title}
           </li>
           {item.menus.map((subItem) => (
             <li
               key={subItem.name}
               className={cn(
-                "[--color:#707070] text-[var(--color)] pl-3 lg:pl-5 h-8 lg:h-10",
+                "text-gray-500 pl-3 lg:pl-4 h-8 lg:h-10 text-sm group-last:h-6",
                 idx === data.length - 1 && "h-auto"
               )}
             >

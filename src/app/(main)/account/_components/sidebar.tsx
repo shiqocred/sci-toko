@@ -1,11 +1,23 @@
 "use client";
 
 import { Button } from "@/components/ui/button";
-import { Headset, LogOut, ScrollText } from "lucide-react";
+import {
+  Headset,
+  LogOut,
+  MessageSquareMoreIcon,
+  ScrollText,
+} from "lucide-react";
 import { signOut } from "next-auth/react";
-import React, { MouseEvent } from "react";
+import Link from "next/link";
+import React, { MouseEvent, useMemo } from "react";
+import { useGetContact } from "../_api";
+import { usePathname } from "next/navigation";
+import { cn } from "@/lib/utils";
 
 export const Sidebar = ({ onClose }: { onClose?: () => void }) => {
+  const pathname = usePathname();
+  const { data: contact } = useGetContact();
+  const contactUrl = useMemo(() => contact?.data ?? "", [contact]);
   const handleLogout = async (e: MouseEvent) => {
     e.preventDefault();
     await signOut({ redirect: true, redirectTo: "/" });
@@ -16,17 +28,42 @@ export const Sidebar = ({ onClose }: { onClose?: () => void }) => {
         className="w-full justify-start"
         variant={"ghost"}
         onClick={() => onClose?.()}
+        asChild
       >
-        <Headset />
-        FAQ&apos;s
+        <Link href={contactUrl} target="_blank">
+          <Headset />
+          Contact Us
+        </Link>
       </Button>
       <Button
-        className="w-full justify-start"
+        className={cn(
+          "w-full justify-start",
+          pathname.includes("/faqs") &&
+            "!border-green-600 !text-green-600 hover:!bg-green-50 !shadow-none"
+        )}
         variant={"ghost"}
         onClick={() => onClose?.()}
+        asChild
       >
-        <ScrollText />
-        Policy
+        <Link href={"/faqs"}>
+          <MessageSquareMoreIcon />
+          FAQ&apos;s
+        </Link>
+      </Button>
+      <Button
+        className={cn(
+          "w-full justify-start",
+          pathname.includes("/policies") &&
+            "!border-green-600 !text-green-600 hover:!bg-green-50 !shadow-none"
+        )}
+        variant={"ghost"}
+        onClick={() => onClose?.()}
+        asChild
+      >
+        <Link href={"/policies/privacy"}>
+          <ScrollText />
+          Policies
+        </Link>
       </Button>
       <Button
         className="w-full text-red-400 hover:bg-red-50 hover:text-red-500 justify-start"

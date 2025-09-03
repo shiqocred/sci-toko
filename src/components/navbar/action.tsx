@@ -69,7 +69,7 @@ export const Action = ({
           variant={"destructive"}
           asChild
         >
-          <Link href={"/sign-up"}>Daftar</Link>
+          <Link href={"/sign-up"}>Register</Link>
         </Button>
       </div>
     );

@@ -233,7 +233,7 @@ export const OrderList = ({
                     asChild
                   >
                     <Link href={`/account/orders/${order.id}/review`}>
-                      Rate
+                      {order.isReviewed ? "Your Rating" : "Rate"}
                     </Link>
                   </Button>
                 )}
