@@ -33,10 +33,9 @@ export const VerifyEmail = async ({ name, code }: VerifyEmailProps) => {
             <Section className="bg-white px-10 py-7 max-w-xl w-full mx-auto rounded-md">
               <Img
                 src={`${baseUrl}/assets/images/logo-sci.png`}
-                width="132"
-                height="50"
-                alt="SCI"
-                className="mx-auto mb-8"
+                alt="Company Logo"
+                width="120"
+                className="mx-auto mb-4"
               />
               <Section>
                 <Text className="text-sm text-center mb-1 mt-0">
