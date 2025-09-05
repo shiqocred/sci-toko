@@ -1,9 +1,10 @@
 import { eq } from "drizzle-orm";
 import { add } from "date-fns";
-import VerifyEmail from "@/components/email/verify";
+import { VerifyEmail } from "@/components/email/verify";
 import { db, verificationOtp } from "@/lib/db";
 import { errorRes, generateOtp } from "@/lib/auth";
-import { resend } from "@/lib/providers";
+import { transporter } from "@/lib/providers";
+import { smtpUser } from "@/config";
 
 export const apiResendOTPVerificationEmail = async (email: string) => {
   const userExists = await db.query.users.findFirst({
@@ -30,11 +31,11 @@ export const apiResendOTPVerificationEmail = async (email: string) => {
       expires,
     }),
 
-    resend.emails.send({
-      from: "SCI Team<ju@support.sro.my.id>",
-      to: [userExists.email],
+    transporter.sendMail({
+      from: `Sehat Cerah Indonesia<${smtpUser}>`,
+      to: [email],
       subject: "Verify your email",
-      react: VerifyEmail({
+      html: await VerifyEmail({
         name: userExists.name,
         code: otp,
       }),

@@ -13,6 +13,7 @@ export const TooltipText = ({
   sideOffset,
   align,
   side,
+  delay,
 }: {
   className?: string;
   sideOffset?: number;
@@ -20,10 +21,11 @@ export const TooltipText = ({
   align?: "center" | "end" | "start";
   side?: "top" | "bottom" | "left" | "right";
   value: ReactNode;
+  delay?: number;
 }) => {
   return (
     <TooltipProvider>
-      <Tooltip>
+      <Tooltip delayDuration={delay}>
         <TooltipTrigger asChild>{children}</TooltipTrigger>
         <TooltipContent
           align={align}

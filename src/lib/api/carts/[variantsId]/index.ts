@@ -65,7 +65,7 @@ export const deleteCart = async (
 ) => {
   const { variantId } = await params;
 
-  if (!variantId) return errorRes("Variant id is required", 422);
+  if (!variantId) throw errorRes("Variant id is required", 422);
 
   const cartExits = await db.query.carts.findFirst({
     columns: {

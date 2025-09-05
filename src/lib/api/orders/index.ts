@@ -155,6 +155,13 @@ export const createOrder = async (req: NextRequest, userId: string) => {
   const { Invoice } = xendit;
   const { note, courierId } = await req.json();
 
+  const userExist = await db.query.users.findFirst({
+    where: (u, { eq }) => eq(u.id, userId),
+  });
+
+  if (!userExist) throw errorRes("Unauthorized", 401);
+  if (!userExist.emailVerified) throw errorRes("Email not vefiried", 403);
+
   // Ambil orderDraft aktif sekaligus detail address dan shipping supaya 1x query
   const orderDraftExist = await db.query.orderDraft.findFirst({
     where: (od, { eq }) => eq(od.userId, userId),

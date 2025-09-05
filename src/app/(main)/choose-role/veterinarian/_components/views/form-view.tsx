@@ -106,12 +106,12 @@ export const FormView = ({
 
       {/* NIK */}
       <div className="flex flex-col gap-1.5 w-full">
-        <Label htmlFor="nik" className="required">
+        <Label htmlFor="personal_id" className="required">
           NIK
         </Label>
         <Input
-          id="nik"
-          name="nik"
+          id="personal_id"
+          name="personal_id"
           type="number"
           placeholder="Type your NIK Number"
           onChange={handleChange}
@@ -127,12 +127,12 @@ export const FormView = ({
 
       {/* No KTA */}
       <div className="flex flex-col gap-1.5 w-full">
-        <Label htmlFor="no_kta" className="required">
+        <Label htmlFor="veterinarian_id" className="required">
           KTA Number
         </Label>
         <Input
-          id="no_kta"
-          name="no_kta"
+          id="veterinarian_id"
+          name="veterinarian_id"
           type="number"
           placeholder="Type your KTA Number"
           onChange={handleChange}

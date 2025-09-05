@@ -28,11 +28,13 @@ export const HeroSection = ({ data }: { data: BannerProps[] }) => {
     };
 
     if (typeMap[item.type]) {
-      const param = item.target.map(encodeURIComponent).join(";");
+      const param = item.target
+        .map((i) => encodeURIComponent(i.slug))
+        .join(";");
       return `/products?${typeMap[item.type]}=${param}`;
     }
 
-    return `/products/${item.target[0]}`;
+    return `/products/${item.target[0].slug}`;
   };
 
   const DEFAULT_IMAGE = "/assets/images/logo-sci.png";
@@ -49,14 +51,14 @@ export const HeroSection = ({ data }: { data: BannerProps[] }) => {
         onMouseEnter={plugin.stop}
         onMouseLeave={() => {
           if (data.length > 1) {
-            plugin.play();
+            plugin.reset();
           }
         }}
       >
         <CarouselContent className="ml-0 lg:-ml-8">
-          {data.map((item) => (
+          {data.map((item, idx) => (
             <CarouselItem
-              key={item.name}
+              key={`${item.name}-${idx}`}
               className={cn(
                 "pl-0 lg:pl-8",
                 data.length < 3

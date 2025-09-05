@@ -1,7 +1,8 @@
-import ResetPassword from "@/components/email/reset-password";
+import { ResetPassword } from "@/components/email/reset-password";
+import { smtpUser } from "@/config";
 import { errorRes, generateOtp } from "@/lib/auth";
 import { db, users, verificationOtp } from "@/lib/db";
-import { resend } from "@/lib/providers";
+import { transporter } from "@/lib/providers";
 import { add } from "date-fns";
 import { desc, eq } from "drizzle-orm";
 
@@ -37,11 +38,11 @@ export const apiForgotPassword = async (req: Request) => {
       type: "PASSWORD_RESET",
       expires,
     }),
-    resend.emails.send({
-      from: "SCI Team<inpo@support.sro.my.id>",
+    transporter.sendMail({
+      from: `Sehat Cerah Indonesia<${smtpUser}>`,
       to: [email],
       subject: "Reset password",
-      react: ResetPassword({
+      html: await ResetPassword({
         name: userExists.name,
         code: otp,
       }),

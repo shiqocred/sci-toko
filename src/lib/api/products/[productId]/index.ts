@@ -195,7 +195,7 @@ export const productDetail = async (
     packaging: productExist.packaging,
     registration_number: productExist.registrationNumber,
     storage_instruction: productExist.storageInstruction,
-    available,
+    isAvailable: available,
     availableFor: availableRaw.map((i) => i.role),
     supplier: {
       name: productExist.supplierName,

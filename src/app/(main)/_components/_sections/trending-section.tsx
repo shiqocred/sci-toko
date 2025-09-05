@@ -14,15 +14,15 @@ export const TrendingSection = ({ data }: { data: ProductProps[] }) => {
       <Heading label="Trending Products" isExpand={"/products"} />
       <Carousel
         opts={{ align: "start", loop: false }}
-        className="w-full max-w-[1240px] mx-auto group"
+        className="w-full max-w-[1240px] mx-auto"
       >
         <CarouselContent className="lg:-ml-9 md:-ml-6 -ml-4">
-          {data.map((item, idx) => (
+          {data.map((item) => (
             <CarouselItem
               key={item.slug}
-              className="lg:pl-9 md:pl-6 pl-4 flex-[0_0_50%] md:flex-[0_0_30%] lg:flex-[0_0_25%]"
+              className="lg:pl-9 md:pl-6 pl-4 flex-[0_0_50%] md:flex-[0_0_30%] lg:flex-[0_0_25%] group mb-1"
             >
-              <ProductCard key={`${item.title}-${idx}`} {...item} />
+              <ProductCard {...item} />
             </CarouselItem>
           ))}
         </CarouselContent>

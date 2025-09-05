@@ -17,7 +17,10 @@ export type BannerProps = {
   type: "DETAIL" | "PETS" | "PROMOS" | "SUPPLIERS" | "CATEGORIES";
   name: string;
   image: string | null;
-  target: string[];
+  target: {
+    name: string;
+    slug: string;
+  }[];
 };
 
 type Response = {

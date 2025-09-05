@@ -93,10 +93,15 @@ export const hompage = async () => {
     ? await db
         .select({
           bannerId: bannerItems.bannerId,
+          categoryName: categories.name,
           categorySlug: categories.slug,
+          petName: pets.name,
           petSlug: pets.slug,
+          productName: products.name,
           productSlug: products.slug,
+          promoName: promos.name,
           promoSlug: promos.slug,
+          supplierName: suppliers.name,
           supplierSlug: suppliers.slug,
         })
         .from(bannerItems)
@@ -124,15 +129,15 @@ export const hompage = async () => {
       .map((i) => {
         switch (item.type) {
           case "CATEGORIES":
-            return i.categorySlug;
+            return { name: i.categoryName, slug: i.categorySlug };
           case "DETAIL":
-            return i.productSlug;
+            return { name: i.productSlug, slug: i.productSlug };
           case "PETS":
-            return i.petSlug;
+            return { name: i.petSlug, slug: i.petSlug };
           case "PROMOS":
-            return i.promoSlug;
+            return { name: i.promoSlug, slug: i.promoSlug };
           case "SUPPLIERS":
-            return i.supplierSlug;
+            return { name: i.supplierName, slug: i.supplierSlug };
         }
       }),
   }));

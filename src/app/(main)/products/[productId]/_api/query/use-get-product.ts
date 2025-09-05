@@ -21,7 +21,7 @@ export type ProductDetailProps = {
   packaging: string;
   registration_number: string;
   storage_instruction: string;
-  available: boolean;
+  isAvailable: boolean;
   availableFor: ("BASIC" | "PETSHOP" | "VETERINARIAN")[];
   supplier: {
     name: string;

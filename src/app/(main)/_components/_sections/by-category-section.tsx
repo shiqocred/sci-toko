@@ -20,13 +20,13 @@ export const ByCategorySection = ({
       <Heading label="Shop By Category" />
       <Carousel
         opts={{ align: "start", loop: false }}
-        className="w-full max-w-[1240px] mx-auto group"
+        className="w-full max-w-[1240px] mx-auto "
       >
         <CarouselContent className="lg:-ml-6">
           {data.map((item) => (
             <CarouselItem
               key={item.slug}
-              className="lg:pl-6 flex-[0_0_65%] md:flex-[0_0_40%] lg:flex-[0_0_33%]"
+              className="lg:pl-6 flex-[0_0_65%] md:flex-[0_0_40%] lg:flex-[0_0_33%] group"
             >
               <CategoryCard key={item.slug} {...item} />
             </CarouselItem>
@@ -44,12 +44,12 @@ const CategoryCard = ({ name, slug, image }: SupplierCategoryPromoProps) => {
       className="w-full relative bg-white grid grid-cols-2 rounded-lg overflow-hidden h-full border"
     >
       <div className="w-full aspect-square">
-        <div className="size-full relative">
+        <div className="size-full relative overflow-hidden">
           <Image
             alt={name}
             src={image ?? "/assets/images/logo-sci.png"}
             fill
-            className="object-cover"
+            className="object-cover group-hover:scale-105 transition-all"
             sizes={sizesImage}
           />
         </div>

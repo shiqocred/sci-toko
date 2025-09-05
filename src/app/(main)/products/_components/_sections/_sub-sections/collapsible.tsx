@@ -8,6 +8,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { Check } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { TooltipText } from "@/providers/tooltip-provider";
 
 interface FilterCollapsibleProps {
   items: { name: string; slug: string }[];
@@ -25,23 +26,25 @@ type FilterButtonProps = {
 };
 
 const FilterButton = ({ item, selected, onSelect }: FilterButtonProps) => (
-  <Button
-    key={item.slug}
-    variant="ghost"
-    className="w-full justify-start"
-    onClick={() => onSelect(item.slug)}
-  >
-    <div
-      className={cn(
-        "rounded size-4 flex items-center justify-center border border-gray-500 [&_svg]:text-transparent",
-        selected.includes(decodeURIComponent(item.slug)) &&
-          "bg-primary border-primary [&_svg]:text-white"
-      )}
+  <TooltipText value={item.name} side="right" delay={500}>
+    <Button
+      key={item.slug}
+      variant="ghost"
+      className="w-full justify-start"
+      onClick={() => onSelect(item.slug)}
     >
-      <Check className="size-3" />
-    </div>
-    <p className="capitalize">{item.name}</p>
-  </Button>
+      <div
+        className={cn(
+          "rounded size-4 flex items-center justify-center border border-gray-500 [&_svg]:text-transparent",
+          selected.includes(decodeURIComponent(item.slug)) &&
+            "bg-primary border-primary [&_svg]:text-white"
+        )}
+      >
+        <Check className="size-3" />
+      </div>
+      <p className="capitalize line-clamp-1 text-ellipsis">{item.name}</p>
+    </Button>
+  </TooltipText>
 );
 
 export const FilterCollapsible = ({

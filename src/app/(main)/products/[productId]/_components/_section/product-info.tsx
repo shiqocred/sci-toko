@@ -54,7 +54,7 @@ export const ProductInfo = ({ product, status }: ProductInfoProps) => {
                   </Badge>
                 )}
               </div>
-              {product.available && (
+              {product.isAvailable && (
                 <div className="flex items-center gap-2">
                   <p className="text-sm text-gray-500 line-through">
                     {price("old")}

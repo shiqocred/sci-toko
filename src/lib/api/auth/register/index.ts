@@ -1,10 +1,11 @@
 import { z } from "zod/v4";
 import { hash } from "argon2";
 import { add } from "date-fns";
-import VerifyEmail from "@/components/email/verify";
+import { VerifyEmail } from "@/components/email/verify";
 import { db, userRoleDetails, users, verificationOtp } from "@/lib/db";
 import { errorRes, generateOtp } from "@/lib/auth";
-import { resend } from "@/lib/providers";
+import { transporter } from "@/lib/providers";
+import { smtpUser } from "@/config";
 
 const registerSchema = z.object({
   name: z.string().min(1, "Last name is required"),
@@ -127,11 +128,11 @@ export const apiRegister = async (req: Request) => {
       .insert(verificationOtp)
       .values({ identifier: email, otp, type: "EMAIL_VERIFICATION", expires }),
 
-    resend.emails.send({
-      from: "SCI Team<ju@support.sro.my.id>",
+    transporter.sendMail({
+      from: `Sehat Cerah Indonesia<${smtpUser}>`,
       to: [email],
       subject: "Verify your email",
-      react: VerifyEmail({
+      html: await VerifyEmail({
         name,
         code: otp,
       }),

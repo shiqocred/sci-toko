@@ -24,5 +24,10 @@ export const checkoutUrl = process.env.CHECKOUT_XENDIT_URL!;
 
 export const biteshipAPI = process.env.NEXT_PUBLIC_API_BITESHIP!;
 
+export const smtpHost = process.env.NEXT_PUBLIC_SMTP_HOST!;
+export const smtpPort = process.env.NEXT_PUBLIC_SMTP_PORT!;
+export const smtpUser = process.env.NEXT_PUBLIC_SMTP_USER!;
+export const smtpPassword = process.env.NEXT_PUBLIC_SMTP_PASSWORD!;
+
 export const successXendit = `${baseUrl}/account/orders?tab=processed`;
 export const failureXendit = `${baseUrl}/account/orders?tab=failed`;

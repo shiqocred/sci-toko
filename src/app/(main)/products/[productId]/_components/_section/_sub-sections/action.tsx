@@ -5,7 +5,8 @@ import { DialogAddedToCart } from "../../_dialogs";
 import { useRouter } from "next/navigation";
 import { ProductDetailProps, useAddToCart, Variant } from "../../../_api";
 import { Badge } from "@/components/ui/badge";
-import { Loader2, Minus, Plus } from "lucide-react";
+import { Loader2, LogInIcon, Minus, Plus } from "lucide-react";
+import Link from "next/link";
 
 export const CartAction = ({
   product,
@@ -54,7 +55,7 @@ export const CartAction = ({
 
   const isSame = data.oldPrice === data.newPrice;
   const isNoPrice = Number(data.newPrice) < 1;
-  const available = product?.available;
+  const available = product?.isAvailable;
 
   const priceFormatted = (type: "old" | "new") => {
     const price = type === "old" ? data.oldPrice : data.newPrice;
@@ -123,6 +124,8 @@ export const CartAction = ({
           : (parseFloat(prev.quantity) - 1).toString(),
     }));
   };
+
+  console.log(status);
 
   useEffect(() => {
     if (isNaN(parseFloat(input.quantity)) || parseFloat(input.quantity) < 1) {
@@ -236,33 +239,45 @@ export const CartAction = ({
           <p className="font-semibold text-lg">{subtotal}</p>
         </div>
       )}
-      <Button
-        variant={"destructive"}
-        className="flex-auto w-full rounded-full"
-        onClick={handleAddToCart}
-        disabled={
-          ((!input.variant_id || parseFloat(data.stock) < 1) &&
-            status === "authenticated") ||
-          !available
-        }
-      >
-        {isAddingToCart && <Loader2 className="animate-spin" />}
-        {status === "authenticated" && available && "Add to Cart"}
-        {status === "unauthenticated" && available && "Sign in"}
-        {status === "authenticated" &&
-          !available &&
-          `Available for ${product?.availableFor
-            .map((i) => {
-              if (i === "BASIC") {
-                return "Pet Owner";
-              } else if (i === "PETSHOP") {
-                return "Pet Shop";
-              } else if (i === "VETERINARIAN") {
-                return "Vet Clinic";
-              }
-            })
-            .join(" & ")}`}
-      </Button>
+      {status === "unauthenticated" ? (
+        <Button
+          variant={"destructive"}
+          className="flex-auto w-full rounded-full"
+          asChild
+        >
+          <Link href={"/sign-in"}>
+            <LogInIcon />
+            Sign in
+          </Link>
+        </Button>
+      ) : (
+        <Button
+          variant={"destructive"}
+          className="flex-auto w-full rounded-full disabled:opacity-100 disabled:pointer-events-auto disabled:cursor-not-allowed disabled:hover:bg-destructive"
+          onClick={handleAddToCart}
+          disabled={
+            ((!input.variant_id || parseFloat(data.stock) < 1) &&
+              status === "authenticated") ||
+            !available
+          }
+        >
+          {isAddingToCart && <Loader2 className="animate-spin" />}
+          {status === "authenticated" && available && "Add to Cart"}
+          {status === "authenticated" &&
+            !available &&
+            `Available for ${product?.availableFor
+              .map((i) => {
+                if (i === "BASIC") {
+                  return "Pet Owner";
+                } else if (i === "PETSHOP") {
+                  return "Pet Shop";
+                } else if (i === "VETERINARIAN") {
+                  return "Vet Clinic";
+                }
+              })
+              .join(" & ")}`}
+        </Button>
+      )}
     </div>
   );
 };

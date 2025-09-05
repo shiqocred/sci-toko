@@ -9,7 +9,7 @@ import { useRouter } from "next/navigation";
 export const AlertVerification = () => {
   const router = useRouter();
   const { mutate: sendOTP, isPending: isSendingOTP } = useSendOTP();
-  const { data } = useGetUser();
+  const { data, isPending } = useGetUser();
 
   const handleSendOTP = (e: MouseEvent) => {
     e.preventDefault();
@@ -23,7 +23,7 @@ export const AlertVerification = () => {
     );
   };
 
-  if (!data?.data.emailVerified)
+  if (!isPending && !data?.data.emailVerified) {
     return (
       <div className="w-full flex items-center gap-4 justify-between bg-yellow-100 rounded-lg p-3">
         <div className="flex items-center gap-2">
@@ -46,5 +46,7 @@ export const AlertVerification = () => {
         </Button>
       </div>
     );
+  }
+
   return null;
 };

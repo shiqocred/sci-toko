@@ -1,6 +1,6 @@
 import { errorRes } from "@/lib/auth";
 import { db, shippingHistories } from "@/lib/db";
-import { asc } from "drizzle-orm";
+import { desc } from "drizzle-orm";
 
 export const trackOrder = async (
   params: Promise<{ orderId: string }>,
@@ -23,7 +23,7 @@ export const trackOrder = async (
 
   const histories = await db.query.shippingHistories.findMany({
     where: (sh, { eq }) => eq(sh.shippingId, shipping.id),
-    orderBy: asc(shippingHistories.updatedAt),
+    orderBy: desc(shippingHistories.updatedAt),
   });
 
   return histories;

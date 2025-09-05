@@ -25,10 +25,7 @@ export const ProductCard = ({
   image,
 }: ProductCardProps) => {
   return (
-    <Link
-      href={`/products/${encodeURIComponent(slug)}`}
-      className="group h-full"
-    >
+    <Link href={`/products/${encodeURIComponent(slug)}`} className="h-full">
       <Card className="p-0 overflow-hidden gap-0 rounded-md md:rounded-lg lg:rounded-xl shadow border-none h-full">
         <CardHeader className="w-full aspect-4/3 relative p-0 overflow-hidden flex-none">
           <Image

@@ -7,6 +7,7 @@ import { ToastProvider } from "@/providers/toast-provider";
 import { NuqsAdapter } from "nuqs/adapters/next/app";
 import { ThemeProvider } from "@/providers/theme-provider";
 import { auth } from "@/lib/auth";
+import Script from "next/script";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -35,6 +36,19 @@ export default async function RootLayout({
   const session = await auth();
   return (
     <html lang="en" suppressHydrationWarning>
+      <head>
+        {/* Google Tag Manager */}
+        <Script id="gtm-script" strategy="afterInteractive">
+          {`
+            (function(w,d,s,l,i){w[l]=w[l]||[];w[l].push({'gtm.start':
+            new Date().getTime(),event:'gtm.js'});var f=d.getElementsByTagName(s)[0],
+            j=d.createElement(s),dl=l!='dataLayer'?'&l='+l:'';j.async=true;j.src=
+            'https://www.googletagmanager.com/gtm.js?id='+i+dl;f.parentNode.insertBefore(j,f);
+            })(window,document,'script','dataLayer','GTM-PJNKT9KV');
+          `}
+        </Script>
+        {/* End Google Tag Manager */}
+      </head>
       <body
         className={`${geistSans.variable} ${geistMono.variable} antialiased`}
       >
@@ -47,6 +61,15 @@ export default async function RootLayout({
                 enableSystem={false}
                 disableTransitionOnChange
               >
+                <noscript>
+                  <iframe
+                    src="https://www.googletagmanager.com/ns.html?id=GTM-PJNKT9KV"
+                    height="0"
+                    width="0"
+                    style={{ display: "none", visibility: "hidden" }}
+                    title="GTM"
+                  />
+                </noscript>
                 <ToastProvider />
                 {children}
               </ThemeProvider>
