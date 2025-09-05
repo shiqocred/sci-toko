@@ -59,7 +59,7 @@ export const ResetPassword = async ({ name, code }: ResetPasswordProps) => {
               <Hr className="my-3" />
               <Section>
                 <Text className="text-sm mt-0 mb-1 text-center">
-                  This email was sent by SCI.
+                  This email was sent by Sehat Cerah Indonesia.
                 </Text>
               </Section>
             </Section>

@@ -59,10 +59,7 @@ export const VerifyEmail = async ({ name, code }: VerifyEmailProps) => {
               <Hr className="my-3" />
               <Section>
                 <Text className="text-sm mt-0 mb-1 text-center">
-                  This email was sent by SCI.
-                </Text>
-                <Text className="text-gray-500 text-xs my-0 text-center">
-                  470 Noor Ave STE B #1148, South San Francisco, CA 94080
+                  This email was sent by Sehat Cerah Indonesia.
                 </Text>
               </Section>
             </Section>
