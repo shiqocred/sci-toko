@@ -250,7 +250,7 @@ export const DialogSelectAddress = ({
                             circleClassName="fill-sci text-sci"
                           />
                           <p className="font-semibold text-sm lg:text-base line-clamp-1">
-                            {item.name} Lorem ipsum dolor sit amet.
+                            {item.name}
                           </p>
                           |
                           <p className="text-xs whitespace-nowrap">

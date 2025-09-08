@@ -54,6 +54,7 @@ export async function POST(req: NextRequest) {
             .update(orders)
             .set({
               status,
+              willExpired: null,
               updatedAt: sql`NOW()`,
               expiredAt: sql`NOW()`,
             })
@@ -89,6 +90,7 @@ export async function POST(req: NextRequest) {
         tx
           .update(orders)
           .set({
+            willExpired: null,
             status: "PACKING",
             updatedAt: sql`NOW()`,
             paidAt: sql`NOW()`,

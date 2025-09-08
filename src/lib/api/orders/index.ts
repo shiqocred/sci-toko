@@ -64,12 +64,8 @@ const getOrCreateOrder = (
       total_price: row.total_price,
       isReviewed: row.isReviewed,
       expired:
-        row.status === "WAITING_PAYMENT" && row.created
-          ? format(
-              add(new Date(row.created), { seconds: 10800 }),
-              "dd-LL-yyyy HH:mm",
-              { locale: id }
-            )
+        row.status === "WAITING_PAYMENT" && row.expiredSoon
+          ? format(row.expiredSoon, "dd-LL-yyyy HH:mm", { locale: id })
           : null,
       items: [],
     };
@@ -129,7 +125,7 @@ export const getOrder = async (userId: string) => {
       variant_isDefault: productVariants.isDefault,
       status: orders.status,
       total_price: orders.totalPrice,
-      created: orders.createdAt,
+      expiredSoon: orders.willExpired,
       isReviewed: sql<boolean>`${isNotNull(testimonies.id)}`.as("isReviewed"),
     })
     .from(orders)
@@ -256,7 +252,7 @@ export const createOrder = async (req: NextRequest, userId: string) => {
       externalId: orderId,
       successRedirectUrl: successXendit,
       failureRedirectUrl: failureXendit,
-      invoiceDuration: 10800,
+      invoiceDuration: Number(storeDetail.expired) * 60 * 60,
     },
   });
 
@@ -280,6 +276,7 @@ export const createOrder = async (req: NextRequest, userId: string) => {
       totalPrice: totalPrice.toString(),
       discountId: orderDraftExist.discountId,
       totalDiscount: orderDraftExist.totalDiscount,
+      willExpired: add(new Date(), { hours: Number(storeDetail.expired) }),
       note,
     });
 
