@@ -13,7 +13,6 @@ export const useSubmitReview = () => {
     endpoint: "/orders/:id/review",
     method: "post",
     onSuccess: async ({ data }) => {
-      console.log(data.data.orderId);
       await invalidateQuery(queryClient, [["review", data.data.orderId]]);
     },
     onError: {

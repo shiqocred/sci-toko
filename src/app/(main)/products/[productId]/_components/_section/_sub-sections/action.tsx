@@ -125,8 +125,6 @@ export const CartAction = ({
     }));
   };
 
-  console.log(status);
-
   useEffect(() => {
     if (isNaN(parseFloat(input.quantity)) || parseFloat(input.quantity) < 1) {
       setInput((prev) => ({ ...prev, quantity: "1" }));

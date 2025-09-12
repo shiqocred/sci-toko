@@ -70,9 +70,9 @@ export const ProductInfo = ({ product, status }: ProductInfoProps) => {
           <div className="flex items-center gap-3">
             <StarIcon className="size-4 fill-yellow-400 text-transparent" />
             <div className="flex items-center text-xs gap-2 text-gray-500">
-              <span>4.8</span>
+              <span>{(product.avg_rating ?? 0).toLocaleString()}</span>
               <span className="h-4 w-px bg-gray-500" />
-              <span>100 Sold</span>
+              <span>{(product.total_orders ?? 0).toLocaleString()} Sold</span>
             </div>
           </div>
           <div className="flex items-center flex-wrap gap-2">

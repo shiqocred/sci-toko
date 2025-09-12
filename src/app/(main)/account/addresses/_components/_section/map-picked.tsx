@@ -333,8 +333,6 @@ const Maps = ({
           formattedAddress,
         } = sanitizeAddress(results);
 
-        console.log(results, formattedAddress);
-
         setAddress(formattedAddress ?? "");
 
         setInput((prev: any) => ({

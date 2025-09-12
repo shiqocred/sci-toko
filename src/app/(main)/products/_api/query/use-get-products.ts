@@ -8,6 +8,8 @@ type Response = {
       slug: string;
       description: string;
       image: string | null;
+      totalSold: number;
+      avgRating: number;
     }[];
     pagination: {
       total: number;

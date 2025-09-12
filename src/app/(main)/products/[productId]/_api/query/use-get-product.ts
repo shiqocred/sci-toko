@@ -23,6 +23,8 @@ export type ProductDetailProps = {
   storage_instruction: string;
   isAvailable: boolean;
   availableFor: ("BASIC" | "PETSHOP" | "VETERINARIAN")[];
+  total_orders: number;
+  avg_rating: number;
   supplier: {
     name: string;
     slug: string;
