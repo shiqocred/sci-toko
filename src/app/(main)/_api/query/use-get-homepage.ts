@@ -5,6 +5,8 @@ export type ProductProps = {
   title: string;
   slug: string;
   description: string;
+  totalSold: number;
+  avgRating: number;
 };
 
 export type SupplierCategoryPromoProps = {

@@ -10,6 +10,9 @@ import {
   productToPets,
   productVariants,
   suppliers,
+  orderItems,
+  testimoniProduct,
+  testimonies,
 } from "@/lib/db";
 import {
   and,
@@ -68,7 +71,7 @@ export const productDetail = async (
   if (!productExist) throw errorRes("Product not found", 404);
 
   // Jalankan semua query paralel
-  const [compositions, imagesRaw, petsRaw, variantsRaw, availableRaw] =
+  const [compositions, imagesRaw, petsRaw, variantsRaw, availableRaw, stats] =
     await Promise.all([
       db.query.productCompositions.findMany({
         columns: { name: true, value: true },
@@ -98,6 +101,25 @@ export const productDetail = async (
       db.query.productAvailableRoles.findMany({
         where: (pa, { eq }) => eq(pa.productId, productExist.id),
       }),
+      db
+        .select({
+          totalOrders: sql<number>`COALESCE(ROUND(SUM(${orderItems.quantity})::numeric, 0), 0)`,
+          avgRating: sql<number>`COALESCE(ROUND(AVG(${testimonies.rating})::numeric, 0), 0)`,
+        })
+        .from(productVariants)
+        .leftJoin(orderItems, eq(orderItems.variantId, productVariants.id))
+        .leftJoin(
+          testimoniProduct,
+          eq(testimoniProduct.productId, productVariants.productId)
+        )
+        .leftJoin(
+          testimonies,
+          and(
+            eq(testimonies.id, testimoniProduct.testimoniId),
+            eq(testimonies.isActive, true)
+          )
+        )
+        .where(eq(productVariants.productId, productExist.id)),
     ]);
 
   const variantIds = variantsRaw.map((v) => v.id);
@@ -211,5 +233,7 @@ export const productDetail = async (
     data_variant,
     variants: variants.length ? variants : null,
     default_variant: defaultVariant,
+    total_orders: stats[0]?.totalOrders ?? 0,
+    avg_rating: stats[0]?.avgRating ?? 0,
   };
 };

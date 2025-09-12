@@ -2,12 +2,15 @@ import { r2Public } from "@/config";
 import {
   categories,
   db,
+  orderItems,
   productImages,
   products,
   productToPets,
   productVariants,
   promoItems,
   suppliers,
+  testimonies,
+  testimoniProduct,
 } from "@/lib/db";
 import { and, desc, eq, inArray, isNull, sql } from "drizzle-orm";
 import { NextRequest } from "next/server";
@@ -118,12 +121,26 @@ export const productsList = async (req: NextRequest) => {
          WHERE ${productImages.productId} = ${products.id} 
          ORDER BY ${productImages.position} ASC 
          LIMIT 1)`.as("image"),
+      totalSold:
+        sql<number>`COALESCE(ROUND(SUM(${orderItems.quantity})::numeric, 0), 0)`.as(
+          "total_sold"
+        ),
+      avgRating:
+        sql<number>`COALESCE(ROUND(AVG(${testimonies.rating})::numeric, 0), 0)`.as(
+          "avg_rating"
+        ),
     })
     .from(products)
     .leftJoin(categories, eq(products.categoryId, categories.id))
     .leftJoin(suppliers, eq(products.supplierId, suppliers.id))
     .leftJoin(productToPets, eq(products.id, productToPets.productId))
     .leftJoin(promoItems, eq(products.id, promoItems.productId))
+    // 🔹 join ke product_variants → order_items
+    .leftJoin(productVariants, eq(productVariants.productId, products.id))
+    .leftJoin(orderItems, eq(orderItems.variantId, productVariants.id))
+    // 🔹 join ke testimonies lewat testimoniProduct
+    .leftJoin(testimoniProduct, eq(testimoniProduct.productId, products.id))
+    .leftJoin(testimonies, eq(testimonies.id, testimoniProduct.testimoniId))
     .where(finalWhere)
     .groupBy(products.id)
     .orderBy(desc(products.createdAt))

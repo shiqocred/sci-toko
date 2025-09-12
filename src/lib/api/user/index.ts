@@ -1,7 +1,7 @@
 import { r2Public } from "@/config";
 import { errorRes } from "@/lib/auth";
 import { convertToWebP } from "@/lib/convert-image";
-import { db, users } from "@/lib/db";
+import { db, userRoleDetails, users } from "@/lib/db";
 import { deleteR2, uploadToR2 } from "@/lib/providers";
 import { eq, sql } from "drizzle-orm";
 import { NextRequest } from "next/server";
@@ -12,6 +12,33 @@ const userSchema = z.object({
   email: z.email("Invalid email address").min(1, "Email is required"),
   phone: z.string().min(1, { message: "Phone number is required" }),
 });
+
+export const getUser = async (userId: string) => {
+  const [userRes] = await db
+    .select({
+      email: users.email,
+      emailVerified: users.emailVerified,
+      image: users.image,
+      name: users.name,
+      phoneNumber: users.phoneNumber,
+      role: users.role,
+      newRole: userRoleDetails.newRole,
+      statusRole: userRoleDetails.status,
+    })
+    .from(users)
+    .innerJoin(userRoleDetails, eq(userRoleDetails.userId, userId))
+    .where(eq(users.id, userId))
+    .limit(1);
+
+  if (!userRes) throw errorRes("User not found", 404);
+
+  const response = {
+    ...userRes,
+    image: userRes.image ? `${r2Public}/${userRes.image}` : null,
+  };
+
+  return response;
+};
 
 export const updateUser = async (req: NextRequest, userId: string) => {
   const formData = await req.formData();

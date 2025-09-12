@@ -256,6 +256,8 @@ export const createOrder = async (req: NextRequest, userId: string) => {
     },
   });
 
+  if (!invoice) throw errorRes("error", 500);
+
   await db.transaction(async (tx) => {
     // Lock variant yang dicekout
     await Promise.all(

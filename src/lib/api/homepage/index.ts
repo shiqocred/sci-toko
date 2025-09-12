@@ -9,6 +9,10 @@ import {
   pets,
   promos,
   suppliers,
+  orders,
+  orderItems,
+  testimonies,
+  testimoniProduct,
 } from "@/lib/db";
 import { and, eq, exists, inArray, isNull, sql } from "drizzle-orm";
 
@@ -33,26 +37,41 @@ export const hompage = async () => {
         slug: products.slug,
         description: products.description,
         image: sql`
-        (SELECT ${productImages.url} 
-         FROM ${productImages} 
-         WHERE ${productImages.productId} = ${products.id} 
-         ORDER BY ${productImages.position} ASC 
-         LIMIT 1)`.as("image"),
+          (SELECT ${productImages.url} 
+          FROM ${productImages} 
+          WHERE ${productImages.productId} = ${products.id} 
+          ORDER BY ${productImages.position} ASC 
+          LIMIT 1)`.as("image"),
+        totalSold:
+          sql<number>`COALESCE(ROUND(SUM(${orderItems.quantity})::numeric, 0), 0)`.as(
+            "total_sold"
+          ),
+        avgRating:
+          sql<number>`COALESCE(ROUND(AVG(${testimonies.rating})::numeric, 0), 0)`.as(
+            "avg_rating"
+          ),
       })
       .from(products)
+      // 🔹 join ke product_variants → order_items
+      .leftJoin(productVariants, eq(productVariants.productId, products.id))
+      .leftJoin(orderItems, eq(orderItems.variantId, productVariants.id))
+      // 🔹 join ke testimonies lewat testimoniProduct
+      .leftJoin(testimoniProduct, eq(testimoniProduct.productId, products.id))
+      .leftJoin(testimonies, eq(testimonies.id, testimoniProduct.testimoniId))
       .where(
         and(
           exists(
             sql`(
-              SELECT 1 FROM ${productVariants}
-              WHERE ${productVariants.productId} = ${products.id}
-                AND ${productVariants.stock} > 0
-            )`
+        SELECT 1 FROM ${productVariants}
+        WHERE ${productVariants.productId} = ${products.id}
+          AND ${productVariants.stock} > 0
+      )`
           ),
           eq(products.status, true),
           isNull(products.deletedAt)
         )
       )
+      .groupBy(products.id)
       .orderBy(sql`RANDOM()`)
       .limit(4),
 

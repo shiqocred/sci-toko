@@ -16,6 +16,8 @@ interface ProductCardProps {
   slug: string;
   description: string;
   image: string | null;
+  totalSold: number;
+  avgRating: number;
 }
 
 export const ProductCard = ({
@@ -23,6 +25,8 @@ export const ProductCard = ({
   slug,
   description,
   image,
+  totalSold,
+  avgRating,
 }: ProductCardProps) => {
   return (
     <Link href={`/products/${encodeURIComponent(slug)}`} className="h-full">
@@ -47,12 +51,12 @@ export const ProductCard = ({
           <div className="flex items-center gap-3 mt-auto">
             <StarIcon className="size-3 text-[#FFC403] fill-[#FFC403]" />
             <div className="text-xs flex items-center text-[#746D76]">
-              <p>{100}</p>
+              <p>{(avgRating ?? 0).toLocaleString()}</p>
               <Separator
                 className="mx-1.5 !h-3.5 flex-none bg-[#746D76]"
                 orientation="vertical"
               />
-              <p>{(100).toLocaleString()} Sold</p>
+              <p>{(totalSold ?? 0).toLocaleString()} Sold</p>
             </div>
           </div>
         </CardContent>
