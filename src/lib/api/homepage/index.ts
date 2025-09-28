@@ -12,67 +12,58 @@ import {
   orderItems,
   testimonies,
   testimoniProduct,
+  productTrendings,
 } from "@/lib/db";
-import { and, eq, exists, inArray, isNull, sql } from "drizzle-orm";
+import { and, asc, eq, exists, inArray, isNull, not, sql } from "drizzle-orm";
 
 // 🔹 helper format image
 const formatImage = (image: string | null) =>
   image ? `${r2Public}/${image}` : null;
 
-export const hompage = async () => {
-  const now = new Date();
-
-  const [
-    trendingProductsRaw,
-    suppliersHomeRaw,
-    categoriesHomeRaw,
-    bannersHomeRaw,
-    promosHomeRaw,
-  ] = await Promise.all([
-    // 🔹 Trending Products
-    db
-      .select({
-        title: products.name,
-        slug: products.slug,
-        description: products.description,
-        image: sql`
+const buildProductSelect = () => ({
+  title: products.name,
+  slug: products.slug,
+  description: products.description,
+  image: sql`
           (SELECT ${productImages.url} 
           FROM ${productImages} 
           WHERE ${productImages.productId} = ${products.id} 
           ORDER BY ${productImages.position} ASC 
           LIMIT 1)`.as("image"),
-        totalSold:
-          sql<number>`COALESCE(ROUND(SUM(${orderItems.quantity})::numeric, 0), 0)`.as(
-            "total_sold"
-          ),
-        avgRating:
-          sql<number>`COALESCE(ROUND(AVG(${testimonies.rating})::numeric, 0), 0)`.as(
-            "avg_rating"
-          ),
-      })
-      .from(products)
-      // 🔹 join ke product_variants → order_items
+  totalSold:
+    sql<number>`COALESCE(ROUND(SUM(${orderItems.quantity})::numeric, 0), 0)`.as(
+      "total_sold"
+    ),
+  avgRating:
+    sql<number>`COALESCE(ROUND(AVG(${testimonies.rating})::numeric, 0), 0)`.as(
+      "avg_rating"
+    ),
+});
+
+const mapWithImage = (arr: Array<{ image: string | null }>) =>
+  arr.map((x) => ({ ...x, image: formatImage(x.image) }));
+
+export const hompage = async () => {
+  const now = new Date();
+
+  const [
+    terndingProductRes,
+    suppliersHomeRaw,
+    categoriesHomeRaw,
+    bannersHomeRaw,
+    promosHomeRaw,
+  ] = await Promise.all([
+    db
+      .select(buildProductSelect())
+      .from(productTrendings)
+      .leftJoin(products, eq(productTrendings.productId, products.id))
       .leftJoin(productVariants, eq(productVariants.productId, products.id))
       .leftJoin(orderItems, eq(orderItems.variantId, productVariants.id))
       // 🔹 join ke testimonies lewat testimoniProduct
       .leftJoin(testimoniProduct, eq(testimoniProduct.productId, products.id))
       .leftJoin(testimonies, eq(testimonies.id, testimoniProduct.testimoniId))
-      .where(
-        and(
-          exists(
-            sql`(
-        SELECT 1 FROM ${productVariants}
-        WHERE ${productVariants.productId} = ${products.id}
-          AND ${productVariants.stock} > 0
-      )`
-          ),
-          eq(products.status, true),
-          isNull(products.deletedAt)
-        )
-      )
-      .groupBy(products.id)
-      .orderBy(sql`RANDOM()`)
-      .limit(4),
+      .groupBy(products.id, productTrendings.position)
+      .orderBy(asc(productTrendings.position)),
 
     // 🔹 Suppliers
     db.query.suppliers.findMany({
@@ -158,20 +149,49 @@ export const hompage = async () => {
       }),
   }));
 
+  const productTrendingsSlug = terndingProductRes.map((i) => i.slug as string);
+
+  const trendingProductsExtend = await db
+    .select(buildProductSelect())
+    .from(products)
+    // 🔹 join ke product_variants → order_items
+    .leftJoin(productVariants, eq(productVariants.productId, products.id))
+    .leftJoin(orderItems, eq(orderItems.variantId, productVariants.id))
+    // 🔹 join ke testimonies lewat testimoniProduct
+    .leftJoin(testimoniProduct, eq(testimoniProduct.productId, products.id))
+    .leftJoin(testimonies, eq(testimonies.id, testimoniProduct.testimoniId))
+    .where(
+      and(
+        exists(
+          sql`(
+    SELECT 1 FROM ${productVariants}
+    WHERE ${productVariants.productId} = ${products.id}
+      AND ${productVariants.stock} > 0
+  )`
+        ),
+        eq(products.status, true),
+        isNull(products.deletedAt),
+        not(inArray(products.slug, productTrendingsSlug))
+      )
+    )
+    .groupBy(products.id)
+    .orderBy(sql`RANDOM()`)
+    .limit(4 - terndingProductRes.length);
+
   return {
-    products: trendingProductsRaw.map((p) => ({
-      ...p,
-      image: formatImage(p.image as string),
-    })),
-    suppliers: suppliersHomeRaw.map((s) => ({
-      ...s,
-      image: formatImage(s.image),
-    })),
-    categories: categoriesHomeRaw.map((c) => ({
-      ...c,
-      image: formatImage(c.image),
-    })),
+    products: [
+      ...terndingProductRes.map((p) => ({
+        ...p,
+        image: formatImage(p.image as string),
+      })),
+      ...trendingProductsExtend.map((p) => ({
+        ...p,
+        image: formatImage(p.image as string),
+      })),
+    ],
+    suppliers: mapWithImage(suppliersHomeRaw),
+    categories: mapWithImage(categoriesHomeRaw),
     banners: bannersHomeFormat,
-    promos: promosHomeRaw.map((p) => ({ ...p, image: formatImage(p.image) })),
+    promos: mapWithImage(promosHomeRaw),
   };
 };
