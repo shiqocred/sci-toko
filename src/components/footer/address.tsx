@@ -1,6 +1,7 @@
 import React from "react";
 import Link from "next/link";
 import { baseUrl } from "@/config";
+import pkg from "../../../package.json";
 
 export const Address = ({
   data,
@@ -26,6 +27,7 @@ export const Address = ({
         <Link href={"/"} className="underline hover:text-black">
           {baseUrl.replace("https://", "")}
         </Link>
+        <span className="ml-1">v{pkg.version}</span>
       </p>
     </div>
   );

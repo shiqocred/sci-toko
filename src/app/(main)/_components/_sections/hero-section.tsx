@@ -80,7 +80,8 @@ export const HeroSection = ({ data }: { data: BannerProps[] }) => {
                     fill
                     sizes={sizesImage}
                     className="object-cover"
-                    priority
+                    quality={100}
+                    priority={true}
                   />
                 </div>
               </Link>

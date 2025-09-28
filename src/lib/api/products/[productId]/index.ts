@@ -16,7 +16,7 @@ import {
 } from "@/lib/db";
 import {
   and,
-  desc,
+  asc,
   eq,
   exists,
   InferSelectModel,
@@ -80,7 +80,7 @@ export const productDetail = async (
       db.query.productImages.findMany({
         columns: { url: true },
         where: (c, { eq }) => eq(c.productId, productExist.id),
-        orderBy: desc(productImages.position),
+        orderBy: asc(productImages.position),
       }),
       db
         .select({ name: pets.name, slug: pets.slug })

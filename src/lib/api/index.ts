@@ -14,6 +14,7 @@ export * from "./homepage/other";
 export * from "./products";
 export * from "./products/filters";
 export * from "./products/[productId]";
+export * from "./products/[productId]/reviews";
 
 export * from "./carts";
 export * from "./carts/[variantsId]";

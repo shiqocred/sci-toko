@@ -14,7 +14,6 @@ import {
 } from "@/components/ui/carousel";
 import { Heading } from "@/components/heading";
 import { SupplierCategoryPromoProps } from "../../_api";
-import { Button } from "@/components/ui/button";
 
 export const PromoSection = ({
   data,
@@ -45,7 +44,7 @@ export const PromoSection = ({
       >
         <div className="w-full max-w-[1240px] mx-auto min-[1440px]:px-8 flex items-center justify-between gap-4">
           <Heading label="Best Deal" />
-          <div className="items-center gap-2 justify-center hidden md:flex">
+          <div className="items-center gap-2 justify-center flex">
             <CarouselPrevious className="relative left-auto top-auto -translate-y-0" />
             <CarouselNext className="relative right-auto top-auto -translate-y-0" />
           </div>

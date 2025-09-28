@@ -9,7 +9,6 @@ import {
   pets,
   promos,
   suppliers,
-  orders,
   orderItems,
   testimonies,
   testimoniProduct,
@@ -79,14 +78,12 @@ export const hompage = async () => {
     db.query.suppliers.findMany({
       columns: { name: true, slug: true, image: true },
       orderBy: sql`RANDOM()`,
-      limit: 3,
     }),
 
     // 🔹 Categories
     db.query.categories.findMany({
       columns: { name: true, slug: true, image: true },
       orderBy: sql`RANDOM()`,
-      limit: 3,
     }),
 
     // 🔹 Banners

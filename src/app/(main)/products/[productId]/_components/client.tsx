@@ -1,7 +1,11 @@
 "use client";
 
 import React, { useEffect, useMemo, useState } from "react";
-import { ProductDetailProps, useGetProduct } from "../_api";
+import {
+  ProductDetailProps,
+  useGetProduct,
+  useGetProductReviews,
+} from "../_api";
 import { useParams } from "next/navigation";
 import { DetailProduct, ImagesGallery, ProductInfo } from "./_section";
 import { DialogUnavailable, DrawerCart } from "./_dialogs";
@@ -9,6 +13,8 @@ import { Button } from "@/components/ui/button";
 import { useSession } from "next-auth/react";
 import { Loader, ShoppingBag } from "lucide-react";
 import Link from "next/link";
+import { Marquee } from "@/components/ui/marquee";
+import { ReviewCard } from "@/components/review-card";
 
 const Client = () => {
   const { status } = useSession();
@@ -22,10 +28,15 @@ const Client = () => {
   const { data, isSuccess, isPending, error, isError } = useGetProduct({
     productId: productId as string,
   });
+  const { data: reviews, isPending: isPendingReview } = useGetProductReviews({
+    productId: productId as string,
+  });
 
   const product: ProductDetailProps | undefined = useMemo(() => {
     return data?.data;
   }, [data]);
+
+  const reviewsList = useMemo(() => reviews?.data ?? [], [reviews]);
 
   useEffect(() => {
     if (data && isSuccess) {
@@ -44,7 +55,7 @@ const Client = () => {
     }
   }, [data, isSuccess]);
 
-  if (isPending) {
+  if (isPending || isPendingReview) {
     return (
       <div className="flex flex-col gap-1 w-full h-[50vh] relative items-center justify-center">
         <Loader className="animate-spin size-5" />
@@ -107,6 +118,33 @@ const Client = () => {
           </div>
         )}
 
+        <div className="w-full flex flex-col gap-2">
+          <h4 className="text-2xl font-semibold">Product Reviews</h4>
+          {reviewsList.length > 0 ? (
+            <div className="relative flex w-full flex-col items-center justify-center overflow-hidden">
+              <div className="w-10 h-full bg-gradient-to-r from-sky-50 to-transparent absolute left-0 top-0 z-10" />
+              <Marquee pauseOnHover className="[--duration:20s]">
+                {reviewsList.map((review) => (
+                  <ReviewCard
+                    key={`${review.title}-${review.timestamp}`}
+                    isMarque
+                    className="relative w-52 md:w-56 lg:w-64 xl:w-80 bg-white rounded-lg shadow p-5 gap-2"
+                    data={review}
+                  />
+                ))}
+              </Marquee>
+              <div className="w-10 h-full bg-gradient-to-l from-sky-50 to-transparent absolute right-0 top-0 z-10" />
+            </div>
+          ) : (
+            <div className="w-full flex items-center relative">
+              <div className="w-10 h-full bg-gradient-to-r from-sky-50 to-transparent absolute left-0 top-0 z-10" />
+              <div className="h-52 flex items-center justify-center bg-white rounded-lg border-y w-full">
+                <p className="font-semibold">No Reviews Yet</p>
+              </div>
+              <div className="w-10 h-full bg-gradient-to-l from-sky-50 to-transparent absolute right-0 top-0 z-10" />
+            </div>
+          )}
+        </div>
         {/* <div className="flex flex-col gap-4">
           <Heading label="Similar Products" isExpand />
           <div className="grid grid-cols-5 gap-6 w-full">

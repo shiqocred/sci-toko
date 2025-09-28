@@ -8,6 +8,8 @@ import {
   Carousel,
   CarouselContent,
   CarouselItem,
+  CarouselNext,
+  CarouselPrevious,
 } from "@/components/ui/carousel";
 
 export const ByCategorySection = ({
@@ -17,11 +19,17 @@ export const ByCategorySection = ({
 }) => {
   return (
     <div className="w-full max-w-[1240px] mx-auto px-4 lg:px-8 flex flex-col gap-4 md:gap-6 lg:gap-8 py-4 md:py-5 lg:py-6">
-      <Heading label="Shop By Category" />
       <Carousel
         opts={{ align: "start", loop: false }}
-        className="w-full max-w-[1240px] mx-auto "
+        className="w-full max-w-[1440px] mx-auto flex flex-col gap-4 md:gap-6 lg:gap-8"
       >
+        <div className="w-full max-w-[1240px] mx-auto flex items-center justify-between gap-4">
+          <Heading label="Shop By Category" />
+          <div className="items-center gap-2 justify-center flex">
+            <CarouselPrevious className="relative left-auto top-auto -translate-y-0" />
+            <CarouselNext className="relative right-auto top-auto -translate-y-0" />
+          </div>
+        </div>
         <CarouselContent className="lg:-ml-6">
           {data.map((item) => (
             <CarouselItem

@@ -6,7 +6,7 @@ export const convertToWebP = async (file: File) => {
     .rotate() // ini yang memperbaiki orientasi sesuai EXIF
     .resize({ width: 1280, withoutEnlargement: true })
     .webp({
-      quality: 40,
+      quality: 70,
       effort: 6,
       smartSubsample: true,
     })
