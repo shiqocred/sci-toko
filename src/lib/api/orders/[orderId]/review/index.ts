@@ -45,7 +45,7 @@ export const getReview = async (userId: string, orderId: string) => {
     description: testimoniesExist.message,
     images: images.map((i) => `${r2Public}/${i.url}`),
     timestamp: testimoniesExist.createdAt
-      ? format(testimoniesExist.createdAt, "PPP HH:mm", { locale: id })
+      ? testimoniesExist.createdAt.toISOString()
       : null,
   };
 

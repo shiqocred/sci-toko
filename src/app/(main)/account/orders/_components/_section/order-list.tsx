@@ -12,6 +12,8 @@ import {
 import Link from "next/link";
 import { useConfirm } from "@/hooks/use-confirm";
 import { Badge } from "@/components/ui/badge";
+import { format } from "date-fns";
+import { id } from "date-fns/locale";
 
 const parseQty = (qty?: string) => Number.parseFloat(qty ?? "0") || 0;
 
@@ -202,7 +204,12 @@ export const OrderList = ({
             <div className="flex items-center gap-4 justify-between w-full">
               {order.expired && (
                 <p className="text-xs text-gray-500">
-                  Pay before <span className="underline">{order.expired}</span>
+                  Pay before{" "}
+                  <span className="underline">
+                    {format(new Date(order.expired), "PPP HH:mm", {
+                      locale: id,
+                    })}
+                  </span>
                 </p>
               )}
               <div className="flex items-center gap-2 md:gap-3 ml-auto *:px-2.5 *:py-1 *:h-8 *:text-xs *:md:px-4 *:md:py-2 *:md:h-9 *:md:text-sm">

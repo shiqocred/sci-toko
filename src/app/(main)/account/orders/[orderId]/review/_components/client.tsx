@@ -21,6 +21,8 @@ import { Input } from "@/components/ui/input";
 import Image from "next/image";
 import { useGetReviewTrack, useSubmitReview } from "../_api";
 import { sizesImage } from "@/lib/utils";
+import { format } from "date-fns";
+import { id } from "date-fns/locale";
 
 const Client = () => {
   const { orderId } = useParams();
@@ -74,7 +76,13 @@ const Client = () => {
             <div className="flex flex-col gap-3 w-full">
               <div className="flex flex-col">
                 <h5 className="text-xl font-semibold">{reviewData.title}</h5>
-                <p className="text-sm text-gray-400">{reviewData.timestamp}</p>
+                <p className="text-sm text-gray-400">
+                  {reviewData.timestamp
+                    ? format(new Date(reviewData.timestamp), "PPP HH:mm", {
+                        locale: id,
+                      })
+                    : "-"}
+                </p>
               </div>
               <Rating defaultValue={input.rating} readOnly>
                 {Array.from({ length: 5 }).map((_, index) => (

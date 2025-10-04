@@ -65,7 +65,7 @@ const getOrCreateOrder = (
       isReviewed: row.isReviewed,
       expired:
         row.status === "WAITING_PAYMENT" && row.expiredSoon
-          ? format(row.expiredSoon, "dd-LL-yyyy HH:mm", { locale: id })
+          ? row.expiredSoon.toISOString()
           : null,
       items: [],
     };
