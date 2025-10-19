@@ -11,8 +11,6 @@ import {
 } from "@/lib/db";
 import { uploadToR2 } from "@/lib/providers";
 import { createId } from "@paralleldrive/cuid2";
-import { format } from "date-fns";
-import { id } from "date-fns/locale";
 import { eq } from "drizzle-orm";
 import { NextRequest } from "next/server";
 import slugify from "slugify";

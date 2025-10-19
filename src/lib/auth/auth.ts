@@ -13,6 +13,7 @@ import {
 import { verify } from "argon2";
 import { eq } from "drizzle-orm";
 import { r2Public } from "@/config";
+import type { Adapter } from "next-auth/adapters";
 
 class CustomError extends CredentialsSignin {
   code = "credential_not_match";
@@ -67,7 +68,7 @@ export const { handlers, auth, unstable_update } = NextAuth({
     accountsTable: accounts,
     sessionsTable: sessions,
     verificationTokensTable: verificationTokens,
-  }),
+  }) as Adapter,
   providers: [
     Google,
     Credentials({
