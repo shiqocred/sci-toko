@@ -8,12 +8,11 @@ import {
   CommandList,
 } from "@/components/ui/command";
 import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
 import { apiGMaps } from "@/config";
 import { useDebounce } from "@/hooks/use-debounce";
 import { cn } from "@/lib/utils";
 import { GoogleMap, useLoadScript } from "@react-google-maps/api";
-import { Locate, XCircle } from "lucide-react";
+import { Locate, Search, X, XCircle } from "lucide-react";
 import {
   ChangeEvent,
   Dispatch,
@@ -59,6 +58,7 @@ const Maps = ({
   setInput: Dispatch<SetStateAction<any>>;
   errors: Record<string, string>;
 }) => {
+  const [isSearch, setIsSearch] = useState(false);
   const [address, setAddress] = useState("");
   // center marker by lat lng
   const center = useMemo(
@@ -133,6 +133,7 @@ const Maps = ({
     setFetchData(false);
     setCenterPosition({ lat, lng });
     setZoomLevel(18);
+    setIsSearch(false);
   };
 
   //   handle drag end
@@ -366,50 +367,63 @@ const Maps = ({
           isSomeError && "border-red-500"
         )}
       >
-        <Command className="h-fit absolute top-3 z-10 w-full md:w-[calc(100%-24px)]">
-          <div className="flex flex-col gap-1.5">
-            <Label>Search Address</Label>
-            <div className="w-full relative flex items-center">
-              <Input
-                className="pr-10 bg-gray-100 border-gray-300 focus-visible:border-gray-500 focus-visible:ring-transparent text-sm focus-visible:text-base lg:text-base"
-                value={address}
-                onChange={(e) => {
-                  setAddress(e.target.value);
-                  setFetchData(true);
-                }}
-                disabled={!ready}
-                placeholder="Type search address"
-              />
-              {address?.length > 0 && (
-                <Button
-                  type="button"
-                  onClick={handleClear}
-                  className="px-0 w-8 h-7 bg-transparent justify-start hover:bg-transparent text-black absolute right-1 shadow-none hover:scale-110"
-                >
-                  <XCircle className="size-4" />
-                </Button>
-              )}
-            </div>
-          </div>
-          {status === "OK" && (
-            <CommandList className="mt-2 rounded-md border border-gray-500">
-              <CommandGroup>
-                {data.map(({ place_id, description }) => (
-                  <CommandItem
-                    onSelect={() => handleSelect(description)}
-                    key={place_id}
-                  >
-                    {description}
-                  </CommandItem>
-                ))}
-              </CommandGroup>
-            </CommandList>
-          )}
-        </Command>
-
-        <div className="w-full h-full mt-20 md:mt-[70px]">
+        <div className="w-full h-full">
           <div className="w-full aspect-square md:aspect-[5/3] relative flex items-center justify-center border-gray-300">
             <div className="w-full h-full relative overflow-hidden rounded-md md:rounded shadow">
+              <div className="flex gap-1 absolute w-[calc(100%-8px)] md:w-[calc(100%-24px)] top-1 right-1 md:top-3 md:right-3 ml-auto z-10">
+                {isSearch && (
+                  <Command className="h-fit z-10 w-full bg-transparent">
+                    <div className="flex flex-col gap-1.5 w-full">
+                      <div className="w-full relative flex items-center">
+                        <Input
+                          className="pr-10 bg-white border-gray-300 focus-visible:border-gray-500 shadow focus-visible:ring-transparent text-sm focus-visible:text-base lg:text-base"
+                          value={address}
+                          onChange={(e) => {
+                            setAddress(e.target.value);
+                            setFetchData(true);
+                          }}
+                          disabled={!ready}
+                          placeholder="Type search address"
+                        />
+                        {address?.length > 0 && (
+                          <Button
+                            type="button"
+                            onClick={handleClear}
+                            className="px-0 w-8 h-7 bg-transparent justify-start hover:bg-transparent text-black absolute right-1 shadow-none hover:scale-110"
+                          >
+                            <XCircle className="size-4" />
+                          </Button>
+                        )}
+                      </div>
+                    </div>
+                    {status === "OK" && (
+                      <CommandList className="mt-2 rounded-md border border-gray-500 bg-white">
+                        <CommandGroup>
+                          {data.map(({ place_id, description }) => (
+                            <CommandItem
+                              onSelect={() => handleSelect(description)}
+                              key={place_id}
+                            >
+                              {description}
+                            </CommandItem>
+                          ))}
+                        </CommandGroup>
+                      </CommandList>
+                    )}
+                  </Command>
+                )}
+                <Button
+                  size={"icon"}
+                  variant={"outline"}
+                  className="shadow border-gray-300 hover:border-gray-500 ml-auto"
+                  onClick={(e) => {
+                    e.preventDefault();
+                    setIsSearch(!isSearch);
+                  }}
+                >
+                  {isSearch ? <X /> : <Search />}
+                </Button>
+              </div>
               <GoogleMap
                 mapContainerClassName="w-full h-full scale-110"
                 options={{
@@ -485,16 +499,9 @@ const Maps = ({
         {(input.province || input.city || input.district) && (
           <div className="grid md:grid-cols-2 gap-4">
             <LabelInput
-              label="Address"
+              label="District"
               className="bg-gray-100 focus-visible:border-gray-300 read-only:cursor-default read-only:focus-visible:border-gray-300 read-only:pointer-events-none text-sm lg:text-base"
-              classContainer="md:col-span-2"
-              value={input.address ?? ""}
-              readOnly
-            />
-            <LabelInput
-              label="Province"
-              className="bg-gray-100 focus-visible:border-gray-300 read-only:cursor-default read-only:focus-visible:border-gray-300 read-only:pointer-events-none text-sm lg:text-base"
-              value={input.province ?? ""}
+              value={input.district ?? ""}
               readOnly
             />
             <LabelInput
@@ -504,9 +511,9 @@ const Maps = ({
               readOnly
             />
             <LabelInput
-              label="District"
+              label="Province"
               className="bg-gray-100 focus-visible:border-gray-300 read-only:cursor-default read-only:focus-visible:border-gray-300 read-only:pointer-events-none text-sm lg:text-base"
-              value={input.district ?? ""}
+              value={input.province ?? ""}
               readOnly
             />
             <LabelInput

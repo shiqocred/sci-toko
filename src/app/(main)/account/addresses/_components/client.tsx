@@ -17,6 +17,20 @@ import { Header } from "./_section/header";
 import { LoadingState } from "./_section/loading";
 import { AddressForm } from "./_section/form";
 
+export interface InputProps {
+  address: string;
+  district: string;
+  city: string;
+  province: string;
+  latitude: string;
+  longitude: string;
+  postal_code: string;
+  detail: string;
+  name: string;
+  phone: string;
+  is_default: boolean;
+}
+
 const initialValue = {
   address: "",
   district: "",
@@ -40,7 +54,7 @@ const Client = () => {
 
   const [dialCode, setDialCode] = useState("+62");
   const [errors, setErrors] = useState<Record<string, string>>({});
-  const [input, setInput] = useState({ ...initialValue });
+  const [input, setInput] = useState<InputProps>({ ...initialValue });
 
   const [DeleteDialog, confirmDelete] = useConfirm(
     "Delete Address?",
@@ -120,6 +134,10 @@ const Client = () => {
   const handleSetDefault = (id: string) => {
     setDefault({ params: { id } });
   };
+
+  useEffect(() => {
+    setInput(initialValue);
+  }, [address, addressId]);
 
   // --- Render helpers ---
   return (

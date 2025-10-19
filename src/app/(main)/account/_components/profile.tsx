@@ -81,7 +81,7 @@ export const Profile = ({
         {user?.role === "BASIC" && (
           <Badge className="bg-green-50 hover:bg-green-50 border-green-600 text-green-600 rounded-full">
             <User2 />
-            <p>Pet Owner</p>
+            <p>Agent</p>
           </Badge>
         )}
         {user?.role === "ADMIN" && (

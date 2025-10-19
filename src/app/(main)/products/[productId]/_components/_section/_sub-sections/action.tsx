@@ -266,7 +266,7 @@ export const CartAction = ({
             `Available for ${product?.availableFor
               .map((i) => {
                 if (i === "BASIC") {
-                  return "Pet Owner";
+                  return "Agent";
                 } else if (i === "PETSHOP") {
                   return "Pet Shop";
                 } else if (i === "VETERINARIAN") {

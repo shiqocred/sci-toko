@@ -8,6 +8,7 @@ import { Button } from "@/components/ui/button";
 import { Loader2, Send } from "lucide-react";
 import { FormEvent } from "react";
 import { MapPicker } from "./map-picked";
+import { InputProps } from "../client";
 
 export const AddressForm = ({
   input,
@@ -19,7 +20,7 @@ export const AddressForm = ({
   handleSubmit,
   detailAddress,
 }: {
-  input: any;
+  input: InputProps;
   setInput: React.Dispatch<React.SetStateAction<any>>;
   dialCode: string;
   setDialCode: React.Dispatch<React.SetStateAction<string>>;
@@ -73,9 +74,25 @@ export const AddressForm = ({
 
       <div className="flex flex-col w-full gap-1.5">
         <LabelInput
-          label="Address Detail"
+          label="Street, Building Name, Number, Sub-Village and Village"
           classLabel="required"
-          placeholder="Type address detail"
+          placeholder="e.g. Jl. Merdeka, Merdeka Apartement, No. 5b"
+          className={cn(
+            "bg-gray-100 focus-visible:border-gray-500",
+            errors?.address && "border-red-500 hover:border-red-500"
+          )}
+          value={input.address ?? ""}
+          onChange={(e) =>
+            setInput((prev: any) => ({ ...prev, address: e.target.value }))
+          }
+          disabled={isLoading}
+        />
+        <MessageInputError error={errors?.address} />
+      </div>
+      <div className="flex flex-col w-full gap-1.5">
+        <LabelInput
+          label="Additional details (e.g. Block, Unit, Landmark)"
+          placeholder="e.g. Block Merdeka, Unit Melati, Depan Masjid Sulaiman"
           className={cn(
             "bg-gray-100 focus-visible:border-gray-500",
             errors?.detail && "border-red-500 hover:border-red-500"
@@ -111,7 +128,21 @@ export const AddressForm = ({
         </Label>
       </TooltipText>
 
-      <Button type="submit" variant={"destructive"} disabled={isLoading}>
+      <Button
+        type="submit"
+        variant={"destructive"}
+        disabled={
+          isLoading ||
+          !input.address ||
+          !input.city ||
+          !input.district ||
+          !input.latitude ||
+          !input.longitude ||
+          !input.name ||
+          !input.phone ||
+          !input.province
+        }
+      >
         {isLoading ? <Loader2 className="animate-spin" /> : <Send />}
         {detailAddress ? "Update" : "Create"} Address
       </Button>

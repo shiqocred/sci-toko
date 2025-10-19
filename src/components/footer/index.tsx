@@ -9,70 +9,77 @@ import { Address } from "./address";
 import { usePathname } from "next/navigation";
 import { cn } from "@/lib/utils";
 import { useGetFooter } from "./_api";
-
-const data = {
-  menu: [
-    {
-      title: "Online Shopping",
-      menus: [
-        {
-          name: "Cats",
-          href: "/products?pets=pets-67890",
-        },
-        {
-          name: "Dogs",
-          href: "/products?pets=dogs-12345",
-        },
-      ],
-    },
-    {
-      title: "Quick Links",
-      menus: [
-        {
-          name: "My Account",
-          href: "/account",
-        },
-        {
-          name: "FAQ's",
-          href: "/faqs",
-        },
-        {
-          name: "Refund Policy",
-          href: "/policies/refund",
-        },
-        {
-          name: "Privacy Policy",
-          href: "/policies/privacy",
-        },
-        {
-          name: "Term of Use",
-          href: "/policies/term-of-use",
-        },
-      ],
-    },
-    {
-      title: "Opening Hours",
-      menus: [
-        {
-          name: "Monday-Friday: 08:30 AM - 05:30 PM",
-          href: undefined,
-        },
-        {
-          name: "Saturday, Sunday & National Holiday: Closed",
-          href: undefined,
-        },
-      ],
-    },
-  ],
-};
+import { useGetContact } from "@/app/(main)/account/_api";
 
 export const Footer = () => {
   const pathname = usePathname();
   const [isMounted, setIsMounted] = useState(false);
 
   const { data: footer } = useGetFooter();
+  const { data: contact } = useGetContact();
+  const contactUrl = useMemo(() => contact?.data ?? "", [contact]);
 
   const footerRes = useMemo(() => footer?.data, [footer]);
+
+  const data = {
+    menu: [
+      {
+        title: "Online Shopping",
+        menus: [
+          {
+            name: "Cats",
+            href: "/products?pets=pets-67890",
+          },
+          {
+            name: "Dogs",
+            href: "/products?pets=dogs-12345",
+          },
+        ],
+      },
+      {
+        title: "Quick Links",
+        menus: [
+          {
+            name: "My Account",
+            href: "/account",
+          },
+          {
+            name: "Contact Us",
+            href: contactUrl,
+          },
+          {
+            name: "FAQ's",
+            href: "/faqs",
+          },
+          {
+            name: "Refund Policy",
+            href: "/policies/refund",
+          },
+          {
+            name: "Privacy Policy",
+            href: "/policies/privacy",
+          },
+          {
+            name: "Term of Use",
+            href: "/policies/term-of-use",
+          },
+        ],
+      },
+      {
+        title: "Opening Hours",
+        menus: [
+          {
+            name: "Monday-Friday: 08:30 AM - 05:30 PM",
+            href: undefined,
+          },
+          {
+            name: "Saturday, Sunday & National Holiday: Closed",
+            href: undefined,
+          },
+        ],
+      },
+    ],
+  };
 
   const sosmedList = [
     {
