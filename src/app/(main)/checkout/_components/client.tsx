@@ -282,7 +282,9 @@ export default function Client() {
                 totalPrice={totalPrice}
               />
               <CheckoutButton
-                disabled={!shipping || !checkout?.addressId || isLoading}
+                disabled={isLoading}
+                selectedAddress={!!checkout?.addressId}
+                shipping={shipping}
                 onClick={handleOrder}
               />
             </div>

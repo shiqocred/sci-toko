@@ -1,6 +1,6 @@
 // components/checkout/AddressSection.tsx
 import { Button } from "@/components/ui/button";
-import { Loader, MapPinned } from "lucide-react";
+import { Loader, MapPinned, MapPinOff } from "lucide-react";
 import { Address } from "../types";
 import { DialogSelectAddress } from "../_dialogs";
 
@@ -44,7 +44,7 @@ export function AddressSection({
         </div>
       ) : (
         <div className="w-full">
-          {selected && (
+          {selected ? (
             <div className="flex flex-col border rounded-md overflow-hidden gap-0">
               <div className="flex items-center justify-between border-b py-2 px-3 bg-green-50">
                 <div className="flex items-center gap-2">
@@ -64,6 +64,11 @@ export function AddressSection({
                 <p className="text-gray-500">{selected.detail}</p>
                 <p>{selected.address}</p>
               </div>
+            </div>
+          ) : (
+            <div className="py-4 flex items-center justify-center w-full border border-gray-300 rounded-md gap-3">
+              <MapPinOff className="size-3.5" />
+              <p className="font-semibold text-sm">No Address Selected.</p>
             </div>
           )}
         </div>

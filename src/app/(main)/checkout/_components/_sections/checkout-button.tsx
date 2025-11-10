@@ -5,13 +5,20 @@ import { Loader2, Send } from "lucide-react";
 interface Props {
   disabled: boolean;
   onClick: () => void;
+  selectedAddress: boolean;
+  shipping: string;
 }
 
-export function CheckoutButton({ disabled, onClick }: Props) {
+export function CheckoutButton({
+  disabled,
+  onClick,
+  selectedAddress,
+  shipping,
+}: Props) {
   return (
     <Button
       variant="destructive"
-      disabled={disabled}
+      disabled={disabled || !selectedAddress || !shipping}
       onClick={onClick}
       className="w-full"
     >

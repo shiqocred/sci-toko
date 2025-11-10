@@ -38,6 +38,7 @@ export const cartsList = async (userId: string) => {
       productName: products.name,
       productSlug: products.slug,
       createdAt: carts.createdAt,
+      status: products.status,
     })
     .from(carts)
     .innerJoin(productVariants, eq(carts.variantId, productVariants.id))
@@ -129,8 +130,8 @@ export const cartsList = async (userId: string) => {
       availableRolesMap.get(item.productId) ?? new Set()
     ).has(user.role);
 
-    // Out of stock jika stock habis atau role tidak diperbolehkan
-    if (stock <= 0 || !roleAllowed) {
+    // Out of stock jika stock habis, role tidak diperbolehkan, atau status produk false
+    if (stock <= 0 || !roleAllowed || !item.status) {
       addToMap(outOfStockMap, item, 0);
       continue;
     }
@@ -220,7 +221,15 @@ export const cartsList = async (userId: string) => {
     products: formatProducts(inStockMap),
     out_of_stock: formatProducts(outOfStockMap),
     subtotal,
-    total_cart_selected: cartItems.filter((i) => i.checked).length,
+    total_cart_selected: Array.from(inStockMap.values()).reduce(
+      (acc, product) => {
+        const variants =
+          product.variants ||
+          (product.default_variant ? [product.default_variant] : []);
+        return acc + variants.filter((v: any) => v.checked).length;
+      },
+      0
+    ),
     total_cart: cartItems.length,
     total: subtotal,
   };
