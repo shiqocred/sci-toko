@@ -297,18 +297,21 @@ export const addToCart = async (req: NextRequest, userId: string) => {
   }
 };
 
+export const resultZod = <T>(result: z.ZodSafeParseError<T>) => {
+  const errors = Object.fromEntries(
+    result.error.issues.map((err) => [err.path.join("."), err.message])
+  );
+
+  return errors;
+};
+
 export const checkedCart = async (req: NextRequest, userId: string) => {
   const body = await req.json();
 
   const result = cartEditSchema.safeParse(body);
 
   if (!result.success) {
-    const errors: Record<string, string> = {};
-
-    result.error.issues.forEach((err) => {
-      const path = err.path.join(".");
-      errors[path] = err.message;
-    });
+    const errors = resultZod(result);
 
     throw errorRes("Validation failed", 422, errors);
   }
