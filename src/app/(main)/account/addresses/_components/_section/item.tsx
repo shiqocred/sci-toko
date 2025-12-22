@@ -37,7 +37,7 @@ export const AddressItem = ({
               Default
             </Badge>
           )}
-          <DropdownMenu>
+          <DropdownMenu modal={false}>
             <DropdownMenuTrigger asChild>
               <Button
                 variant={"ghost"}

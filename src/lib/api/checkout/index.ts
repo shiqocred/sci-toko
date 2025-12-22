@@ -13,6 +13,13 @@ import { formatRupiah } from "@/lib/utils";
 import { createId } from "@paralleldrive/cuid2";
 import { and, eq, inArray, isNull } from "drizzle-orm";
 
+export const isDraftOrderExist = async (userId: string) => {
+  const draftOrder = await db.query.orderDraft.findFirst({
+    where: (o, { eq }) => eq(o.userId, userId),
+  });
+  return !!draftOrder;
+};
+
 export const drafOrder = async (userId: string) => {
   // ✅ Parallel queries untuk data dasar
   const [draftOrder, storeAddress, userExist] = await Promise.all([
@@ -36,7 +43,7 @@ export const drafOrder = async (userId: string) => {
 
   // ✅ Early validation
   if (!userExist) throw errorRes("Unauthorized", 401);
-  if (!draftOrder) throw errorRes("No draft order found", 400);
+  if (!draftOrder) throw errorRes("No draft order found", 404);
   if (!storeAddress) throw errorRes("Store address not found", 400);
 
   // ✅ Ambil items dengan satu query
@@ -65,7 +72,7 @@ export const drafOrder = async (userId: string) => {
       .where(inArray(productVariants.id, variantIds)),
     discountId
       ? db.query.discounts.findFirst({
-          where: (d, { eq }) => eq(d.id, discountId),
+          where: (d, { eq }) => and(eq(d.id, discountId), isNull(d.deletedAt)),
         })
       : Promise.resolve(null),
   ]);

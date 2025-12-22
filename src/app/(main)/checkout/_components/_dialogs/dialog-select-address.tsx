@@ -1,8 +1,7 @@
-import { LabelInput } from "@/components/label-input";
-import { MessageInputError } from "@/components/message-input-error";
+"use client";
+
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Checkbox } from "@/components/ui/checkbox";
 import {
   Dialog,
   DialogFooter,
@@ -13,37 +12,18 @@ import {
 } from "@/components/ui/dialog";
 import { Label } from "@/components/ui/label";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
-import { cn } from "@/lib/utils";
-import {
-  ArrowLeft,
-  Edit,
-  Loader,
-  LocateOff,
-  PlusCircle,
-  Send,
-} from "lucide-react";
-import React, { FormEvent, MouseEvent, useEffect, useState } from "react";
+import { Edit, Loader, LocateOff, PlusCircle } from "lucide-react";
+import { MouseEvent, useState } from "react";
 import { useGetAddress, useSelectedAddress } from "../../_api";
 import {
   useAddAddress,
   useUpdateAddress,
 } from "@/app/(main)/account/addresses/_api";
-import { MapPicker } from "@/app/(main)/account/addresses/_components/_section/map-picked";
-import { TooltipText } from "@/providers/tooltip-provider";
+import { FormSection } from "./form";
 
-const initialValue = {
-  address: "",
-  district: "",
-  city: "",
-  province: "",
-  latitude: "",
-  longitude: "",
-  postal_code: "",
-  detail: "",
-  name: "",
-  phone: "",
-  is_default: false,
-};
+export type AddAddressType = ReturnType<typeof useAddAddress>["mutate"];
+export type UpdateAddressType = ReturnType<typeof useUpdateAddress>["mutate"];
+export type GetAddressType = ReturnType<typeof useGetAddress>["data"];
 
 export const DialogSelectAddress = ({
   open,
@@ -68,33 +48,6 @@ export const DialogSelectAddress = ({
   const [address, setAddress] = useState("");
   const [state, setState] = useState("");
   const [selectedAddressId, setSelectedAddressId] = useState("");
-  const [dialCode, setDialCode] = useState("+62");
-  const [errors, setErrors] = useState({
-    address: "",
-    district: "",
-    city: "",
-    province: "",
-    latitude: "",
-    longitude: "",
-    postal_code: "",
-    detail: "",
-    name: "",
-    phone: "",
-    is_default: "",
-  });
-  const [input, setInput] = useState<{
-    address: string;
-    district: string;
-    city: string;
-    province: string;
-    latitude: string;
-    longitude: string;
-    postal_code: string;
-    detail: string;
-    name: string;
-    phone: string;
-    is_default: boolean | "indeterminate";
-  }>(initialValue);
 
   const { mutate: selectAddress, isPending: isSelecting } =
     useSelectedAddress();
@@ -116,82 +69,20 @@ export const DialogSelectAddress = ({
     );
   };
 
-  const handleCreate = (e: FormEvent) => {
-    e.preventDefault();
-    if (state === "create") {
-      addAddress(
-        {
-          body: {
-            ...input,
-            phone: `${dialCode} ${input.phone}`,
-            is_default: input.is_default as boolean,
-          },
-        },
-        {
-          onSuccess: () => {
-            setInput(initialValue);
-            setState("");
-          },
-          onError: (data) => {
-            setErrors((data.response?.data as any)?.errors);
-          },
-        }
-      );
-    } else if (state === "edit") {
-      updateAddress(
-        {
-          body: {
-            ...input,
-            phone: `${dialCode} ${input.phone}`,
-            is_default: input.is_default as boolean,
-          },
-          params: { id: selectedAddressId },
-        },
-        {
-          onSuccess: () => {
-            setInput(initialValue);
-            setState("");
-          },
-          onError: (data) => {
-            setErrors((data.response?.data as any)?.errors);
-          },
-        }
-      );
-    }
-  };
-
-  useEffect(() => {
-    const detail = detailAddress?.data;
-    if (detail) {
-      const phone = detail?.phoneNumber.split(" ") ?? [];
-      setInput({
-        name: detail?.name ?? "",
-        phone: phone[1],
-        address: detail?.address ?? "",
-        province: detail?.province ?? "",
-        city: detail?.city ?? "",
-        district: detail?.district ?? "",
-        longitude: detail?.longitude ?? "",
-        latitude: detail?.latitude ?? "",
-        detail: detail?.detail ?? "",
-        postal_code: detail?.postalCode ?? "",
-        is_default: detail?.isDefault ?? false,
-      });
-      setDialCode(phone[0]);
-    }
-  }, [detailAddress]);
-
-  useEffect(() => {
-    if (open) {
-      if (addressId) {
-        setAddress(addressId);
-      }
-    } else {
-      setAddress("");
-    }
-  }, [open]);
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
+    <Dialog
+      open={open}
+      onOpenChange={(e) => {
+        onOpenChange();
+        if (e) {
+          if (addressId) {
+            setAddress(addressId);
+          }
+        } else {
+          setAddress("");
+        }
+      }}
+    >
       <DialogContent showCloseButton={false} className="p-0 gap-0 lg:min-w-2xl">
         <DialogHeader className="border-b p-3 lg:p-5  gap-0">
           <div className="flex items-center justify-between capitalize">
@@ -294,125 +185,16 @@ export const DialogSelectAddress = ({
           (state === "edit" &&
             !!selectedAddressId &&
             !isPendingDetailAddress)) && (
-          <form onSubmit={handleCreate} className="flex w-full flex-col gap-4">
-            <div className="flex flex-col relative overflow-x-hidden overflow-y-auto max-h-[60vh] gap-3 lg:gap-4 p-3 lg:p-5">
-              <div className="flex flex-col w-full gap-1.5">
-                <LabelInput
-                  label="Full Name"
-                  classLabel="required"
-                  placeholder="Type full name"
-                  className={cn(
-                    "bg-gray-100 focus-visible:border-gray-500",
-                    errors?.name && "border-red-500 hover:border-red-500"
-                  )}
-                  value={input.name ?? ""}
-                  onChange={(e) =>
-                    setInput((prev) => ({
-                      ...prev,
-                      name: e.target.value,
-                    }))
-                  }
-                  disabled={isLoading}
-                />
-                <MessageInputError error={errors?.name} />
-              </div>
-              <div className="flex flex-col w-full gap-1.5">
-                <LabelInput
-                  label="Phone Number"
-                  classLabel="required"
-                  placeholder="Type phone number"
-                  className={cn(
-                    "bg-gray-100 focus-visible:border-gray-500",
-                    errors?.phone && "border-red-500 hover:border-red-500"
-                  )}
-                  value={input.phone ?? ""}
-                  onChange={(e) =>
-                    setInput((prev) => ({
-                      ...prev,
-                      phone: e.target.value,
-                    }))
-                  }
-                  isPhone
-                  dialCode={dialCode}
-                  setDialCode={setDialCode}
-                  disabled={isLoading}
-                />
-                <MessageInputError error={errors?.phone} />
-              </div>
-
-              <MapPicker input={input} setInput={setInput} errors={errors} />
-
-              <div className="flex flex-col w-full gap-1.5">
-                <LabelInput
-                  label="Address Detail"
-                  classLabel="required"
-                  placeholder="Type address detail"
-                  className={cn(
-                    "bg-gray-100 focus-visible:border-gray-500",
-                    errors?.detail && "border-red-500 hover:border-red-500"
-                  )}
-                  value={input.detail ?? ""}
-                  onChange={(e) =>
-                    setInput((prev) => ({
-                      ...prev,
-                      detail: e.target.value,
-                    }))
-                  }
-                  disabled={isLoading}
-                />
-                <MessageInputError error={errors?.detail} />
-              </div>
-
-              <TooltipText
-                value="Unavailable to undefault address"
-                className={cn(
-                  "hidden",
-                  detailAddress?.data.isDefault && "flex"
-                )}
-                side="right"
-              >
-                <Label
-                  className={cn(
-                    "flex items-center gap-3 w-fit",
-                    detailAddress?.data.isDefault && "cursor-not-allowed"
-                  )}
-                >
-                  <Checkbox
-                    className="border-gray-500 disabled:opacity-100 disabled:pointer-events-auto disabled:cursor-not-allowed"
-                    checked={input.is_default}
-                    onCheckedChange={(e) =>
-                      setInput((prev) => ({ ...prev, is_default: e }))
-                    }
-                    disabled={detailAddress?.data.isDefault || isLoading}
-                  />
-                  <p className="text-sm font-medium">Set default address</p>
-                </Label>
-              </TooltipText>
-            </div>
-            <DialogFooter className="px-5 py-3 border-t">
-              <Button
-                type="button"
-                onClick={() => {
-                  setSelectedAddressId("");
-                  setState("");
-                  setInput(initialValue);
-                }}
-                variant={"outline"}
-                disabled={isLoading}
-              >
-                <ArrowLeft />
-                Cancel
-              </Button>
-              <Button
-                disabled={isLoading}
-                type="submit"
-                variant={"destructive"}
-              >
-                <Send />
-                {state === "create" ? "Create" : "Update"} Address
-              </Button>
-            </DialogFooter>
-          </form>
+          <FormSection
+            state={state}
+            selectedAddressId={selectedAddressId}
+            addAddress={addAddress}
+            updateAddress={updateAddress}
+            detailAddress={detailAddress}
+            setState={setState}
+            setSelectedAddressId={setSelectedAddressId}
+            isLoading={isLoading}
+          />
         )}
         {state === "edit" && !!selectedAddressId && isPendingDetailAddress && (
           <div className="h-[50vh] flex-none flex flex-col gap-3 w-full items-center justify-center text-sm lg:text-base">

@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import { useEffect } from "react";
 import { Input } from "../ui/input";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useSearchQuery } from "@/lib/search";
@@ -7,7 +7,6 @@ import { XCircle } from "lucide-react";
 
 export const InputSearch = ({ pathname }: { pathname: string }) => {
   const router = useRouter();
-  const [isMounted, setIsMounted] = useState(false);
   const q = useSearchParams().get("q");
 
   const { search, searchValue, setSearch } = useSearchQuery();
@@ -23,12 +22,6 @@ export const InputSearch = ({ pathname }: { pathname: string }) => {
       }
     }
   }, [pathname, searchValue, search, q]);
-
-  useEffect(() => {
-    setIsMounted(true);
-  }, []);
-
-  if (!isMounted) return;
 
   return (
     <div className="w-full relative flex items-center">

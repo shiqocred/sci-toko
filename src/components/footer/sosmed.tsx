@@ -27,6 +27,7 @@ export const Sosmed = ({ data }: { data: SosmedProps[] }) => {
           fill
           className="object-contain object-center"
           sizes={sizesImage}
+          loading="eager"
         />
       </Link>
       <div className="flex gap-2 md:gap-4 items-center">

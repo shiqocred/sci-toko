@@ -1,7 +1,6 @@
 "use client";
 
-import React, { FormEvent, useEffect, useMemo, useState } from "react";
-import { useRouter } from "next/navigation";
+import { useMemo } from "react";
 import { parseAsString, useQueryStates } from "nuqs";
 import { useConfirm } from "@/hooks/use-confirm";
 import {
@@ -31,30 +30,15 @@ export interface InputProps {
   is_default: boolean;
 }
 
-const initialValue = {
-  address: "",
-  district: "",
-  city: "",
-  province: "",
-  latitude: "",
-  longitude: "",
-  postal_code: "",
-  detail: "",
-  name: "",
-  phone: "",
-  is_default: false,
-};
+export type UpdateAddressType = ReturnType<typeof useUpdateAddress>["mutate"];
+export type AddAddressType = ReturnType<typeof useAddAddress>["mutate"];
+export type DetailAddressType = ReturnType<typeof useGetAddress>["data"];
 
 const Client = () => {
-  const router = useRouter();
   const [{ address, id: addressId }, setAddress] = useQueryStates({
     address: parseAsString.withDefault(""),
     id: parseAsString.withDefault(""),
   });
-
-  const [dialCode, setDialCode] = useState("+62");
-  const [errors, setErrors] = useState<Record<string, string>>({});
-  const [input, setInput] = useState<InputProps>({ ...initialValue });
 
   const [DeleteDialog, confirmDelete] = useConfirm(
     "Delete Address?",
@@ -79,53 +63,6 @@ const Client = () => {
 
   const listAddresses = useMemo(() => data?.data || [], [data]);
 
-  useEffect(() => {
-    if (!detailAddress?.data) return;
-
-    const phoneParts = detailAddress.data.phoneNumber.split(" ");
-    setInput({
-      name: detailAddress.data.name || "",
-      phone: phoneParts[1] || "",
-      address: detailAddress.data.address || "",
-      province: detailAddress.data.province || "",
-      city: detailAddress.data.city || "",
-      district: detailAddress.data.district || "",
-      longitude: detailAddress.data.longitude || "",
-      latitude: detailAddress.data.latitude || "",
-      detail: detailAddress.data.detail || "",
-      postal_code: detailAddress.data.postalCode || "",
-      is_default: detailAddress.data.isDefault || false,
-    });
-    setDialCode(phoneParts[0] || "+62");
-  }, [detailAddress]);
-
-  const handleSubmit = (e: FormEvent) => {
-    e.preventDefault();
-    const payload = {
-      ...input,
-      phone: `${dialCode} ${input.phone}`,
-      is_default: input.is_default as boolean,
-    };
-
-    const onSuccess = () => {
-      setInput(initialValue);
-      router.push("/account/addresses");
-    };
-
-    const onError = (data: any) => {
-      setErrors(data.response?.data?.errors || {});
-    };
-
-    if (address === "create") {
-      addAddress({ body: payload }, { onSuccess, onError });
-    } else if (address === "edit") {
-      updateAddress(
-        { body: payload, params: { id: addressId } },
-        { onSuccess, onError }
-      );
-    }
-  };
-
   const handleDelete = async (id: string) => {
     if (!(await confirmDelete())) return;
     deleteAddress({ params: { id } });
@@ -135,15 +72,11 @@ const Client = () => {
     setDefault({ params: { id } });
   };
 
-  useEffect(() => {
-    setInput(initialValue);
-  }, [address, addressId]);
-
   // --- Render helpers ---
   return (
     <div className="bg-white p-3 md:p-4 lg:p-5 flex flex-col text-sm gap-4">
       <DeleteDialog />
-      <Header address={address} setAddress={setAddress} />
+      <Header address={address} setAddress={(v) => setAddress(v)} />
       {!address && (
         <AddressList
           isPending={isPending}
@@ -161,14 +94,12 @@ const Client = () => {
       {(address === "create" ||
         (address === "edit" && !!addressId && !isPendingDetailAddress)) && (
         <AddressForm
-          input={input}
-          setInput={setInput}
-          dialCode={dialCode}
-          setDialCode={setDialCode}
-          errors={errors}
+          addressId={addressId}
+          address={address}
+          addAddress={addAddress}
+          updateAddress={updateAddress}
           isLoading={isLoading}
-          handleSubmit={handleSubmit}
-          detailAddress={detailAddress?.data}
+          detailAddress={detailAddress}
         />
       )}
     </div>

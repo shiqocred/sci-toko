@@ -18,14 +18,14 @@ export const AnimalsSection = () => {
       <Heading label="Shop By Pet" />
       <div className="grid grid-cols-2 gap-3 md:gap-4 lg:gap-5 w-full">
         <AnimalCard
-          label={"Dogs"}
+          label={"dog"}
           classImage={"left-4 md:left-5 lg:left-6 h-[90%] aspect-[854/1171]"}
           urlImage={"/assets/images/dog.png"}
           classBox="justify-end bg-[#B7E8FA]"
           href={`/products?pets=dogs-12345`}
         />
         <AnimalCard
-          label={"Cats"}
+          label={"cat"}
           classImage={
             "right-4 md:right-5 lg:right-6 h-[85%] aspect-[1454/1188]"
           }

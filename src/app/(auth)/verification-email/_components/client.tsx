@@ -85,16 +85,6 @@ const Client = () => {
     return () => clearInterval(interval);
   }, [resendAgain]);
 
-  const [isMounted, setIsMounted] = useState(false);
-
-  useEffect(() => {
-    if (!isMounted) {
-      setIsMounted(true);
-    }
-  }, []);
-
-  if (!isMounted) return;
-
   return (
     <div className="w-full bg-sky-50 relative h-full">
       <div

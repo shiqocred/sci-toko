@@ -31,7 +31,9 @@ const Client = () => {
           <HeroSection data={dataHome?.banners ?? []} />
           <AnimalsSection />
           <TrendingSection data={dataHome?.products ?? []} />
-          <PromoSection data={dataHome?.promos ?? []} />
+          {dataHome?.promos && dataHome.promos.length > 0 && (
+            <PromoSection data={dataHome.promos} />
+          )}
           <ByCategorySection data={dataHome?.categories ?? []} />
           <BySupplierSection data={dataHome?.suppliers ?? []} />
         </div>

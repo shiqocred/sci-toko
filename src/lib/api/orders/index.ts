@@ -284,25 +284,26 @@ export const createOrder = async (req: NextRequest, userId: string) => {
     // Update stok hanya untuk item yang cukup stok
     await Promise.all([
       // Insert orderItems hanya yang cukup stok
-      await tx.insert(orderItems).values(
+      tx.insert(orderItems).values(
         itemsToCheckout.map((item) => ({
           orderId,
           variantId: item.variantId,
           price: item.price,
           weight: item.weight,
           quantity: item.quantity,
+          discountPrice: item.discountPrice,
         }))
       ),
 
       // Insert invoice
-      await tx.insert(invoices).values({
+      tx.insert(invoices).values({
         amount: totalPrice.toString(),
         orderId,
         paymentId: invoice.id,
       }),
 
       // Insert shipping
-      await tx.insert(shippings).values({
+      tx.insert(shippings).values({
         name: addressSelected.name,
         phone: addressSelected.phoneNumber,
         address: `${addressSelected.address}, ${addressSelected.district}, ${addressSelected.city}, ${addressSelected.province}, Indonesia ${addressSelected.postalCode}`,

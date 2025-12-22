@@ -12,6 +12,17 @@ import {
   CarouselPrevious,
 } from "@/components/ui/carousel";
 
+function generateStableHsl(key: string) {
+  let hash = 0;
+
+  for (const char of key) {
+    const code = char.codePointAt(0)!;
+    hash = code + ((hash << 5) - hash);
+  }
+
+  return `hsl(${Math.abs(hash) % 360}, 70%, 80%)`;
+}
+
 export const ByCategorySection = ({
   data,
 }: {
@@ -65,7 +76,7 @@ const CategoryCard = ({ name, slug, image }: SupplierCategoryPromoProps) => {
       <div
         className="w-full font-bold items-center text-center flex p-2 md:p-3 lg:p-4"
         style={{
-          backgroundColor: `hsl(${Math.floor(Math.random() * 360)}, 70%, 80%)`,
+          backgroundColor: generateStableHsl(name),
         }}
       >
         <p className="w-full text-sm md:text-lg lg:text-2xl line-clamp-3">

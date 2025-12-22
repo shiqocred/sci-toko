@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useEffect, useMemo, useState } from "react";
+import { useMemo, useState } from "react";
 import {
   ProductDetailProps,
   useGetProduct,
@@ -8,7 +8,7 @@ import {
 } from "../_api";
 import { useParams } from "next/navigation";
 import { DetailProduct, ImagesGallery, ProductInfo } from "./_section";
-import { DialogUnavailable, DrawerCart } from "./_dialogs";
+import { DrawerCart } from "./_dialogs";
 import { Button } from "@/components/ui/button";
 import { useSession } from "next-auth/react";
 import { Loader, ShoppingBag } from "lucide-react";
@@ -19,13 +19,9 @@ import { ReviewCard } from "@/components/review-card";
 const Client = () => {
   const { status } = useSession();
   const { productId } = useParams();
-  const [dialog, setDialog] = useState(false);
   const [isDialog, setIsDialog] = useState(false);
-  const [imageHighlight, setImageHighlight] = useState(
-    "/assets/images/logo-sci.png"
-  );
 
-  const { data, isSuccess, isPending, error, isError } = useGetProduct({
+  const { data, isPending, error, isError } = useGetProduct({
     productId: productId as string,
   });
   const { data: reviews, isPending: isPendingReview } = useGetProductReviews({
@@ -37,23 +33,6 @@ const Client = () => {
   }, [data]);
 
   const reviewsList = useMemo(() => reviews?.data ?? [], [reviews]);
-
-  useEffect(() => {
-    if (data && isSuccess) {
-      const productFisrtImage = data?.data.images[0];
-      setImageHighlight(productFisrtImage);
-      if (
-        (data.data.default_variant &&
-          parseFloat(data.data.default_variant.stock) < 1) ||
-        (data.data.variants &&
-          data.data.variants.every((v) => Number(v.stock) < 1))
-      ) {
-        setDialog(true);
-      } else {
-        setDialog(false);
-      }
-    }
-  }, [data, isSuccess]);
 
   if (isPending || isPendingReview) {
     return (
@@ -97,7 +76,6 @@ const Client = () => {
 
   return (
     <div className="bg-sky-50 h-full relative">
-      <DialogUnavailable open={dialog} onOpenChange={setDialog} />
       <DrawerCart
         open={isDialog}
         onOpenChange={() => setIsDialog(false)}
@@ -108,11 +86,7 @@ const Client = () => {
       <div className="max-w-[1240px] mx-auto w-full flex flex-col gap-3 md:gap-5 lg:gap-7 px-4 lg:px-8 pt-6 md:py-10 lg:py-14 pb-10 md:pb-16 lg:pb-24">
         {product && (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 w-full gap-4 lg:gap-6">
-            <ImagesGallery
-              imageHighlight={imageHighlight}
-              setImageHighlight={setImageHighlight}
-              images={product.images}
-            />
+            <ImagesGallery product={product} />
             <DetailProduct product={product} />
             <ProductInfo status={status} product={product} />
           </div>

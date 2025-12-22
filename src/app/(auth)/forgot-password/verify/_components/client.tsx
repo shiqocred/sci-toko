@@ -61,7 +61,7 @@ const Client = () => {
     if (!resendAgain) return;
 
     const updateCountdown = () => {
-      const now = new Date().getTime();
+      const now = Date.now();
       const target = resendAgain?.getTime();
       const diff = Math.max(0, Math.floor((target - now) / 1000));
       setSendAgain(diff);
@@ -79,16 +79,6 @@ const Client = () => {
       router.push("/forgot-password");
     }
   }, [emailQuery]);
-
-  const [isMounted, setIsMounted] = useState(false);
-
-  useEffect(() => {
-    if (!isMounted) {
-      setIsMounted(true);
-    }
-  }, []);
-
-  if (!isMounted) return;
 
   return (
     <div className="w-full bg-sky-50 relative h-full">

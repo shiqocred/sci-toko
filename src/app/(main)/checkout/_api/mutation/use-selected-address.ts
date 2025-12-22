@@ -9,8 +9,8 @@ export const useSelectedAddress = () => {
   const mutation = useMutate<Body>({
     endpoint: "/checkout",
     method: "put",
-    onSuccess: async ({ data }) => {
-      toast.success(data.message);
+    onSuccess: async () => {
+      toast.success("Address Selected");
       await invalidateQuery(queryClient, [["ongkir"], ["checkout"]]);
     },
     onError: {

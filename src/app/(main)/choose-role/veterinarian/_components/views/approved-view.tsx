@@ -42,7 +42,6 @@ export const ApprovedView = ({
               src={data.personalIdFile ?? ""}
               alt="Foto KTP"
               fill
-              sizes={sizesImage}
               className="object-cover"
             />
           </div>

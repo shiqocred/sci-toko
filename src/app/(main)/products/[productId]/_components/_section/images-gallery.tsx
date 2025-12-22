@@ -10,18 +10,17 @@ import {
 } from "@/components/ui/carousel";
 import { ChevronLeft, ChevronRight } from "lucide-react";
 import { cn, sizesImage } from "@/lib/utils";
+import { useState } from "react";
+import { ProductDetailProps } from "../../_api";
 
 interface ImagesGalleryProps {
-  imageHighlight: string;
-  setImageHighlight: React.Dispatch<React.SetStateAction<string>>;
-  images: string[];
+  product: ProductDetailProps;
 }
 
-export const ImagesGallery = ({
-  imageHighlight,
-  setImageHighlight,
-  images,
-}: ImagesGalleryProps) => {
+export const ImagesGallery = ({ product }: ImagesGalleryProps) => {
+  const [imageHighlight, setImageHighlight] = useState(
+    product?.images[0] ?? "/assets/images/logo-sci.png"
+  );
   return (
     <div className="flex flex-col gap-3 md:gap-4 w-full order-1">
       <div className="w-full relative aspect-square bg-white rounded-lg overflow-hidden shadow">
@@ -51,17 +50,21 @@ export const ImagesGallery = ({
             icon={ChevronRight}
           />
           <CarouselContent className="-ml-3 md:-ml-4 pb-2">
-            {images.map((item) => (
+            {product.images.map((item) => (
               <CarouselItem
                 key={item}
                 className="basis-1/4 lg:basis-1/3 pl-3 md:pl-4 select-none"
               >
-                <div
+                <button
+                  type="button"
                   className={cn(
                     "w-full relative aspect-square bg-white rounded-lg overflow-hidden shadow",
                     item === imageHighlight && "border border-sci"
                   )}
-                  onMouseEnter={() => setImageHighlight(item)}
+                  onClick={(e) => {
+                    e.preventDefault();
+                    setImageHighlight(item);
+                  }}
                 >
                   <Image
                     alt={`slider-${item}`}
@@ -71,7 +74,7 @@ export const ImagesGallery = ({
                     sizes={sizesImage}
                     priority
                   />
-                </div>
+                </button>
               </CarouselItem>
             ))}
           </CarouselContent>

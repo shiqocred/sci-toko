@@ -5,6 +5,7 @@ import {
   discountToRoles,
   discountUsers,
   orderDraft,
+  orderDraftItems,
   orders,
   products,
   productToPets,
@@ -23,7 +24,6 @@ import { NextRequest } from "next/server";
 
 type ApplyType = InferSelectModel<typeof discounts>["apply"];
 type DraftItem = { variantId: string; quantity: string; price: string };
-type DiscountRow = InferSelectModel<typeof discounts>;
 type RoleType = InferSelectModel<typeof discountToRoles>["role"];
 
 export const applyDiscount = async (req: NextRequest, userId: string) => {
@@ -34,7 +34,7 @@ export const applyDiscount = async (req: NextRequest, userId: string) => {
 
   // Ambil discount terlebih dulu (tanpa guard waktu aktif)
   const discount = await db.query.discounts.findFirst({
-    where: (d, { eq }) => eq(d.code, voucher),
+    where: (d, { eq }) => and(eq(d.code, voucher), isNull(d.deletedAt)),
   });
 
   if (!discount) throw errorRes("Voucher not found", 404);
@@ -71,10 +71,12 @@ export const applyDiscount = async (req: NextRequest, userId: string) => {
     discount.id,
     draftCtx.variantIds
   );
+
   const itemsSelected = selectDiscountedItems(
     draftCtx.orderDraftItems,
     discountedVariantIds
   );
+
   const minViolation = getMinimumViolationMessage(discount, itemsSelected);
   if (minViolation) throw errorRes(minViolation, 400);
 
@@ -99,21 +101,52 @@ export const applyDiscount = async (req: NextRequest, userId: string) => {
     if (cnt > 0) throw errorRes("Maximum usage reached", 400);
   }
 
-  // Hitung total discount (number) lalu simpan (string/number sesuai schema)
-  const totalDiscount = computeTotalDiscount(
-    discount.valueType,
-    discount.value,
-    draftCtx.draft.totalPrice
+  const variantDiscounts = itemsSelected.map((variant) => {
+    const price = n(variant.price) * n(variant.quantity);
+    const discountPrice =
+      discount.valueType === "percentage"
+        ? Math.trunc((price * n(discount.value)) / 100)
+        : n(discount.value);
+    const finalPrice = price - discountPrice;
+    return {
+      variantId: variant.variantId,
+      totalPriceBD: price,
+      discountPrice,
+      finalPrice,
+    };
+  });
+
+  console.log(variantDiscounts);
+
+  const totalDiscount = variantDiscounts.reduce(
+    (sum, item) => sum + item.discountPrice,
+    0
   );
+
+  console.log(totalDiscount);
 
   // Tulis dalam transaksi (lebih aman jika nanti ada side-effect lain)
   await db.transaction(async (tx) => {
-    await tx
+    const updateDraft = tx
       .update(orderDraft)
       .set({ discountId: discount.id, totalDiscount: String(totalDiscount) })
       .where(
         and(eq(orderDraft.userId, userId), eq(orderDraft.id, draftCtx.draft.id))
       );
+
+    const updateItems = variantDiscounts.map((v) =>
+      tx
+        .update(orderDraftItems)
+        .set({ discountPrice: v.discountPrice.toString() })
+        .where(
+          and(
+            eq(orderDraftItems.orderDraftId, draftCtx.draft.id),
+            eq(orderDraftItems.variantId, v.variantId)
+          )
+        )
+    );
+
+    await Promise.all([updateDraft, ...updateItems]);
   });
 };
 
@@ -133,18 +166,6 @@ const n = (v: unknown) => {
   const x = Number(v);
   return Number.isFinite(x) ? x : 0;
 };
-
-function computeTotalDiscount(
-  valueType: DiscountRow["valueType"] | null | undefined,
-  value: DiscountRow["value"] | null | undefined,
-  draftTotalPrice: string | number
-) {
-  const total = n(draftTotalPrice);
-  if (valueType === "percentage") {
-    return Math.trunc((total * n(value)) / 100); // number
-  }
-  return n(value); // number
-}
 
 function selectDiscountedItems(items: DraftItem[], variantIds: string[]) {
   if (variantIds.length === 0 || items.length === 0) return [];

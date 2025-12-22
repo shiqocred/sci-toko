@@ -1,4 +1,4 @@
-import { useState, useEffect, MouseEvent } from "react";
+import { useState, MouseEvent } from "react";
 import { Button } from "@/components/ui/button";
 import { cn, formatRupiah, numericString } from "@/lib/utils";
 import { DialogAddedToCart } from "../../_dialogs";
@@ -19,16 +19,21 @@ export const CartAction = ({
 }) => {
   const router = useRouter();
   // --- State ---
-  const [input, setInput] = useState({ quantity: "1", variant_id: "" });
+  const defaultVariant = product?.default_variant;
+
+  const [input, setInput] = useState(() => ({
+    quantity: "1",
+    variant_id: defaultVariant?.id ?? "",
+  }));
+
+  const [data, setData] = useState(() => ({
+    stock: defaultVariant?.stock ?? "AVAILABLE",
+    oldPrice: defaultVariant?.old_price ?? "OLD PRICE",
+    newPrice: defaultVariant?.new_price ?? "NEW PRICE",
+    discount: defaultVariant?.discount ?? "DISCOUNT",
+  }));
 
   const [dialog, setDialog] = useState(false);
-
-  const [data, setData] = useState({
-    stock: "AVAILABLE",
-    oldPrice: "OLD PRICE",
-    newPrice: "NEW PRICE",
-    discount: "DISCOUNT",
-  });
 
   const { mutate: addToCart, isPending: isAddingToCart } = useAddToCart();
 
@@ -49,9 +54,11 @@ export const CartAction = ({
     }
   };
 
-  const subtotal = !isNaN(parseFloat(data.newPrice))
-    ? formatRupiah(parseFloat(input.quantity) * parseFloat(data.newPrice))
-    : "-";
+  const subtotal = Number.isNaN(Number.parseFloat(data.newPrice))
+    ? "-"
+    : formatRupiah(
+        Number.parseFloat(input.quantity) * Number.parseFloat(data.newPrice)
+      );
 
   const isSame = data.oldPrice === data.newPrice;
   const isNoPrice = Number(data.newPrice) < 1;
@@ -68,7 +75,9 @@ export const CartAction = ({
       variantData?.map((item) => formatRupiah(item)).join(" - ");
 
     const formatPrice = (p: string, variantData?: string[]) =>
-      isNaN(parseFloat(p)) ? formatRange(variantData) : formatRupiah(p);
+      Number.isNaN(Number.parseFloat(p))
+        ? formatRange(variantData)
+        : formatRupiah(p);
 
     if (!available) {
       return formatPrice(price, product?.data_variant.oldPrice);
@@ -87,12 +96,12 @@ export const CartAction = ({
 
   const discountFormatted = () => {
     const discountDefault = product?.data_variant.discount;
-    const discountNew = isNaN(parseFloat(data.discount))
+    const discountNew = Number.isNaN(Number.parseFloat(data.discount))
       ? `-${discountDefault}%`
       : `-${data.discount}%`;
     if (
-      parseFloat(discountDefault ?? "0") > 0 ||
-      parseFloat(data.discount) > 0
+      Number.parseFloat(discountDefault ?? "0") > 0 ||
+      Number.parseFloat(data.discount) > 0
     ) {
       return (
         <Badge className="py-0 px-1 rounded-sm text-[10px] font-bold">
@@ -120,29 +129,11 @@ export const CartAction = ({
       ...prev,
       quantity:
         type === "increase"
-          ? (parseFloat(prev.quantity) + 1).toString()
-          : (parseFloat(prev.quantity) - 1).toString(),
+          ? (Number.parseFloat(prev.quantity) + 1).toString()
+          : (Number.parseFloat(prev.quantity) - 1).toString(),
     }));
   };
 
-  useEffect(() => {
-    if (isNaN(parseFloat(input.quantity)) || parseFloat(input.quantity) < 1) {
-      setInput((prev) => ({ ...prev, quantity: "1" }));
-    }
-  }, [input]);
-
-  useEffect(() => {
-    const isDefaultVariant = product?.default_variant;
-    if (isDefaultVariant) {
-      setInput((prev) => ({ ...prev, variant_id: isDefaultVariant.id }));
-      setData({
-        stock: isDefaultVariant.stock,
-        oldPrice: isDefaultVariant.old_price,
-        newPrice: isDefaultVariant.new_price,
-        discount: isDefaultVariant.discount,
-      });
-    }
-  }, [product]);
   return (
     <div className="flex flex-col gap-4">
       <DialogAddedToCart
@@ -176,7 +167,7 @@ export const CartAction = ({
                 "text-xs",
                 item.id === input.variant_id && "border-gray-500"
               )}
-              disabled={parseFloat(item.stock) < 1}
+              disabled={Number.parseFloat(item.stock) < 1}
               onClick={() => handleSelectVariant(item)}
             >
               {item.name}
@@ -191,7 +182,7 @@ export const CartAction = ({
               variant={"outline"}
               size={"icon"}
               className="rounded-r-none disabled:opacity-100 group"
-              disabled={parseFloat(input.quantity) <= 1}
+              disabled={Number.parseFloat(input.quantity) <= 1}
               onClick={() => handleQuantity("reduce")}
             >
               <Minus className="group-disabled:opacity-50" />
@@ -200,22 +191,38 @@ export const CartAction = ({
               className="h-9 focus-visible:outline-0 text-center w-14 border-y"
               type="number"
               value={input.quantity}
-              onChange={(e) =>
-                setInput((prev) => ({
-                  ...prev,
-                  quantity:
-                    parseFloat(e.target.value) >= parseFloat(data.stock)
-                      ? parseFloat(data.stock).toString()
-                      : numericString(e.target.value),
-                }))
-              }
+              onChange={(e) => {
+                const raw = numericString(e.target.value);
+                const num = Number.parseFloat(raw);
+
+                if (Number.isNaN(num) || num < 1) {
+                  setInput((prev) => ({ ...prev, quantity: "1" }));
+                  return;
+                }
+
+                if (
+                  !Number.isNaN(Number.parseFloat(data.stock)) &&
+                  num > Number.parseFloat(data.stock)
+                ) {
+                  setInput((prev) => ({
+                    ...prev,
+                    quantity: data.stock,
+                  }));
+                  return;
+                }
+
+                setInput((prev) => ({ ...prev, quantity: raw }));
+              }}
             />
             <Button
               variant={"outline"}
               size={"icon"}
               className="rounded-l-none disabled:opacity-100 group"
               onClick={() => handleQuantity("increase")}
-              disabled={parseFloat(input.quantity) === parseFloat(data.stock)}
+              disabled={
+                Number.parseFloat(input.quantity) ===
+                Number.parseFloat(data.stock)
+              }
             >
               <Plus className="group-disabled:opacity-50" />
             </Button>
@@ -224,10 +231,10 @@ export const CartAction = ({
         <p
           className={cn(
             "text-xs",
-            isNaN(parseFloat(data.stock)) && "font-semibold"
+            Number.isNaN(Number.parseFloat(data.stock)) && "font-semibold"
           )}
         >
-          {!isNaN(parseFloat(data.stock)) && "Stock: "}
+          {!Number.isNaN(Number.parseFloat(data.stock)) && "Stock: "}
           {data.stock}
         </p>
       </div>
@@ -254,7 +261,7 @@ export const CartAction = ({
           className="flex-auto w-full rounded-full disabled:opacity-100 disabled:pointer-events-auto disabled:cursor-not-allowed disabled:hover:bg-destructive"
           onClick={handleAddToCart}
           disabled={
-            ((!input.variant_id || parseFloat(data.stock) < 1) &&
+            ((!input.variant_id || Number.parseFloat(data.stock) < 1) &&
               status === "authenticated") ||
             !available
           }

@@ -18,7 +18,7 @@ export function generateRandomNumber(length = 5): string {
 }
 
 export const sizesImage =
-  "(max-width: 768px) 33vw, (max-width: 1200px) 50vw, 100vw";
+  "(max-width: 768px) 50vw, (max-width: 1200px) 75vw, 100vw";
 
 export function formatRupiah(rupiah: string | number): string {
   const value =

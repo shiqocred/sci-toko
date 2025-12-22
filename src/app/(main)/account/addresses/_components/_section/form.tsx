@@ -6,29 +6,98 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { TooltipText } from "@/providers/tooltip-provider";
 import { Button } from "@/components/ui/button";
 import { Loader2, Send } from "lucide-react";
-import { FormEvent } from "react";
+import { FormEvent, useState } from "react";
 import { MapPicker } from "./map-picked";
-import { InputProps } from "../client";
+import {
+  AddAddressType,
+  DetailAddressType,
+  InputProps,
+  UpdateAddressType,
+} from "../client";
+import { useRouter } from "next/navigation";
+
+const initialValue = {
+  address: "",
+  district: "",
+  city: "",
+  province: "",
+  latitude: "",
+  longitude: "",
+  postal_code: "",
+  detail: "",
+  name: "",
+  phone: "",
+  is_default: false,
+};
 
 export const AddressForm = ({
-  input,
-  setInput,
-  dialCode,
-  setDialCode,
-  errors,
+  address,
+  addressId,
+  addAddress,
+  updateAddress,
   isLoading,
-  handleSubmit,
   detailAddress,
 }: {
-  input: InputProps;
-  setInput: React.Dispatch<React.SetStateAction<any>>;
-  dialCode: string;
-  setDialCode: React.Dispatch<React.SetStateAction<string>>;
-  errors: Record<string, string>;
+  address: string;
+  addressId: string;
+  addAddress: AddAddressType;
+  updateAddress: UpdateAddressType;
   isLoading: boolean;
-  handleSubmit: (e: FormEvent) => void;
-  detailAddress: any;
+  detailAddress: DetailAddressType;
 }) => {
+  const detailAddressFormatted = detailAddress?.data;
+  const router = useRouter();
+  const [errors, setErrors] = useState<Record<string, string>>({});
+
+  const [dialCode, setDialCode] = useState(
+    detailAddressFormatted
+      ? detailAddressFormatted.phoneNumber.split(" ")[0]
+      : "+62"
+  );
+  const [input, setInput] = useState<InputProps>(
+    detailAddressFormatted
+      ? {
+          name: detailAddressFormatted.name || "",
+          phone: detailAddressFormatted.phoneNumber.split(" ")[1] || "",
+          address: detailAddressFormatted.address || "",
+          province: detailAddressFormatted.province || "",
+          city: detailAddressFormatted.city || "",
+          district: detailAddressFormatted.district || "",
+          longitude: detailAddressFormatted.longitude || "",
+          latitude: detailAddressFormatted.latitude || "",
+          detail: detailAddressFormatted.detail || "",
+          postal_code: detailAddressFormatted.postalCode || "",
+          is_default: detailAddressFormatted.isDefault || false,
+        }
+      : { ...initialValue }
+  );
+
+  const handleSubmit = (e: FormEvent) => {
+    e.preventDefault();
+    const payload = {
+      ...input,
+      phone: `${dialCode} ${input.phone}`,
+      is_default: input.is_default as boolean,
+    };
+
+    const onSuccess = () => {
+      setInput(initialValue);
+      router.push("/account/addresses");
+    };
+
+    const onError = (data: any) => {
+      setErrors(data.response?.data?.errors || {});
+    };
+
+    if (address === "create") {
+      addAddress({ body: payload }, { onSuccess, onError });
+    } else if (address === "edit") {
+      updateAddress(
+        { body: payload, params: { id: addressId } },
+        { onSuccess, onError }
+      );
+    }
+  };
   return (
     <form onSubmit={handleSubmit} className="flex w-full flex-col gap-4">
       <div className="flex flex-col w-full gap-1.5">
@@ -108,12 +177,12 @@ export const AddressForm = ({
 
       <TooltipText
         value="Unavailable to undefault address"
-        className={cn("hidden", detailAddress?.isDefault && "flex")}
+        className={cn("hidden", detailAddressFormatted?.isDefault && "flex")}
       >
         <Label
           className={cn(
             "flex items-center gap-3 w-fit",
-            detailAddress?.isDefault && "cursor-not-allowed"
+            detailAddressFormatted?.isDefault && "cursor-not-allowed"
           )}
         >
           <Checkbox
@@ -122,7 +191,7 @@ export const AddressForm = ({
             onCheckedChange={(e) =>
               setInput((prev: any) => ({ ...prev, is_default: e }))
             }
-            disabled={detailAddress?.isDefault || isLoading}
+            disabled={detailAddressFormatted?.isDefault || isLoading}
           />
           <p className="text-sm font-medium">Set default address</p>
         </Label>

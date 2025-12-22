@@ -18,10 +18,9 @@ export const Navbar = () => {
   const [isOpen, setIsOpen] = useState(false);
 
   useEffect(() => {
-    if (q && q.length > 0) {
-      setSearch(true);
-    }
+    setSearch(Boolean(q));
   }, [q]);
+
   return (
     <div className="w-full bg-white">
       <DrawerMenu
