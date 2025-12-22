@@ -62,6 +62,17 @@ export const hompage = async () => {
       // 🔹 join ke testimonies lewat testimoniProduct
       .leftJoin(testimoniProduct, eq(testimoniProduct.productId, products.id))
       .leftJoin(testimonies, eq(testimonies.id, testimoniProduct.testimoniId))
+      .where(
+        and(
+          eq(products.status, true),
+          sql`EXISTS (
+          SELECT 1 FROM ${productVariants}
+          WHERE ${productVariants.productId} = ${products.id}
+          AND ${productVariants.stock} > 0
+        )`,
+          isNull(products.deletedAt)
+        )
+      )
       .groupBy(products.id, productTrendings.position)
       .orderBy(asc(productTrendings.position)),
 
