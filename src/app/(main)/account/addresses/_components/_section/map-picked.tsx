@@ -58,11 +58,11 @@ function MapContent({ input, setInput }: any) {
 
   const suggestionMapMemo = useMemo(
     () => suggestionMap?.suggestions ?? [],
-    [suggestionMap]
+    [suggestionMap],
   );
 
   const handleSelect = async (
-    item: google.maps.places.AutocompleteSuggestion
+    item: google.maps.places.AutocompleteSuggestion,
   ) => {
     setIsSearch(false);
     setFetchData(false);
@@ -108,8 +108,6 @@ function MapContent({ input, setInput }: any) {
     const center = map.getCenter();
     if (!center) return;
 
-    console.log(center.toJSON());
-
     const geocoder = new google.maps.Geocoder();
     const res = await geocoder.geocode({
       location: center.toJSON(),
@@ -118,8 +116,6 @@ function MapContent({ input, setInput }: any) {
     if (!res.results[0]) return;
 
     const parsed = sanitizeGeocoder(res.results);
-
-    console.log(parsed, res.results, res);
 
     setAddress(parsed.formatted ?? "");
 
@@ -143,7 +139,8 @@ function MapContent({ input, setInput }: any) {
         map?.panTo({ lat: latitude, lng: longitude });
         map?.setZoom(18);
       },
-      () => toast.error("Please allow location access in your browser settings")
+      () =>
+        toast.error("Please allow location access in your browser settings"),
     );
   };
 
@@ -294,9 +291,15 @@ function MapContent({ input, setInput }: any) {
 }
 
 function sanitizeGeocoder(components: google.maps.GeocoderResult[]) {
-  const selectedAddress = components.find((c) =>
-    c.types.find((t) => t === "street_address")
+  const selectedAddressStreet = components.find((c) =>
+    c.types.includes("street_address"),
   );
+
+  const selectedAddressRoute = components.find((c) =>
+    c.types.includes("route"),
+  );
+
+  const selectedAddress = selectedAddressStreet ?? selectedAddressRoute;
 
   const selectedAddressFirst = components[0];
 
@@ -305,41 +308,43 @@ function sanitizeGeocoder(components: google.maps.GeocoderResult[]) {
   const get = (type: string) =>
     availableAddress?.address_components.find((c) => c.types.includes(type))
       ?.long_name ?? "";
+  const getShort = (type: string) =>
+    availableAddress?.address_components.find((c) => c.types.includes(type))
+      ?.short_name ?? "";
 
-  console.log(
-    selectedAddress?.formatted_address,
-    selectedAddressFirst?.formatted_address.replace(
-      selectedAddressFirst.address_components.find((c) =>
-        c.types.find((t) => t === "plus_code")
-      )?.short_name
-        ? `${
-            selectedAddressFirst.address_components.find((c) =>
-              c.types.find((t) => t === "plus_code")
-            )?.short_name
-          }, `
-        : "",
-      ""
-    )
-  );
+  const districtShort = getShort("administrative_area_level_3");
+  const cityShort = getShort("administrative_area_level_2");
+  const provinceShort = getShort("administrative_area_level_1");
+  const district = get("administrative_area_level_3");
+  const city = get("administrative_area_level_2");
+  const province = get("administrative_area_level_1");
+  let postal_code = get("postal_code");
+  const country = get("country");
+  const plus_code = get("plus_code");
+
+  if (!postal_code) {
+    const new_postal_code =
+      components
+        .find((c) => c.types.includes("postal_code"))
+        ?.address_components.find((c) => c.types.includes("postal_code"))
+        ?.long_name ?? "";
+    postal_code = new_postal_code;
+  }
+
+  const formattedAvailableAddress = availableAddress.formatted_address
+    .replace(plus_code ? `${plus_code}, ` : "", "")
+    .replace(plus_code ? `${plus_code} ` : "", "")
+    .replace(district ? `, ${district}, ` : "", "")
+    .replace(districtShort ? `, ${districtShort}, ` : "", "")
+    .replace(city ? `${city}, ` : "", "")
+    .replace(cityShort ? `${cityShort}, ` : "", "")
+    .replace(province ? `${province} ` : "", "")
+    .replace(provinceShort ? `${provinceShort} ` : "", "")
+    .replace(postal_code ? `${postal_code}, ` : "", "")
+    .replace(country ? `${country}` : "", "");
 
   return {
-    formatted: availableAddress?.formatted_address.replace(
-      availableAddress.address_components.find((c) =>
-        c.types.find((t) => t === "plus_code")
-      )?.short_name
-        ? `${
-            availableAddress.address_components.find((c) =>
-              c.types.find((t) => t === "plus_code")
-            )?.short_name
-          }, `
-        : "",
-      ""
-    ),
-    parsed: {
-      district: get("administrative_area_level_3"),
-      city: get("administrative_area_level_2"),
-      province: get("administrative_area_level_1"),
-      postal_code: get("postal_code"),
-    },
+    formatted: formattedAvailableAddress,
+    parsed: { district, city, province, postal_code },
   };
 }
