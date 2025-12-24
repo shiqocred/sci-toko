@@ -291,19 +291,10 @@ function MapContent({ input, setInput }: any) {
 }
 
 function sanitizeGeocoder(components: google.maps.GeocoderResult[]) {
-  const selectedAddressStreet = components.find((c) =>
-    c.types.includes("street_address"),
-  );
-
-  const selectedAddressRoute = components.find((c) =>
-    c.types.includes("route"),
-  );
-
-  const selectedAddress = selectedAddressStreet ?? selectedAddressRoute;
-
-  const selectedAddressFirst = components[0];
-
-  const availableAddress = selectedAddress ?? selectedAddressFirst;
+  const availableAddress =
+    components.find((c) => c.types.includes("street_address")) ??
+    components.find((c) => c.types.includes("route")) ??
+    components[0];
 
   const get = (type: string) =>
     availableAddress?.address_components.find((c) => c.types.includes(type))
