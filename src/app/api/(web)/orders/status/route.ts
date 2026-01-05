@@ -42,7 +42,7 @@ const sanitizeStatus = async (
     | "rejected"
     | "disposed"
     | "courier_not_found"
-    | "delivered"
+    | "delivered",
 ) => {
   if (
     status === "allocated" ||
@@ -50,7 +50,8 @@ const sanitizeStatus = async (
     status === "picking_up" ||
     status === "picked" ||
     status === "on_hold" ||
-    status === "dropping_off"
+    status === "dropping_off" ||
+    status === "confirmed"
   )
     return "SHIPPING";
   if (
@@ -89,7 +90,7 @@ export async function POST(req: NextRequest) {
       where: (s, { and, eq }) =>
         and(
           eq(s.trackingId, body.courier_tracking_id),
-          eq(s.waybillId, body.courier_waybill_id)
+          eq(s.waybillId, body.courier_waybill_id),
         ),
     });
 
@@ -98,7 +99,7 @@ export async function POST(req: NextRequest) {
 
     // ambil history tracking
     const { ok: historiesOk, response: historiesRes } = await getTracking(
-      shippingExist.trackingId as string
+      shippingExist.trackingId as string,
     );
 
     if (!historiesOk)
@@ -114,15 +115,15 @@ export async function POST(req: NextRequest) {
     const existingSet = new Set(
       historiesExist.map(
         (h) =>
-          `${(h.note ?? "").trim()}|${new Date(h.updatedAt ?? new Date()).getTime()}|${h.status.toUpperCase()}`
-      )
+          `${(h.note ?? "").trim()}|${new Date(h.updatedAt ?? new Date()).getTime()}|${h.status.toUpperCase()}`,
+      ),
     );
 
     const filteredNew = historiesFormatted.filter(
       (h) =>
         !existingSet.has(
-          `${h.note.trim()}|${new Date(h.updated_at).getTime()}|${h.status.toUpperCase()}`
-        )
+          `${h.note.trim()}|${new Date(h.updated_at).getTime()}|${h.status.toUpperCase()}`,
+        ),
     );
 
     await db.transaction(async (tx) => {
@@ -134,7 +135,7 @@ export async function POST(req: NextRequest) {
             note: history.note,
             serviceType: history.service_type,
             updatedAt: new Date(history.updated_at),
-          }))
+          })),
         );
       }
       if (body.status === "disposed") {
