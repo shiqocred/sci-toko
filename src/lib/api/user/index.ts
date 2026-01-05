@@ -3,7 +3,7 @@ import { errorRes } from "@/lib/auth";
 import { convertToWebP } from "@/lib/convert-image";
 import { db, userRoleDetails, users } from "@/lib/db";
 import { deleteR2, uploadToR2 } from "@/lib/providers";
-import { eq, sql } from "drizzle-orm";
+import { and, eq, isNull, sql } from "drizzle-orm";
 import { NextRequest } from "next/server";
 import { z } from "zod/v4";
 
@@ -27,7 +27,7 @@ export const getUser = async (userId: string) => {
     })
     .from(users)
     .innerJoin(userRoleDetails, eq(userRoleDetails.userId, userId))
-    .where(eq(users.id, userId))
+    .where(and(eq(users.id, userId), isNull(users.deletedAt)))
     .limit(1);
 
   if (!userRes) throw errorRes("User not found", 404);
@@ -75,12 +75,16 @@ export const updateUser = async (req: NextRequest, userId: string) => {
       phoneNumber: true,
       emailVerified: true,
     },
-    where: (u, { eq }) => eq(u.id, userId),
+    where: (u, { eq }) => and(eq(u.id, userId), isNull(u.deletedAt)),
   });
 
   if (!userExist) throw errorRes("Unauthorized", 401);
 
   let imageKey: string = "";
+
+  const imageOldFormatted = imageOld
+    ? imageOld.replace(`${r2Public}/`, "")
+    : "";
 
   if (image) {
     // upload KTP
@@ -89,7 +93,7 @@ export const updateUser = async (req: NextRequest, userId: string) => {
     imageKey = `images/user/${userId}-${new Date().getTime()}.webp`;
 
     if (userExist.image) {
-      await deleteR2(imageKey);
+      await deleteR2(imageOldFormatted);
     }
 
     const r2Upload = await uploadToR2({
@@ -99,10 +103,6 @@ export const updateUser = async (req: NextRequest, userId: string) => {
 
     if (!r2Upload) throw errorRes("Upload Failed", 422, r2Upload);
   }
-
-  const imageOldFormatted = imageOld
-    ? imageOld.replace(`${r2Public}/`, "")
-    : "";
 
   const imageSanitize = async () => {
     if (imageKey) {
@@ -114,13 +114,6 @@ export const updateUser = async (req: NextRequest, userId: string) => {
     }
   };
 
-  console.log(
-    await imageSanitize(),
-    imageKey,
-    imageOldFormatted === userExist.image,
-    imageOldFormatted,
-    userExist.image
-  );
   const [user] = await db
     .update(users)
     .set({
@@ -131,7 +124,7 @@ export const updateUser = async (req: NextRequest, userId: string) => {
       image: await imageSanitize(),
       updatedAt: sql`NOW()`,
     })
-    .where(eq(users.id, userId))
+    .where(and(eq(users.id, userId), isNull(users.deletedAt)))
     .returning({
       name: users.name,
       email: users.email,
@@ -146,4 +139,25 @@ export const updateUser = async (req: NextRequest, userId: string) => {
   };
 
   return userFormatted;
+};
+
+export const deleteUser = async (req: NextRequest, userId: string) => {
+  const email = req.nextUrl.searchParams.get("email");
+
+  if (!email) throw errorRes("Email is required", 400);
+
+  const userExist = await db.query.users.findFirst({
+    where: (u, { eq, and, isNull }) =>
+      and(eq(u.id, userId), isNull(u.deletedAt)),
+  });
+
+  if (!userExist) throw errorRes("User not match", 404);
+  if (userExist.email !== email) throw errorRes("User not match", 404);
+
+  await db
+    .update(users)
+    .set({ deletedAt: sql`NOW()`, updatedAt: sql`NOW()` })
+    .where(and(eq(users.id, userId), isNull(users.deletedAt)));
+
+  return "Account deleted successfully";
 };

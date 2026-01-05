@@ -4,7 +4,7 @@ import { errorRes, generateOtp } from "@/lib/auth";
 import { db, users, verificationOtp } from "@/lib/db";
 import { transporter } from "@/lib/providers";
 import { add } from "date-fns";
-import { desc, eq } from "drizzle-orm";
+import { and, desc, eq, isNull } from "drizzle-orm";
 
 export const apiForgotPassword = async (req: Request) => {
   const { email } = await req.json();
@@ -18,7 +18,7 @@ export const apiForgotPassword = async (req: Request) => {
       name: users.name,
     })
     .from(users)
-    .where(eq(users.email, email))
+    .where(and(eq(users.email, email), isNull(users.deletedAt)))
     .orderBy(desc(users.createdAt))
     .limit(1);
 

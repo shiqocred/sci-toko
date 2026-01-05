@@ -1,7 +1,7 @@
 import { errorRes } from "@/lib/auth";
 import { db, users } from "@/lib/db";
 import { hash, verify } from "argon2";
-import { eq, sql } from "drizzle-orm";
+import { and, eq, isNull, sql } from "drizzle-orm";
 import { NextRequest } from "next/server";
 import { z } from "zod/v4";
 
@@ -74,7 +74,7 @@ export const updatePassword = async (req: NextRequest, userId: string) => {
     columns: {
       password: true,
     },
-    where: (u, { eq }) => eq(u.id, userId),
+    where: (u, { eq }) => and(eq(u.id, userId), isNull(u.deletedAt)),
   });
 
   if (!userExist) throw errorRes("Unauthorized", 401);
@@ -104,7 +104,7 @@ export const updatePassword = async (req: NextRequest, userId: string) => {
       password: await hash(new_password),
       updatedAt: sql`NOW()`,
     })
-    .where(eq(users.id, userId))
+    .where(and(eq(users.id, userId), isNull(users.deletedAt)))
     .returning();
 
   console.log(a);

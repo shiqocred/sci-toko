@@ -37,7 +37,7 @@ export const drafOrder = async (userId: string) => {
     db.query.about.findFirst(),
     db.query.users.findFirst({
       columns: { id: true, role: true }, // ✅ hanya ambil kolom yang dibutuhkan
-      where: (u, { eq }) => eq(u.id, userId),
+      where: (u, { eq }) => and(eq(u.id, userId), isNull(u.deletedAt)),
     }),
   ]);
 
@@ -298,7 +298,7 @@ async function checkFreeShipping(
 export const createDraftOrder = async (userId: string) => {
   const user = await db.query.users.findFirst({
     columns: { role: true, emailVerified: true },
-    where: (u, { eq }) => eq(u.id, userId),
+    where: (u, { eq }) => and(eq(u.id, userId), isNull(u.deletedAt)),
   });
 
   if (!user) throw errorRes("Unauthorized", 401);

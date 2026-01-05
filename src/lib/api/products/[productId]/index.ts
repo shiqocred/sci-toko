@@ -130,7 +130,9 @@ export const productDetail = async (
 
   if (userId && variantIds.length > 0) {
     const [user, carts] = await Promise.all([
-      db.query.users.findFirst({ where: (u, { eq }) => eq(u.id, userId) }),
+      db.query.users.findFirst({
+        where: (u, { eq }) => and(eq(u.id, userId), isNull(u.deletedAt)),
+      }),
       db.query.carts.findMany({
         columns: { variantId: true, quantity: true },
         where: (c, { eq, and, inArray }) =>

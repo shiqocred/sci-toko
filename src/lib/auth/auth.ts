@@ -10,7 +10,7 @@ import {
   userRoleDetails,
 } from "../db";
 import { verify } from "argon2";
-import { eq } from "drizzle-orm";
+import { and, eq, isNull } from "drizzle-orm";
 import { r2Public } from "@/config";
 import { Adapter } from "next-auth/adapters";
 
@@ -37,7 +37,7 @@ export async function authorizeWithCredentials(
     })
     .from(users)
     .innerJoin(userRoleDetails, eq(userRoleDetails.userId, users.id))
-    .where(eq(users.email, email));
+    .where(and(eq(users.email, email), isNull(users.deletedAt)));
 
   if (!user) return null;
   if (!user.password) return null;

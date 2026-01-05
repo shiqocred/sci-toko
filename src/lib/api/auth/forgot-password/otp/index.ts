@@ -4,7 +4,7 @@ import { errorRes, generateOtp, successRes } from "@/lib/auth";
 import { db, users, verificationOtp } from "@/lib/db";
 import { transporter } from "@/lib/providers";
 import { add } from "date-fns";
-import { desc, eq } from "drizzle-orm";
+import { and, desc, eq, isNull } from "drizzle-orm";
 
 export const getResendOTPForgotPassword = async (email: string) => {
   const otp = await db.query.verificationOtp.findFirst({
@@ -34,7 +34,7 @@ export const apiResendOTPForgotPassword = async (email: string) => {
       name: users.name,
     })
     .from(users)
-    .where(eq(users.email, email))
+    .where(and(eq(users.email, email), isNull(users.deletedAt)))
     .orderBy(desc(users.createdAt))
     .limit(1);
 

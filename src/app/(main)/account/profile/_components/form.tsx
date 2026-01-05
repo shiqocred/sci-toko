@@ -28,7 +28,7 @@ export const FormSection = ({ session }: { session: SessionType }) => {
       input.name !== user?.name ||
       input.email !== user?.email ||
       `${dialCode} ${input.phone}` !== user?.phone,
-    [input, dialCode, user]
+    [input, dialCode, user],
   );
 
   const { mutate: updateUser, isPending: isUpdatingUser } = useUpdateUser();
@@ -47,7 +47,7 @@ export const FormSection = ({ session }: { session: SessionType }) => {
     }
     formData.append(
       "imageOld",
-      user?.image && user.image === imageOld ? user.image : ""
+      user?.image && user.image === imageOld ? user.image : "",
     );
 
     updateUser(
@@ -63,7 +63,7 @@ export const FormSection = ({ session }: { session: SessionType }) => {
             image: userRes.image,
           });
         },
-      }
+      },
     );
   };
 
@@ -140,7 +140,7 @@ export const FormSection = ({ session }: { session: SessionType }) => {
               className={cn(
                 "bg-gray-100 focus-visible:ring-0 shadow-none focus-visible:border-gray-500",
                 input.name !== user?.name &&
-                  "border-green-500 focus-visible:border-green-500"
+                  "border-green-500 focus-visible:border-green-500",
               )}
               value={input.name}
               onChange={(e) =>
@@ -159,7 +159,7 @@ export const FormSection = ({ session }: { session: SessionType }) => {
               className={cn(
                 "bg-gray-100 focus-visible:ring-0 shadow-none focus-visible:border-gray-500",
                 input.email !== user?.email &&
-                  "border-green-500 focus-visible:border-green-500"
+                  "border-green-500 focus-visible:border-green-500",
               )}
               value={input.email}
               onChange={(e) =>
@@ -174,7 +174,7 @@ export const FormSection = ({ session }: { session: SessionType }) => {
             className={cn(
               "bg-gray-100 border-gray-100 focus-visible:border-gray-500",
               `${dialCode} ${input.phone}` !== user?.phone &&
-                "border-green-500 focus-visible:border-green-500"
+                "border-green-500 focus-visible:border-green-500",
             )}
             isPhone
             value={input.phone}

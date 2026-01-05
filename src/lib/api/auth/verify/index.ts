@@ -1,4 +1,4 @@
-import { and, desc, eq } from "drizzle-orm";
+import { and, desc, eq, isNull } from "drizzle-orm";
 import { add } from "date-fns";
 import { errorRes, successRes } from "@/lib/auth";
 import { db, users, verificationOtp } from "@/lib/db";
@@ -45,7 +45,7 @@ export const apiVerifycationEmail = async (req: Request, email: string) => {
   const [user] = await db
     .update(users)
     .set({ emailVerified: now, updatedAt: now })
-    .where(eq(users.email, email))
+    .where(and(eq(users.email, email), isNull(users.deletedAt)))
     .returning({
       id: users.id,
       emailVerified: users.emailVerified,

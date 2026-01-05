@@ -48,7 +48,7 @@ export const applyDiscount = async (req: NextRequest, userId: string) => {
   const [userRow, draftCtx] = await Promise.all([
     db.query.users.findFirst({
       columns: { role: true },
-      where: (u, { eq }) => eq(u.id, userId),
+      where: (u, { eq }) => and(eq(u.id, userId), isNull(u.deletedAt)),
     }),
     getDraftAndVariantIds(userId),
   ]);

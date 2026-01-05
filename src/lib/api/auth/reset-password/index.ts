@@ -1,7 +1,7 @@
 import { errorRes } from "@/lib/auth";
 import { db, users } from "@/lib/db";
 import { hash } from "argon2";
-import { eq } from "drizzle-orm";
+import { and, eq, isNull } from "drizzle-orm";
 
 const validationPassword = async (value: string) => {
   const failed = [
@@ -62,7 +62,7 @@ export const apiResetPassword = async (
   const [user] = await db
     .update(users)
     .set({ password: await hash(password) })
-    .where(eq(users.id, userId))
+    .where(and(eq(users.id, userId), isNull(users.deletedAt)))
     .returning({ id: users.id });
 
   return user;

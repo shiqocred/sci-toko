@@ -17,7 +17,7 @@ import {
 import { xendit } from "@/lib/utils";
 import { createId } from "@paralleldrive/cuid2";
 import { add } from "date-fns";
-import { and, desc, eq, inArray, isNotNull, sql } from "drizzle-orm";
+import { and, desc, eq, inArray, isNotNull, isNull, sql } from "drizzle-orm";
 import { NextRequest } from "next/server";
 
 // --- TYPES ---
@@ -151,7 +151,7 @@ export const createOrder = async (req: NextRequest, userId: string) => {
   const { note, courierId } = await req.json();
 
   const userExist = await db.query.users.findFirst({
-    where: (u, { eq }) => eq(u.id, userId),
+    where: (u, { eq }) => and(eq(u.id, userId), isNull(u.deletedAt)),
   });
 
   if (!userExist) throw errorRes("Unauthorized", 401);
