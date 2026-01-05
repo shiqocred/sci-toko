@@ -1,15 +1,14 @@
 import { useMutate } from "@/lib/query";
-import { useRouter } from "next/navigation";
+import { signOut } from "next-auth/react";
 import { toast } from "sonner";
 
 export const useDeleteUser = () => {
-  const router = useRouter();
-  const mutation = useMutate({
+  const mutation = useMutate<undefined, undefined, { email: string }>({
     endpoint: "/user",
     method: "delete",
     onSuccess: async ({ data }) => {
       toast.success(data.message);
-      router.push("/sign-in");
+      await signOut({ redirect: true, redirectTo: "/" });
     },
     onError: {
       title: "DELETE_USER",

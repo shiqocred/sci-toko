@@ -8,13 +8,15 @@ import { cn, sizesImage } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
-import { Trash2 } from "lucide-react";
 import { LabelInput } from "@/components/label-input";
+import { Trash2 } from "lucide-react";
+import { DialogDelete } from "./dialog-delete";
 
 export const FormSection = ({ session }: { session: SessionType }) => {
   const { data, update } = session;
   const user = data?.user;
   const [dialCode, setDialCode] = useState(user?.phone?.split(" ")[0] ?? "+62");
+  const [isOpen, setIsOpen] = useState(false);
   const [input, setInput] = useState({
     name: user?.name ?? "",
     email: user?.email ?? "",
@@ -28,7 +30,7 @@ export const FormSection = ({ session }: { session: SessionType }) => {
       input.name !== user?.name ||
       input.email !== user?.email ||
       `${dialCode} ${input.phone}` !== user?.phone,
-    [input, dialCode, user],
+    [input, dialCode, user]
   );
 
   const { mutate: updateUser, isPending: isUpdatingUser } = useUpdateUser();
@@ -47,7 +49,7 @@ export const FormSection = ({ session }: { session: SessionType }) => {
     }
     formData.append(
       "imageOld",
-      user?.image && user.image === imageOld ? user.image : "",
+      user?.image && user.image === imageOld ? user.image : ""
     );
 
     updateUser(
@@ -63,7 +65,7 @@ export const FormSection = ({ session }: { session: SessionType }) => {
             image: userRes.image,
           });
         },
-      },
+      }
     );
   };
 
@@ -140,7 +142,7 @@ export const FormSection = ({ session }: { session: SessionType }) => {
               className={cn(
                 "bg-gray-100 focus-visible:ring-0 shadow-none focus-visible:border-gray-500",
                 input.name !== user?.name &&
-                  "border-green-500 focus-visible:border-green-500",
+                  "border-green-500 focus-visible:border-green-500"
               )}
               value={input.name}
               onChange={(e) =>
@@ -159,7 +161,7 @@ export const FormSection = ({ session }: { session: SessionType }) => {
               className={cn(
                 "bg-gray-100 focus-visible:ring-0 shadow-none focus-visible:border-gray-500",
                 input.email !== user?.email &&
-                  "border-green-500 focus-visible:border-green-500",
+                  "border-green-500 focus-visible:border-green-500"
               )}
               value={input.email}
               onChange={(e) =>
@@ -174,7 +176,7 @@ export const FormSection = ({ session }: { session: SessionType }) => {
             className={cn(
               "bg-gray-100 border-gray-100 focus-visible:border-gray-500",
               `${dialCode} ${input.phone}` !== user?.phone &&
-                "border-green-500 focus-visible:border-green-500",
+                "border-green-500 focus-visible:border-green-500"
             )}
             isPhone
             value={input.phone}
@@ -200,14 +202,11 @@ export const FormSection = ({ session }: { session: SessionType }) => {
           >
             Save
           </Button>
-          <Button
-            type="button"
-            variant="destructiveOutline"
-            className="rounded-full w-full flex-auto"
+          <DialogDelete
             disabled={isUpdatingUser}
-          >
-            Delete Account
-          </Button>
+            open={isOpen}
+            onOpenChange={setIsOpen}
+          />
         </div>
       </form>
     </div>

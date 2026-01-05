@@ -145,6 +145,7 @@ export const deleteUser = async (req: NextRequest, userId: string) => {
   const email = req.nextUrl.searchParams.get("email");
 
   if (!email) throw errorRes("Email is required", 400);
+  const decodeEmail = decodeURIComponent(email);
 
   const userExist = await db.query.users.findFirst({
     where: (u, { eq, and, isNull }) =>
@@ -152,7 +153,7 @@ export const deleteUser = async (req: NextRequest, userId: string) => {
   });
 
   if (!userExist) throw errorRes("User not match", 404);
-  if (userExist.email !== email) throw errorRes("User not match", 404);
+  if (userExist.email !== decodeEmail) throw errorRes("User not match", 404);
 
   await db
     .update(users)
