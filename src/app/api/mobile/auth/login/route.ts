@@ -7,10 +7,11 @@ export async function POST(req: Request) {
     const { email, password } = await req.json();
 
     const user = await db.query.users.findFirst({
-      where: (u, { eq }) => eq(u.email, email),
+      where: (u, { eq, and, isNull }) =>
+        and(eq(u.email, email), isNull(u.deletedAt)),
     });
-    if (!user?.id || !user?.password)
-      return errorRes("Invalid credentials", 401);
+
+    if (!user) return errorRes("Invalid credentials", 401);
 
     const match = await verify(user.password, password);
     if (!match) return errorRes("Invalid credentials", 401);
@@ -27,7 +28,7 @@ export async function POST(req: Request) {
           role: user.role,
         },
       },
-      "Login successfully"
+      "Login successfully",
     );
   } catch (error) {
     console.log("ERROR_LOGIN", error);

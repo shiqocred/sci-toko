@@ -34,7 +34,8 @@ export const applyDiscount = async (req: NextRequest, userId: string) => {
 
   // Ambil discount terlebih dulu (tanpa guard waktu aktif)
   const discount = await db.query.discounts.findFirst({
-    where: (d, { eq }) => and(eq(d.code, voucher), isNull(d.deletedAt)),
+    where: (d, { eq, and, isNull }) =>
+      and(eq(d.code, voucher), isNull(d.deletedAt)),
   });
 
   if (!discount) throw errorRes("Voucher not found", 404);
@@ -48,7 +49,8 @@ export const applyDiscount = async (req: NextRequest, userId: string) => {
   const [userRow, draftCtx] = await Promise.all([
     db.query.users.findFirst({
       columns: { role: true },
-      where: (u, { eq }) => and(eq(u.id, userId), isNull(u.deletedAt)),
+      where: (u, { eq, and, isNull }) =>
+        and(eq(u.id, userId), isNull(u.deletedAt)),
     }),
     getDraftAndVariantIds(userId),
   ]);

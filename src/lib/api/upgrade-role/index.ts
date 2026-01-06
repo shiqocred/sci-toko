@@ -1,7 +1,6 @@
 import { r2Public } from "@/config";
 import { errorRes, successRes } from "@/lib/auth";
 import { db } from "@/lib/db";
-import { and, isNull } from "drizzle-orm";
 import { NextRequest } from "next/server";
 
 export const apiGetStatusRole = async (req: NextRequest, userId: string) => {
@@ -14,7 +13,8 @@ export const apiGetStatusRole = async (req: NextRequest, userId: string) => {
     columns: {
       role: true,
     },
-    where: (u, { eq }) => and(eq(u.id, userId), isNull(u.deletedAt)),
+    where: (u, { eq, and, isNull }) =>
+      and(eq(u.id, userId), isNull(u.deletedAt)),
   });
 
   if (!user) throw errorRes("user not match", 404);

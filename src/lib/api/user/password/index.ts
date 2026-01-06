@@ -74,7 +74,8 @@ export const updatePassword = async (req: NextRequest, userId: string) => {
     columns: {
       password: true,
     },
-    where: (u, { eq }) => and(eq(u.id, userId), isNull(u.deletedAt)),
+    where: (u, { eq, and, isNull }) =>
+      and(eq(u.id, userId), isNull(u.deletedAt)),
   });
 
   if (!userExist) throw errorRes("Unauthorized", 401);

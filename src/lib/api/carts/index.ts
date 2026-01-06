@@ -21,7 +21,8 @@ export const cartsList = async (userId: string) => {
   // 1. Ambil role user
   const user = await db.query.users.findFirst({
     columns: { role: true },
-    where: (u, { eq }) => and(eq(u.id, userId), isNull(u.deletedAt)),
+    where: (u, { eq, and, isNull }) =>
+      and(eq(u.id, userId), isNull(u.deletedAt)),
   });
   if (!user) throw errorRes("Unauthorized", 401);
 
@@ -238,7 +239,8 @@ export const cartsList = async (userId: string) => {
 export const addToCart = async (req: NextRequest, userId: string) => {
   // 🔹 1. Parse user
   const user = await db.query.users.findFirst({
-    where: (u, { eq }) => and(eq(u.id, userId), isNull(u.deletedAt)),
+    where: (u, { eq, and, isNull }) =>
+      and(eq(u.id, userId), isNull(u.deletedAt)),
     columns: { id: true, role: true },
   });
   if (!user) throw errorRes("Unauthorized", 401);
