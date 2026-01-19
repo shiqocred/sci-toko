@@ -158,7 +158,11 @@ export const deleteUser = async (req: NextRequest, userId: string) => {
 
   await db
     .update(users)
-    .set({ deletedAt: sql`NOW()`, updatedAt: sql`NOW()` })
+    .set({
+      deletedAt: sql`NOW()`,
+      updatedAt: sql`NOW()`,
+      email: `deleted_${userExist.email}`,
+    })
     .where(and(eq(users.id, userId), isNull(users.deletedAt)));
 
   return "Account deleted successfully";
